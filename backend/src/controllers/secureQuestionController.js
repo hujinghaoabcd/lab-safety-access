@@ -24,7 +24,7 @@ const normalizeAnswer = (type, answer) => {
   const normalized = [...new Set(letters)].sort().join('');
   if (!normalized) throw new Error('答案必须使用选项字母，例如 A 或 AC');
   if (type === '单选题' && normalized.length !== 1) {
-    throw new Error('单选题只能有一个正确答案');
+    throw new Error('单选题必须且只能有一个正确答案');
   }
   return normalized;
 };
