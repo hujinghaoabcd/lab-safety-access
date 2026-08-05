@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       deploy:
-        description: Publish a production release after verification
+        description: Publish a production deployment after verification
         required: true
         default: false
         type: boolean
@@ -89,7 +89,7 @@ jobs:
       - name: Validate production Compose file
         run: docker compose --env-file .env.example -f docker-compose.prod.yml config
 
-  release:
+  publish:
     needs: verify
     if: >-
       github.ref == 'refs/heads/main' &&
@@ -98,8 +98,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      RELEASE_TAG: deploy-${{ github.sha }}
     steps:
       - name: Check out verified source
         uses: actions/checkout@v4
@@ -117,12 +115,12 @@ jobs:
             --file deploy/web.Dockerfile \
             .
 
-      - name: Create production bundle
+      - name: Create chunked production bundle
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf release-bundle
-          mkdir -p release-bundle
+          rm -rf release-bundle publish
+          mkdir -p release-bundle publish
 
           docker save \
             "lab-safety-backend:${GITHUB_SHA}" \
@@ -136,30 +134,35 @@ jobs:
             images.tar.gz \
             docker-compose.prod.yml \
             release-sha.txt
-          sha256sum lab-safety-production.tar.gz \
-            > lab-safety-production.tar.gz.sha256
-          cp release-bundle/release-sha.txt ./release-sha.txt
-          ls -lh lab-safety-production.tar.gz*
 
-      - name: Publish immutable production release
+          split -b 16m -d -a 4 \
+            lab-safety-production.tar.gz \
+            publish/lab-safety-production.part-
+
+          (
+            cd publish
+            sha256sum lab-safety-production.part-* > chunks.sha256
+          )
+          sha256sum lab-safety-production.tar.gz > publish/bundle.sha256
+          printf '%s\n' "$GITHUB_SHA" > publish/release-sha.txt
+          printf 'schema=1\nchunk_size=16m\n' > publish/manifest.env
+
+          du -h lab-safety-production.tar.gz
+          ls -lh publish/
+
+      - name: Publish resumable deployment branch
         env:
-          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" \
-              lab-safety-production.tar.gz \
-              lab-safety-production.tar.gz.sha256 \
-              release-sha.txt \
-              --clobber
-          else
-            gh release create "$RELEASE_TAG" \
-              lab-safety-production.tar.gz \
-              lab-safety-production.tar.gz.sha256 \
-              release-sha.txt \
-              --target "$GITHUB_SHA" \
-              --title "Production ${GITHUB_SHA::12}" \
-              --notes "Automated production bundle for commit ${GITHUB_SHA}." \
-              --latest
-          fi
+          cd publish
+          git init -q
+          git checkout -q -b deploy-artifacts
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .
+          git commit -q -m "Production ${GITHUB_SHA}"
+          git remote add origin \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force origin deploy-artifacts
