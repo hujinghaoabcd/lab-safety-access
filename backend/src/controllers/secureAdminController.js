@@ -1,5 +1,7 @@
 const XLSX = require('xlsx');
-const { dbGet, dbRun } = require('../database/db');
+const fs = require('fs');
+const path = require('path');
+const { dbGet, dbRun, DB_PATH } = require('../database/db');
 const { generateToken } = require('../middleware/auth');
 const {
   hashPassword,
@@ -234,5 +236,30 @@ exports.batchImportUsers = async (req, res) => {
     try { await dbRun('ROLLBACK'); } catch (_) {}
     console.error('批量导入用户错误:', err);
     return error(res, '批量导入失败', 500);
+  }
+};
+
+exports.downloadDatabaseBackup = async (req, res) => {
+  const filename = path.basename(String(req.params.filename || ''));
+  if (!/^lab_safety_(?:backup|before_restore)_\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}\.db$/.test(filename)) {
+    return error(res, '备份文件名无效', 400);
+  }
+
+  const backupDirectory = path.join(path.dirname(DB_PATH), 'backups');
+  const filePath = path.join(backupDirectory, filename);
+
+  try {
+    const stat = await fs.promises.stat(filePath);
+    if (!stat.isFile()) {
+      return error(res, '备份文件不存在', 404);
+    }
+    res.setHeader('Cache-Control', 'no-store');
+    return res.download(filePath, filename);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      return error(res, '备份文件不存在', 404);
+    }
+    console.error('下载数据库备份失败:', err);
+    return error(res, '下载数据库备份失败', 500);
   }
 };
