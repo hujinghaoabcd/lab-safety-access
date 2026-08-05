@@ -4,7 +4,14 @@ const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 
-const adminController = require('../controllers/adminController');
+const adminDashboardController = require('../controllers/adminDashboardController');
+const adminUserController = require('../controllers/adminUserController');
+const adminExamReadController = require('../controllers/adminExamReadController');
+const adminQuestionCrudController = require('../controllers/adminQuestionCrudController');
+const adminRecordController = require('../controllers/adminRecordController');
+const adminCertificateController = require('../controllers/adminCertificateController');
+const adminSettingsController = require('../controllers/adminSettingsController');
+const adminOrganizationController = require('../controllers/adminOrganizationController');
 const secureAdminController = require('../controllers/secureAdminController');
 const secureExamAdminController = require('../controllers/secureExamAdminController');
 const secureExportController = require('../controllers/secureExportController');
@@ -114,28 +121,28 @@ router.post(
 
 router.use(authMiddleware, requireRole('admin'));
 
-router.get('/dashboard/stats', adminController.getDashboardStats);
-router.get('/dashboard/chart', adminController.getChartData);
-router.get('/dashboard/recent-exams', adminController.getRecentExams);
+router.get('/dashboard/stats', adminDashboardController.getDashboardStats);
+router.get('/dashboard/chart', adminDashboardController.getChartData);
+router.get('/dashboard/recent-exams', adminDashboardController.getRecentExams);
 
-router.get('/users', adminController.getUsers);
+router.get('/users', adminUserController.getUsers);
 router.post('/users', secureAdminController.createUser);
 router.delete('/users/batch', secureDeletionController.batchDeleteUsers);
 router.post('/users/batch-delete', secureDeletionController.batchDeleteUsers);
 router.post('/users/import', excelUpload.single('file'), secureAdminController.batchImportUsers);
-router.put('/users/:id', adminController.updateUser);
+router.put('/users/:id', adminUserController.updateUser);
 router.delete('/users/:id', secureDeletionController.deleteUser);
-router.put('/users/:id/status', adminController.toggleUserStatus);
+router.put('/users/:id/status', adminUserController.toggleUserStatus);
 router.put('/users/:id/reset-password', secureAdminController.resetUserPassword);
 
-router.get('/exams', adminController.getExams);
+router.get('/exams', adminExamReadController.getExams);
 router.post('/exams', secureExamAdminController.createExam);
 router.put('/exams/:id', secureExamAdminController.updateExam);
 router.delete('/exams/:id', secureDeletionController.deleteExam);
 router.put('/exams/:id/status', secureExamAdminController.toggleExamStatus);
-router.get('/exams/:id/assignments', adminController.getExamAssignments);
+router.get('/exams/:id/assignments', adminExamReadController.getExamAssignments);
 router.put('/exams/:id/assignments', secureExamAdminController.updateExamAssignments);
-router.get('/exams/:id/questions', adminController.getExamQuestions);
+router.get('/exams/:id/questions', adminExamReadController.getExamQuestions);
 router.post(
   '/exams/:id/questions/config',
   secureQuestionAssignmentController.configExamQuestions
@@ -145,32 +152,32 @@ router.post(
   secureQuestionAssignmentController.autoSelectQuestions
 );
 
-router.get('/questions', adminController.getQuestions);
+router.get('/questions', adminQuestionCrudController.getQuestions);
 router.get('/questions/export', secureQuestionController.exportQuestions);
 router.post(
   '/questions/import',
   excelUpload.single('file'),
   secureQuestionController.importQuestions
 );
-router.post('/questions', adminController.createQuestion);
+router.post('/questions', adminQuestionCrudController.createQuestion);
 router.delete('/questions/batch', secureDeletionController.batchDeleteQuestions);
 router.post('/questions/batch-delete', secureDeletionController.batchDeleteQuestions);
-router.put('/questions/:id', adminController.updateQuestion);
+router.put('/questions/:id', adminQuestionCrudController.updateQuestion);
 router.delete('/questions/:id', secureDeletionController.deleteQuestion);
 
-router.get('/records', adminController.getRecords);
+router.get('/records', adminRecordController.getRecords);
 router.get('/records/export', secureExportController.exportRecords);
-router.get('/records/:id', adminController.getRecordDetail);
+router.get('/records/:id', adminRecordController.getRecordDetail);
 router.delete('/records/:id', secureDeletionController.deleteRecord);
 
-router.get('/certificates', adminController.getCertificates);
+router.get('/certificates', adminCertificateController.getCertificates);
 router.get('/certificates/export', secureExportController.exportCertificates);
-router.post('/certificates', adminController.issueCertificate);
-router.put('/certificates/:id/revoke', adminController.revokeCertificate);
-router.put('/certificates/:id/reissue', adminController.reissueCertificate);
+router.post('/certificates', adminCertificateController.issueCertificate);
+router.put('/certificates/:id/revoke', adminCertificateController.revokeCertificate);
+router.put('/certificates/:id/reissue', adminCertificateController.reissueCertificate);
 
-router.get('/settings', adminController.getSettings);
-router.put('/settings', adminController.updateSettings);
+router.get('/settings', adminSettingsController.getSettings);
+router.put('/settings', adminSettingsController.updateSettings);
 
 router.get('/db/migrations', databaseMaintenanceController.migrationStatus);
 router.get('/db/backups', databaseMaintenanceController.listBackups);
@@ -178,14 +185,14 @@ router.post('/db/backup', databaseMaintenanceController.createBackup);
 router.post('/db/backup-clear', databaseMaintenanceController.createBackup);
 router.post('/db/restore', databaseMaintenanceController.rejectOnlineRestore);
 
-router.get('/departments', adminController.getDepartments);
-router.post('/departments', adminController.createDepartment);
-router.put('/departments/:id', adminController.updateDepartment);
-router.delete('/departments/:id', adminController.deleteDepartment);
-router.get('/classes', adminController.getClasses);
-router.post('/classes', adminController.createClass);
-router.put('/classes/:id', adminController.updateClass);
-router.delete('/classes/:id', adminController.deleteClass);
+router.get('/departments', adminOrganizationController.getDepartments);
+router.post('/departments', adminOrganizationController.createDepartment);
+router.put('/departments/:id', adminOrganizationController.updateDepartment);
+router.delete('/departments/:id', adminOrganizationController.deleteDepartment);
+router.get('/classes', adminOrganizationController.getClasses);
+router.post('/classes', adminOrganizationController.createClass);
+router.put('/classes/:id', adminOrganizationController.updateClass);
+router.delete('/classes/:id', adminOrganizationController.deleteClass);
 
 router.get('/banner', bannerController.getAllBanners);
 router.post('/banner', bannerController.createBanner);
