@@ -53,6 +53,22 @@ jobs:
             frontend-h5/package-lock.json
             admin-web/package-lock.json
 
+      - name: Verify current source excludes retired risks
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e backend/src/controllers/adminController.js
+          if grep -RInE \
+            "require\(['\"](xlsx|sqlite3)['\"]\)|ucas1234|process\.env\.(JWT_SECRET|ADMIN_PASSWORD)[[:space:]]*\|\|[[:space:]]*['\"]" \
+            backend/src; then
+            echo "Retired dependency, credential, or weak secret fallback found in current backend source." >&2
+            exit 1
+          fi
+          if grep -Eq '"(xlsx|sqlite3)"[[:space:]]*:' backend/package-lock.json; then
+            echo "Retired backend package remains in package-lock.json." >&2
+            exit 1
+          fi
+
       - name: Verify backend dependencies and syntax
         working-directory: backend
         run: |
@@ -64,7 +80,6 @@ jobs:
         run: npm test
 
       - name: Audit backend runtime dependencies
-        continue-on-error: true
         working-directory: backend
         run: npm audit --omit=dev --audit-level=high
 
@@ -72,8 +87,7 @@ jobs:
         working-directory: frontend-h5
         run: npm ci
 
-      - name: Report student TypeScript debt
-        continue-on-error: true
+      - name: Type-check student application
         working-directory: frontend-h5
         run: npm run typecheck
 
@@ -82,7 +96,6 @@ jobs:
         run: npm run build
 
       - name: Audit student dependencies
-        continue-on-error: true
         working-directory: frontend-h5
         run: npm audit --audit-level=high
 
@@ -90,8 +103,7 @@ jobs:
         working-directory: admin-web
         run: npm ci
 
-      - name: Report administrator TypeScript debt
-        continue-on-error: true
+      - name: Type-check administrator application
         working-directory: admin-web
         run: npm run typecheck
 
@@ -102,7 +114,6 @@ jobs:
         run: npm run build
 
       - name: Audit administrator dependencies
-        continue-on-error: true
         working-directory: admin-web
         run: npm audit --audit-level=high
 
