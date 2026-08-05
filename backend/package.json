@@ -1,0 +1,25 @@
+{
+  "name": "lab-safety-access-backend",
+  "version": "1.0.0",
+  "description": "实验室安全教育与准入考试系统 - API服务",
+  "main": "src/app.js",
+  "scripts": {
+    "dev": "nodemon src/app.js",
+    "start": "node src/app.js",
+    "init-db": "node src/database/init.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "pdfjs-dist": "^5.4.449",
+    "sqlite3": "^5.1.7",
+    "uuid": "^9.0.0",
+    "winston": "^3.19.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

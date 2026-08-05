@@ -1,0 +1,39 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+application-local.yml
+application-prod.yml
+
+# Dependencies and builds
+node_modules/
+dist/
+build/
+target/
+*.class
+
+# Logs
+logs/
+*.log
+
+# Databases and backups
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+*.bak
+*.dump
+
+# Runtime uploads
+uploads/
+upload/
+storage/uploads/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
