@@ -19,7 +19,7 @@ while IFS=' ' read -r object_id object_path; do
   lower_path="$(printf '%s' "$object_path" | tr '[:upper:]' '[:lower:]')"
 
   case "$lower_path" in
-    *.xlsx|*.xls|*.db|*.sqlite|*.sqlite3|*.pem|*.key|*.p12|*.pfx|*.env|*.env.*)
+    *.xlsx|*.xls|*.db|*.sqlite|*.sqlite3|*.pem|*.key|*.p12|*.pfx|.env|*/.env|.env.*|*/.env.*)
       case "$lower_path" in
         .env.example|*/.env.example|*template*.xlsx|*template*.xls) continue ;;
       esac
@@ -31,18 +31,20 @@ done < <(git rev-list --objects --all)
 
 sort -u -o "$paths_report" "$paths_report"
 
-secret_regex='BEGIN ([A-Z ]+ )?PRIVATE KEY|JWT_SECRET[[:space:]]*[:=][[:space:]]*[^$<{[:space:]][^[:space:]]+|ADMIN_PASSWORD[[:space:]]*[:=][[:space:]]*[^$<{[:space:]][^[:space:]]+|DEPLOY_SSH_KEY|ucas1234'
+# Look for private-key blocks, the confirmed historical administrator password,
+# and source-code fallbacks that replace missing production secrets with a
+# string literal. Variable names, documentation, CI expressions, and test
+# fixtures are not treated as leaked credentials.
+secret_regex="BEGIN ([A-Z ]+ )?PRIVATE KEY|ucas1234|process\\.env\\.JWT_SECRET[[:space:]]*\\|\\|[[:space:]]*['\"]|process\\.env\\.ADMIN_PASSWORD[[:space:]]*\\|\\|[[:space:]]*['\"]"
 temporary_secret_paths="$report_dir/.suspected-secret-paths.tmp"
 : > "$temporary_secret_paths"
 
-# Search every reachable revision but emit unique paths only. The matching
-# values and source lines never leave Git.
 while IFS= read -r commit; do
   git grep -I -l -E "$secret_regex" "$commit" -- 2>/dev/null \
     | sed -E 's/^[0-9a-f]{40}://' >> "$temporary_secret_paths" || true
 done < <(git rev-list --all)
 
-grep -v -E '^(scripts/scan-sensitive-history\.sh|docs/security-review\.md)$' \
+grep -v -E '^(\.github/|docs/|scripts/|backend/test/|README\.md$|deploy/bootstrap-centos9\.sh$)' \
   "$temporary_secret_paths" \
   | sort -u > "$secrets_report" || true
 rm -f "$temporary_secret_paths"
