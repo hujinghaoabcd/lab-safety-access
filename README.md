@@ -1,127 +1,149 @@
-# Lab Safety Access - 实验室安全教育与准入考试系统
+# Lab Safety Access
 
-## 项目简介
+实验室安全教育与准入考试系统，面向高校和科研机构，覆盖“学习 → 考试 → 证书 → 准入”流程。
 
-这是一个面向高校/科研机构的 **实验室安全教育与准入考试系统**，采用前后端分离架构，包括：
+## 项目组成
 
-- `frontend-h5`：学生端 H5（移动优先），用于学习、考试、查看证书等
-- `admin-web`：后台管理端，用于管理用户、考试、题库、证书和系统参数
-- `backend`：Node.js + Express API 服务，使用 SQLite 作为持久化存储
-
-系统围绕「学 → 考 → 证 → 准入」完整闭环，已经实现：考试中心、错题本、排行榜、合格证书、发布范围按院系/班级过滤、数据库备份与恢复等功能。
-
-## 项目结构
-
-```txt
+```text
 lab-safety-access/
-├── frontend-h5/          # 学生端 H5（Vue 3 + Vant）
-├── admin-web/            # 后台管理系统（Vue 3 + Element Plus）
-├── backend/              # 后端 API（Node.js + Express + SQLite）
-└── README.md             # 根级说明
+├── frontend-h5/          # 学生端：Vue 3 + Vant
+├── admin-web/            # 管理端：Vue 3 + Element Plus
+├── backend/              # API：Node.js + Express + SQLite
+├── deploy/               # Caddy 与前端容器配置
+├── docs/                 # 架构、接口、数据库和部署文档
+└── docker-compose.prod.yml
 ```
 
-各子项目有单独的 `README.md`，详见：
+生产环境统一入口：
 
-- `frontend-h5/README.md` - 学生端页面、路由、接口说明
-- `admin-web/README.md`   - 后台管理端模块说明
-- `backend/README.md`     - API、数据库结构、部署说明
-- `docs/architecture.md`  - 系统架构与模块划分
-- `docs/database-schema.md` - 数据库表说明与关系图
-- `docs/ops-guide.md`     - 运维操作（备份、恢复、清空）
+- 学生端：`/`
+- 后台管理端：`/admin/`
+- API：`/api/`
+- 健康检查：`/api/health`
 
-## 关键功能概览
+## 主要功能
 
-### 学生端（H5）
+### 学生端
 
-- 🔐 **登录 / 个人中心**：基于学号密码登录，支持头像上传、信息修改、密码修改
-- 📝 **考试中心**：只显示当前用户所在院系/班级可参加的考试
-- 📄 **考试说明**：从考试 `description` 字段逐行渲染考试须知
-- ✍️ **在线考试**：支持单选、多选、判断题，后端统一判分并记录
-- 📊 **考试记录 / 详情**：查看历史成绩及每题作答对错
-- ❌ **错题本**：从后端 `wrong_questions` 表加载错题列表，可按题型过滤和移除
-- 🏆 **排行榜**：基于考试记录统计最高分排行榜，显示自己的当前排名
-- 📜 **合格证书**：从后端 `certificates` 查询证书，支持生成图片/PDF 下载
+- 学号登录、个人资料和头像；
+- 在线学习、学习进度；
+- 考试中心、在线答题和后端判分；
+- 历史记录、错题本、排行榜；
+- 合格证书查看及 PDF/图片导出。
 
-### 后台管理端
+### 管理端
 
-- 📊 仪表盘：用户数、考试数、题目数、通过率趋势、题目分类分布
-- 👥 用户管理：导入/导出用户、批量删除、重置密码、启用/禁用
-- 📝 考试管理：考试列表、手动配置题目/自动抽题、发布范围（按院系/班级）、分页
-- 📚 题库管理：题目增删改查、Excel 批量导入导出
-- 📋 考试记录：关键词搜索（学号/姓名）、分页、导出、删除记录
-- 🏅 证书管理：证书列表、关键词搜索、撤销/重新发放、导出
-- ⚙️ 系统设置：基本信息、考试参数、证书参数、安全参数
-- 🗄️ 数据维护（超级管理员）：数据库 **备份并清空业务数据**、从备份文件恢复数据库
+- 用户、院系和班级管理；
+- 题库、考试、发布范围和自动抽题；
+- 考试记录与证书管理；
+- 公告、轮播图和学习资料管理；
+- 系统参数及数据库维护。
 
-## 技术栈
+## 安全约束
 
-- 前端：Vue 3 + TypeScript + Vite + Vant / Element Plus + Pinia + Axios
-- 后端：Node.js + Express 4 + SQLite3 + JWT + Multer（文件上传）
-- 架构：RESTful API，前后端通过 `/api` 代理对接
+生产环境不会使用源码内置管理员账号或 JWT 密钥，启动前必须通过环境变量设置：
 
-## 快速启动
+- `JWT_SECRET`：至少 32 位；
+- `ADMIN_USERNAME`；
+- `ADMIN_PASSWORD`；
+- `DEFAULT_USER_PASSWORD`：至少 8 位。
 
-### 前置要求
+学生密码使用 Node.js `scrypt` 哈希。旧数据库中的明文密码会在用户首次成功登录后自动升级为哈希，不需要停机批量迁移。
 
-- Node.js >= 18
-- npm >= 9
+除 `/api/admin/login` 外，全部管理端接口都要求有效的 `role=admin` JWT。数据库备份不再通过静态目录公开。
 
-### 1. 启动后端
+复制环境变量模板：
+
+```bash
+cp .env.example .env
+```
+
+真实 `.env`、SQLite 数据库、备份、日志和用户上传文件不得提交到 Git。
+
+## 本地开发
+
+要求 Node.js 20 或更高版本。
+
+### 后端
 
 ```bash
 cd backend
-npm install
-npm run dev   # http://localhost:4000
+npm ci
+npm run dev
 ```
 
-> 首次启动时会自动创建 `backend/data/lab_safety.db` 并初始化表结构。
+默认地址：`http://localhost:4000`。
 
-### 2. 启动学生端 H5
+本地开发可在启动命令前设置环境变量。Linux/macOS 示例：
+
+```bash
+export JWT_SECRET="development-secret-at-least-32-characters"
+export ADMIN_USERNAME="admin"
+export ADMIN_PASSWORD="your-local-admin-password"
+export DEFAULT_USER_PASSWORD="ChangeMe123!"
+npm run dev
+```
+
+### 学生端
 
 ```bash
 cd frontend-h5
-npm install
-npm run dev   # http://localhost:3000
+npm ci
+npm run dev
 ```
 
-### 3. 启动后台管理端
+### 管理端
 
 ```bash
 cd admin-web
-npm install
-npm run dev   # http://localhost:3002（视配置而定）
+npm ci
+npm run dev
 ```
 
-## 账号说明（示例）
+开发环境管理端默认运行在 `http://localhost:3002`，并将 `/api` 代理到后端。
 
-> 实际账号数据以当前 SQLite 数据库为准，以下仅为典型示例：
+## 生产部署
 
-- 学生端：`学号 + 初始密码 123456`
-- 后台管理员：在 `admin-web` 登录页使用配置好的管理员账号（如：`admin / ucas1234`）。
+项目提供 Docker Compose、Caddy 自动 HTTPS 和 GitHub Actions 自动部署。
 
-## 数据库与运维
+服务器首次启动：
 
-- 数据库文件：`backend/data/lab_safety.db`
-- 备份目录：`backend/data/backups/*.db`
-- 后台「系统设置 → 数据维护」提供：
-  - **备份并清空数据库**：生成 `.db` 备份并清空业务表（保留院系/班级与结构），备份文件可直接下载到本地
-  - **上传并恢复数据库**：用上传的 `.db` 覆盖当前数据库，操作完成后需重启后端
+```bash
+cp .env.example .env
+# 编辑 .env 后：
+docker compose --env-file .env -f docker-compose.prod.yml up -d --build
+```
 
-详细表结构和运维说明见：
+配置域名时，将 `.env` 中的 `SITE_ADDRESS` 设置为已解析到服务器的域名，Caddy 会自动申请和续期证书；只有 IP 时可使用 `SITE_ADDRESS=:80`。
 
-- `docs/database-schema.md`
-- `docs/ops-guide.md`
+完整步骤、GitHub Secrets、备份、回滚和上线检查见：
 
-## 设计与扩展文档
+- [生产部署与自动发布](docs/deployment.md)
 
-项目附带了多份文档帮助后续维护和二次开发：
+## CI/CD
 
-- `docs/architecture.md`：整体架构、模块划分、数据流
-- `docs/backend-apis.md`：主要 API 分组与说明（用户 / 考试 / 记录 / 错题本 / 证书等）
-- `docs/database-schema.md`：表结构、字段含义、外键关系
-- `docs/ops-guide.md`：部署、备份与恢复、常见问题
+`.github/workflows/ci-deploy.yml` 会执行：
+
+- 后端依赖安装与 JavaScript 语法检查；
+- 学生端生产构建；
+- 管理端生产构建；
+- Docker Compose 配置校验。
+
+自动部署默认关闭。配置部署 Secrets 后，将仓库变量 `AUTO_DEPLOY_ENABLED` 设为 `true` 才会在 `main` 更新后发布；也可以从 Actions 页面手动触发。
+
+## 文档
+
+- [系统架构](docs/architecture.md)
+- [后端 API](docs/backend-apis.md)
+- [数据库结构](docs/database-schema.md)
+- [运维说明](docs/ops-guide.md)
+- [生产部署与自动发布](docs/deployment.md)
+- [匿名用户导入模板](docs/templates/student-import-template.csv)
+
+## 数据与隐私
+
+仓库中只允许保留匿名模板，不应提交真实学生名单、手机号、邮箱、头像、证书、数据库或备份。若敏感文件曾进入 Git 历史，仅在新提交中删除并不足够，还需要清理仓库历史并评估是否需要更换相关凭据。
 
 ## License
 
 MIT
-
