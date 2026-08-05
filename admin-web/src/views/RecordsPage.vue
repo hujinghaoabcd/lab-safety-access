@@ -65,13 +65,36 @@ const handleReset = () => {
   loadRecords()
 }
 
+const downloadBase64File = (base64: string, fileName: string) => {
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  const blob = new Blob([bytes], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
 const handleExport = async () => {
   try {
     const params: any = {}
     if (searchForm.keyword) params.keyword = searchForm.keyword
     const data: any = await adminApi.exportRecords(params)
-    const url = data?.url || '/exports/records.xlsx'
-    window.open(url, '_blank')
+    if (!data?.base64) {
+      ElMessage.warning('没有可导出的考试记录')
+      return
+    }
+    downloadBase64File(data.base64, data.fileName || '考试记录导出.xlsx')
+    ElMessage.success(`已导出 ${data.rowCount ?? ''} 条记录`)
   } catch (err: any) {
     console.error('导出考试记录失败:', err)
     ElMessage.error(err?.message || '导出失败')
@@ -91,7 +114,6 @@ const handleDelete = async (row: Record) => {
     )
     await adminApi.deleteRecord(row.id)
     ElMessage.success('删除成功')
-    // 如果当前页删空了，自动回到上一页
     if (records.value.length === 1 && pagination.currentPage > 1) {
       pagination.currentPage -= 1
     }
@@ -106,7 +128,6 @@ const handleDelete = async (row: Record) => {
 
 <template>
   <div class="records-page">
-    <!-- 搜索栏 -->
     <div class="page-card">
       <el-form :inline="true" :model="searchForm" class="search-form">
         <el-form-item label="关键词">
@@ -119,7 +140,6 @@ const handleDelete = async (row: Record) => {
       </el-form>
     </div>
 
-    <!-- 表格 -->
     <div class="page-card">
       <div class="page-header">
         <h2>考试记录</h2>
@@ -178,7 +198,7 @@ const handleDelete = async (row: Record) => {
       margin-bottom: 0;
     }
   }
-  
+
   .pagination-wrapper {
     margin-top: 20px;
     display: flex;
@@ -186,4 +206,3 @@ const handleDelete = async (row: Record) => {
   }
 }
 </style>
-
