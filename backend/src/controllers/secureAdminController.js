@@ -1,4 +1,3 @@
-const XLSX = require('xlsx');
 const fs = require('fs');
 const path = require('path');
 const { dbGet, dbRun, withTransaction, DB_PATH } = require('../database/db');
@@ -8,6 +7,7 @@ const {
   safeEqualText,
   validatePassword
 } = require('../utils/password');
+const { readWorksheetRows } = require('../utils/spreadsheet');
 const { success, error } = require('../utils/response');
 
 const getDefaultUserPassword = () => {
@@ -25,7 +25,12 @@ const normalizeText = (value, label, maxLength, { required = false } = {}) => {
 };
 
 const normalizeUserRow = (row) => {
-  const studentId = normalizeText(row.studentId ?? row['学号'] ?? row.student_id, '学号', 100, { required: true });
+  const studentId = normalizeText(
+    row.studentId ?? row['学号'] ?? row.student_id,
+    '学号',
+    100,
+    { required: true }
+  );
   const name = normalizeText(row.name ?? row['姓名'], '姓名', 100, { required: true });
   const department = normalizeText(row.department ?? row['院系'], '院系', 200);
   const className = normalizeText(row.class ?? row['班级'], '班级', 200);
@@ -156,14 +161,15 @@ exports.resetUserPassword = async (req, res) => {
 };
 
 exports.batchImportUsers = async (req, res) => {
-  if (!req.file) return error(res, '请上传 Excel 文件', 400);
+  if (!req.file) return error(res, '请上传 XLSX 文件', 400);
 
   try {
-    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+    const data = await readWorksheetRows(req.file.buffer, {
+      maxRows: 5000,
+      maxColumns: 20,
+      maxBytes: 10 * 1024 * 1024
+    });
     if (!data.length) return error(res, 'Excel 文件为空', 400);
-    if (data.length > 5000) return error(res, '单次最多导入 5000 名用户', 400);
 
     const defaultPassword = getDefaultUserPassword();
     const results = { success: 0, updated: 0, failed: 0, errors: [] };
@@ -232,7 +238,9 @@ exports.batchImportUsers = async (req, res) => {
           }
         } catch (rowError) {
           results.failed += 1;
-          results.errors.push(`第 ${i + 2} 行：${rowError.message}`);
+          if (results.errors.length < 200) {
+            results.errors.push(`第 ${i + 2} 行：${rowError.message}`);
+          }
         }
       }
     });
@@ -243,6 +251,9 @@ exports.batchImportUsers = async (req, res) => {
       `导入完成：新增 ${results.success} 条，更新 ${results.updated} 条，失败 ${results.failed} 条`
     );
   } catch (err) {
+    if (/Excel|工作表|列标题|不允许使用公式|最多|不能超过/.test(err.message || '')) {
+      return error(res, err.message, 400);
+    }
     console.error('批量导入用户错误:', err);
     return error(res, '批量导入失败', 500);
   }
@@ -250,7 +261,7 @@ exports.batchImportUsers = async (req, res) => {
 
 exports.downloadDatabaseBackup = async (req, res) => {
   const filename = path.basename(String(req.params.filename || ''));
-  if (!/^lab_safety_(?:backup|before_restore)_\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}\.db$/.test(filename)) {
+  if (!/^lab_safety_[a-z0-9_-]+_\d{8}T\d{6}Z_[a-f0-9]{8}\.db$/i.test(filename)) {
     return error(res, '备份文件名无效', 400);
   }
 
@@ -261,6 +272,7 @@ exports.downloadDatabaseBackup = async (req, res) => {
     const stat = await fs.promises.stat(filePath);
     if (!stat.isFile()) return error(res, '备份文件不存在', 404);
     res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     return res.download(filePath, filename);
   } catch (err) {
     if (err.code === 'ENOENT') return error(res, '备份文件不存在', 404);
