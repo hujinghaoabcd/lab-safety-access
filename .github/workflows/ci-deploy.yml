@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       deploy:
-        description: Deploy to the production server after verification
+        description: Publish a production release after verification
         required: true
         default: false
         type: boolean
@@ -89,13 +89,17 @@ jobs:
       - name: Validate production Compose file
         run: docker compose --env-file .env.example -f docker-compose.prod.yml config
 
-  package:
+  release:
     needs: verify
     if: >-
       github.ref == 'refs/heads/main' &&
       ((github.event_name == 'push' && vars.AUTO_DEPLOY_ENABLED == 'true') ||
        (github.event_name == 'workflow_dispatch' && inputs.deploy == true))
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: deploy-${{ github.sha }}
     steps:
       - name: Check out verified source
         uses: actions/checkout@v4
@@ -113,154 +117,49 @@ jobs:
             --file deploy/web.Dockerfile \
             .
 
-      - name: Create transferable image archive
+      - name: Create production bundle
         shell: bash
         run: |
           set -euo pipefail
-          archive="lab-safety-images-${GITHUB_SHA}.tar.gz"
+          rm -rf release-bundle
+          mkdir -p release-bundle
+
           docker save \
             "lab-safety-backend:${GITHUB_SHA}" \
             "lab-safety-web:${GITHUB_SHA}" \
-            | gzip -1 > "$archive"
-          sha256sum "$archive" > "${archive}.sha256"
-          ls -lh "$archive" "${archive}.sha256"
+            | gzip -1 > release-bundle/images.tar.gz
 
-      - name: Store deployment package
-        uses: actions/upload-artifact@v4
-        with:
-          name: production-images-${{ github.sha }}
-          path: |
-            lab-safety-images-${{ github.sha }}.tar.gz
-            lab-safety-images-${{ github.sha }}.tar.gz.sha256
-          retention-days: 1
-          if-no-files-found: error
+          cp docker-compose.prod.yml release-bundle/docker-compose.prod.yml
+          printf '%s\n' "$GITHUB_SHA" > release-bundle/release-sha.txt
 
-  deploy:
-    needs:
-      - verify
-      - package
-    if: >-
-      github.ref == 'refs/heads/main' &&
-      ((github.event_name == 'push' && vars.AUTO_DEPLOY_ENABLED == 'true') ||
-       (github.event_name == 'workflow_dispatch' && inputs.deploy == true))
-    runs-on: ubuntu-latest
-    environment: production
-    env:
-      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
-      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-    steps:
-      - name: Check out deployment configuration
-        uses: actions/checkout@v4
-
-      - name: Download verified image package
-        uses: actions/download-artifact@v4
-        with:
-          name: production-images-${{ github.sha }}
-          path: release
-
-      - name: Validate deployment secrets
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "$DEPLOY_HOST" || { echo 'DEPLOY_HOST is missing'; exit 1; }
-          test -n "$DEPLOY_USER" || { echo 'DEPLOY_USER is missing'; exit 1; }
-          test -n "$DEPLOY_PATH" || { echo 'DEPLOY_PATH is missing'; exit 1; }
-          test -n "$DEPLOY_SSH_KEY" || { echo 'DEPLOY_SSH_KEY is missing'; exit 1; }
-
-      - name: Configure SSH
-        shell: bash
-        run: |
-          set -euo pipefail
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H -p "$DEPLOY_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
-
-      - name: Prepare deployment directory
-        shell: bash
-        run: |
-          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
-            "mkdir -p '$DEPLOY_PATH'"
-
-      - name: Transfer images and Compose configuration
-        shell: bash
-        run: |
-          set -euo pipefail
-          rsync -az \
-            -e "ssh -p $DEPLOY_PORT" \
+          tar -C release-bundle -czf lab-safety-production.tar.gz \
+            images.tar.gz \
             docker-compose.prod.yml \
-            release/lab-safety-images-${GITHUB_SHA}.tar.gz \
-            release/lab-safety-images-${GITHUB_SHA}.tar.gz.sha256 \
-            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+            release-sha.txt
+          sha256sum lab-safety-production.tar.gz \
+            > lab-safety-production.tar.gz.sha256
+          cp release-bundle/release-sha.txt ./release-sha.txt
+          ls -lh lab-safety-production.tar.gz*
 
-      - name: Load, restart, verify, and roll back on failure
+      - name: Publish immutable production release
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
-            "bash -se -- '$DEPLOY_PATH' '$GITHUB_SHA'" <<'REMOTE'
           set -euo pipefail
-          deploy_path="$1"
-          new_tag="$2"
-          archive="lab-safety-images-${new_tag}.tar.gz"
-          checksum="${archive}.sha256"
-
-          cd "$deploy_path"
-          test -f .env || {
-            echo 'Server .env is missing. Create it before the first deployment.'
-            exit 1
-          }
-          command -v docker >/dev/null || {
-            echo 'Docker is not installed on the server.'
-            exit 1
-          }
-          command -v curl >/dev/null || {
-            echo 'curl is not installed on the server.'
-            exit 1
-          }
-
-          sha256sum -c "$checksum"
-          old_tag="$(cat .current-image-tag 2>/dev/null || true)"
-          sudo docker load --input "$archive"
-
-          start_release() {
-            sudo env IMAGE_TAG="$1" docker compose \
-              --env-file .env \
-              --file docker-compose.prod.yml \
-              up -d --no-build --remove-orphans
-          }
-
-          start_release "$new_tag"
-
-          healthy=false
-          for _ in $(seq 1 24); do
-            if curl -fsS http://127.0.0.1/api/health >/tmp/lab-safety-health.json 2>/dev/null; then
-              healthy=true
-              break
-            fi
-            sleep 5
-          done
-
-          if [ "$healthy" != true ]; then
-            echo 'New release failed its health check.'
-            sudo env IMAGE_TAG="$new_tag" docker compose \
-              --env-file .env \
-              --file docker-compose.prod.yml \
-              logs --tail=200 || true
-
-            if [ -n "$old_tag" ]; then
-              echo "Rolling back to $old_tag"
-              start_release "$old_tag"
-            else
-              echo 'No previous release is available for rollback.'
-            fi
-            exit 1
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" \
+              lab-safety-production.tar.gz \
+              lab-safety-production.tar.gz.sha256 \
+              release-sha.txt \
+              --clobber
+          else
+            gh release create "$RELEASE_TAG" \
+              lab-safety-production.tar.gz \
+              lab-safety-production.tar.gz.sha256 \
+              release-sha.txt \
+              --target "$GITHUB_SHA" \
+              --title "Production ${GITHUB_SHA::12}" \
+              --notes "Automated production bundle for commit ${GITHUB_SHA}." \
+              --latest
           fi
-
-          printf '%s\n' "$new_tag" > .current-image-tag
-          rm -f "$archive" "$checksum" /tmp/lab-safety-health.json
-          sudo docker image prune -f
-          echo "Release $new_tag is healthy."
-          REMOTE
