@@ -4,21 +4,21 @@ const userController = require('../controllers/userController');
 const { authMiddleware } = require('../middleware/auth');
 const multer = require('multer');
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+      return cb(new Error('仅支持 JPG、PNG 或 WebP 图片'));
+    }
+    return cb(null, true);
+  }
+});
 
-// GET /api/user/profile - 获取用户信息
 router.get('/profile', authMiddleware, userController.getProfile);
-
-// PUT /api/user/profile - 更新用户信息
 router.put('/profile', authMiddleware, userController.updateProfile);
-
-// GET /api/user/profile/stats - 获取用户统计数据
 router.get('/profile/stats', authMiddleware, userController.getProfileStats);
-
-// PUT /api/user/profile/password - 修改密码
 router.put('/profile/password', authMiddleware, userController.changePassword);
-
-// POST /api/user/profile/avatar - 上传/修改头像
 router.post(
   '/profile/avatar',
   authMiddleware,
@@ -27,4 +27,3 @@ router.post(
 );
 
 module.exports = router;
-
