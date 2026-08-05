@@ -26,11 +26,13 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24.19.0
           cache: npm
           cache-dependency-path: |
             backend/package-lock.json
@@ -43,14 +45,14 @@ jobs:
           npm ci
           find src test -name '*.js' -print0 | xargs -0 -n1 node --check
 
-      - name: Test backend API and domain rules
+      - name: Test backend API, migrations, and domain rules
         working-directory: backend
         run: npm test
 
-      - name: Report backend dependency audit
+      - name: Audit backend runtime dependencies
         continue-on-error: true
         working-directory: backend
-        run: npm audit --audit-level=critical
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Install student dependencies
         working-directory: frontend-h5
@@ -65,10 +67,10 @@ jobs:
         working-directory: frontend-h5
         run: npm run build
 
-      - name: Report student dependency audit
+      - name: Audit student dependencies
         continue-on-error: true
         working-directory: frontend-h5
-        run: npm audit --audit-level=critical
+        run: npm audit --audit-level=high
 
       - name: Install administrator dependencies
         working-directory: admin-web
@@ -85,13 +87,16 @@ jobs:
           VITE_BASE_PATH: /admin/
         run: npm run build
 
-      - name: Report administrator dependency audit
+      - name: Audit administrator dependencies
         continue-on-error: true
         working-directory: admin-web
-        run: npm audit --audit-level=critical
+        run: npm audit --audit-level=high
 
       - name: Validate production Compose file
         run: docker compose --env-file .env.example -f docker-compose.prod.yml config
+
+      - name: Build production backend image
+        run: docker build --tag lab-safety-backend:ci --file backend/Dockerfile backend
 
   publish:
     needs: verify
