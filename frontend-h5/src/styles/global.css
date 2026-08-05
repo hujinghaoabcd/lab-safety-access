@@ -1,0 +1,199 @@
+/* 基于 vw 的移动端适配方案 */
+/* 设计稿基准：375px */
+
+:root {
+  --primary-color: #0475FA;
+  --success-color: #07c160;
+  --warning-color: #ff976a;
+  --danger-color: #ee0a24;
+  --text-color: #323233;
+  --text-color-secondary: #969799;
+  --background-color: #f7f8fa;
+  --border-color: #ebedf0;
+  
+  /* Vant 主题色覆盖 */
+  --van-primary-color: #0475FA;
+  --van-button-primary-background: #0475FA;
+  --van-button-primary-border-color: #0475FA;
+  --van-nav-bar-icon-color: #0475FA;
+  --van-checkbox-checked-icon-color: #0475FA;
+  --van-switch-on-background: #0475FA;
+  --van-progress-color: #0475FA;
+  --van-tag-primary-color: #0475FA;
+  
+  /* 去除圆角 */
+  --van-button-border-radius: 0;
+  --van-button-round-border-radius: 0;
+  --van-tag-border-radius: 0;
+  --van-cell-group-inset-border-radius: 0;
+  --van-card-border-radius: 0;
+  --van-image-border-radius: 0;
+  --van-popup-border-radius: 0;
+  --van-toast-border-radius: 0;
+  --van-dialog-border-radius: 0;
+  --van-notify-border-radius: 0;
+  
+  /* 导航栏样式 */
+  --van-nav-bar-background: #0475FA;
+  --van-nav-bar-title-text-color: #fff;
+  --van-nav-bar-icon-color: #fff;
+  --van-nav-bar-arrow-size: 18px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 4.267vw; /* 16px at 375px viewport */
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica,
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial,
+    sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 禁止长按选择 */
+body {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 允许输入框选择 */
+input, textarea {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+/* 通用页面容器 */
+.page-container {
+  min-height: 100vh;
+  padding: 4vw;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 通用卡片样式 */
+.card {
+  background: #fff;
+  border-radius: 0;
+  padding: 4vw;
+  margin-bottom: 3.2vw;
+  box-shadow: 0 0.267vw 1.067vw rgba(0, 0, 0, 0.05);
+}
+
+/* 页面标题 */
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 4vw;
+}
+
+/* 辅助类 */
+.text-center {
+  text-align: center;
+}
+
+.text-primary {
+  color: var(--primary-color);
+}
+
+.text-success {
+  color: var(--success-color);
+}
+
+.text-warning {
+  color: var(--warning-color);
+}
+
+.text-danger {
+  color: var(--danger-color);
+}
+
+.text-secondary {
+  color: var(--text-color-secondary);
+}
+
+/* flex 布局辅助类 */
+.flex {
+  display: flex;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+/* 间距辅助类 */
+.mt-1 { margin-top: 1.067vw; }
+.mt-2 { margin-top: 2.133vw; }
+.mt-3 { margin-top: 3.2vw; }
+.mt-4 { margin-top: 4.267vw; }
+
+.mb-1 { margin-bottom: 1.067vw; }
+.mb-2 { margin-bottom: 2.133vw; }
+.mb-3 { margin-bottom: 3.2vw; }
+.mb-4 { margin-bottom: 4.267vw; }
+
+.p-1 { padding: 1.067vw; }
+.p-2 { padding: 2.133vw; }
+.p-3 { padding: 3.2vw; }
+.p-4 { padding: 4.267vw; }
+
+/* 全局导航栏蓝色样式 */
+.blue-nav.van-nav-bar,
+.van-nav-bar.blue-nav {
+  background: #0475FA !important;
+}
+
+.blue-nav .van-nav-bar__title,
+.van-nav-bar.blue-nav .van-nav-bar__title {
+  color: #fff !important;
+  font-size: 4.267vw;
+  font-weight: 500;
+}
+
+.blue-nav .van-nav-bar__arrow,
+.van-nav-bar.blue-nav .van-nav-bar__arrow {
+  color: #fff !important;
+}
+
+.blue-nav .van-nav-bar__left .van-icon,
+.blue-nav .van-nav-bar__right .van-icon,
+.van-nav-bar.blue-nav .van-nav-bar__left .van-icon,
+.van-nav-bar.blue-nav .van-nav-bar__right .van-icon {
+  color: #fff !important;
+}
+
+.blue-nav .van-nav-bar__text,
+.van-nav-bar.blue-nav .van-nav-bar__text {
+  color: #fff !important;
+}
+
