@@ -29,6 +29,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Audit reachable Git history
+        id: history_audit
+        continue-on-error: true
+        run: bash scripts/scan-sensitive-history.sh .history-audit
+
+      - name: Upload sanitized history audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: history-audit-${{ github.sha }}
+          path: .history-audit/
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
