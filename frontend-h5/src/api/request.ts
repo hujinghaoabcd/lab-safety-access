@@ -1,8 +1,13 @@
 import axios from 'axios'
-import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import type { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { showToast, showLoadingToast, closeToast } from 'vant'
 
-// 创建 axios 实例
+interface ApiResponse<T = unknown> {
+  code: number
+  message?: string
+  data: T
+}
+
 const service: AxiosInstance = axios.create({
   baseURL: '/api',
   timeout: 30000,
@@ -11,125 +16,112 @@ const service: AxiosInstance = axios.create({
   }
 })
 
-// 请求拦截器
 service.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`
     return config
   },
-  (error) => {
-    return Promise.reject(error)
-  }
+  (error: AxiosError) => Promise.reject(error)
 )
 
-// 响应拦截器
 service.interceptors.response.use(
   (response: AxiosResponse) => {
-    const res = response.data
-    
-    // 假设后端返回格式为 { code: 0, data: any, message: string }
-    if (res.code !== 0 && res.code !== 200) {
+    const payload = response.data as ApiResponse<unknown>
+    if (payload.code !== 0 && payload.code !== 200) {
       showToast({
-        message: res.message || '请求失败',
+        message: payload.message || '请求失败',
         type: 'fail'
       })
-      
-      // token 过期（业务层面的 401）
-      if (res.code === 401) {
-        // 如果是登录接口，不跳转，只显示错误
+
+      if (payload.code === 401) {
         const url = response.config?.url || ''
         if (!url.includes('/auth/login')) {
           localStorage.removeItem('token')
           window.location.href = '/login'
         }
       }
-      
-      return Promise.reject(new Error(res.message || 'Error'))
+
+      return Promise.reject(new Error(payload.message || '请求失败'))
     }
-    
-    return res
+    return response
   },
-  (error) => {
-    console.error('Request error:', error)
-    
-    // 处理 HTTP 状态码错误
-    const status = error.response?.status
-    const res = error.response?.data
-    const message = res?.message || error.message || '网络错误'
-    const url = error.config?.url || ''
-    
-    // HTTP 401 错误
+  (unknownError: unknown) => {
+    const requestError = unknownError as AxiosError<ApiResponse<unknown>>
+    console.error('Request error:', requestError)
+
+    const status = requestError.response?.status
+    const payload = requestError.response?.data
+    const message = payload?.message || requestError.message || '网络错误'
+    const url = requestError.config?.url || ''
+
     if (status === 401) {
-      // 如果是登录接口，只显示错误信息，不跳转
       if (url.includes('/auth/login')) {
-        showToast({
-          message: message || '用户名或密码错误',
-          type: 'fail'
-        })
-        return Promise.reject(new Error(message || '用户名或密码错误'))
-      } else {
-        // 其他接口的 401，说明 token 过期
-        localStorage.removeItem('token')
-        showToast({
-          message: '登录已过期，请重新登录',
-          type: 'fail'
-        })
-        // 延迟跳转，让用户看到提示
-        setTimeout(() => {
-          window.location.href = '/login'
-        }, 1000)
-        return Promise.reject(new Error('登录已过期，请重新登录'))
+        showToast({ message, type: 'fail' })
+        return Promise.reject(new Error(message))
       }
+
+      localStorage.removeItem('token')
+      showToast({ message: '登录已过期，请重新登录', type: 'fail' })
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 1000)
+      return Promise.reject(new Error('登录已过期，请重新登录'))
     }
-    
-    // 其他 HTTP 错误
-    showToast({
-      message: message,
-      type: 'fail'
-    })
-    return Promise.reject(error)
+
+    showToast({ message, type: 'fail' })
+    return Promise.reject(requestError)
   }
 )
 
-// 封装请求方法
 export const request = {
-  get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    return service.get(url, config)
+  async get<T = ApiResponse>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    const response = await service.get<T>(url, config)
+    return response.data
   },
-  
-  post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    return service.post(url, data, config)
+
+  async post<T = ApiResponse>(
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig
+  ): Promise<T> {
+    const response = await service.post<T>(url, data, config)
+    return response.data
   },
-  
-  put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    return service.put(url, data, config)
+
+  async put<T = ApiResponse>(
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig
+  ): Promise<T> {
+    const response = await service.put<T>(url, data, config)
+    return response.data
   },
-  
-  delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    return service.delete(url, config)
+
+  async delete<T = ApiResponse>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    const response = await service.delete<T>(url, config)
+    return response.data
   }
 }
 
-// 带 loading 的请求
 export const requestWithLoading = {
-  async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  async get<T = ApiResponse>(url: string, config?: AxiosRequestConfig): Promise<T> {
     showLoadingToast({ message: '加载中...', forbidClick: true })
     try {
-      const res = await request.get<T>(url, config)
-      return res
+      return await request.get<T>(url, config)
     } finally {
       closeToast()
     }
   },
-  
-  async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+
+  async post<T = ApiResponse>(
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig
+  ): Promise<T> {
     showLoadingToast({ message: '提交中...', forbidClick: true })
     try {
-      const res = await request.post<T>(url, data, config)
-      return res
+      return await request.post<T>(url, data, config)
     } finally {
       closeToast()
     }
@@ -137,4 +129,3 @@ export const requestWithLoading = {
 }
 
 export default service
-

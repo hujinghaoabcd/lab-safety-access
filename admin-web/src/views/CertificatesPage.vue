@@ -145,6 +145,17 @@ const getGradeColor = (grade: string) => {
   if (grade === '良好') return '#07c160'
   return '#0475FA'
 }
+const handleCertificatePageChange = (page: number) => {
+  pagination.currentPage = page
+  loadCertificates()
+}
+
+const handleCertificatePageSizeChange = (size: number) => {
+  pagination.pageSize = size
+  pagination.currentPage = 1
+  loadCertificates()
+}
+
 </script>
 
 <template>
@@ -249,8 +260,8 @@ const getGradeColor = (grade: string) => {
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
           layout="total, sizes, prev, pager, next, jumper"
-          @current-change="page => { pagination.currentPage = page; loadCertificates() }"
-          @size-change="size => { pagination.pageSize = size; pagination.currentPage = 1; loadCertificates() }"
+          @current-change="handleCertificatePageChange"
+          @size-change="handleCertificatePageSizeChange"
         />
       </div>
     </div>
