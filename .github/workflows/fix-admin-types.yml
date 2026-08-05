@@ -1,0 +1,157 @@
+name: Fix administrator type errors
+
+on:
+  push:
+    branches:
+      - agent/phase2-security-stability
+    paths:
+      - .github/workflows/fix-admin-types.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/phase2-security-stability
+
+      - name: Apply targeted type fixes
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def edit(path, replacements, insertion=''):
+              file = Path(path)
+              text = file.read_text(encoding='utf-8')
+              for old, new in replacements:
+                  count = text.count(old)
+                  if count != 1:
+                      raise SystemExit(f'{path}: expected one match, got {count}: {old!r}')
+                  text = text.replace(old, new, 1)
+              if insertion:
+                  if insertion.strip() in text:
+                      raise SystemExit(f'{path}: insertion already present')
+                  marker = '</script>'
+                  if text.count(marker) != 1:
+                      raise SystemExit(f'{path}: expected one script end')
+                  text = text.replace(marker, insertion + '\n' + marker, 1)
+              file.write_text(text, encoding='utf-8')
+
+          edit(
+              'admin-web/src/views/AnnouncementsPage.vue',
+              [
+                  ('@current-change="page => { pagination.currentPage = page; loadAnnouncements() }"', '@current-change="handleAnnouncementPageChange"'),
+                  ('@size-change="size => { pagination.pageSize = size; pagination.currentPage = 1; loadAnnouncements() }"', '@size-change="handleAnnouncementPageSizeChange"'),
+              ],
+              '''const handleAnnouncementPageChange = (page: number) => {
+            pagination.currentPage = page
+            loadAnnouncements()
+          }
+
+          const handleAnnouncementPageSizeChange = (size: number) => {
+            pagination.pageSize = size
+            pagination.currentPage = 1
+            loadAnnouncements()
+          }
+          '''
+          )
+
+          edit(
+              'admin-web/src/views/BannersPage.vue',
+              [
+                  ('@current-change="page => { pagination.currentPage = page; loadBanners() }"', '@current-change="handleBannerPageChange"'),
+                  ('@size-change="size => { pagination.pageSize = size; pagination.currentPage = 1; loadBanners() }"', '@size-change="handleBannerPageSizeChange"'),
+              ],
+              '''const handleBannerPageChange = (page: number) => {
+            pagination.currentPage = page
+            loadBanners()
+          }
+
+          const handleBannerPageSizeChange = (size: number) => {
+            pagination.pageSize = size
+            pagination.currentPage = 1
+            loadBanners()
+          }
+          '''
+          )
+
+          edit(
+              'admin-web/src/views/CertificatesPage.vue',
+              [
+                  ('@current-change="page => { pagination.currentPage = page; loadCertificates() }"', '@current-change="handleCertificatePageChange"'),
+                  ('@size-change="size => { pagination.pageSize = size; pagination.currentPage = 1; loadCertificates() }"', '@size-change="handleCertificatePageSizeChange"'),
+              ],
+              '''const handleCertificatePageChange = (page: number) => {
+            pagination.currentPage = page
+            loadCertificates()
+          }
+
+          const handleCertificatePageSizeChange = (size: number) => {
+            pagination.pageSize = size
+            pagination.currentPage = 1
+            loadCertificates()
+          }
+          '''
+          )
+
+          edit(
+              'admin-web/src/views/RecordsPage.vue',
+              [
+                  ('@current-change="(page) => { pagination.currentPage = page; loadRecords() }"', '@current-change="handleRecordPageChange"'),
+                  ('@size-change="(size) => { pagination.pageSize = size; pagination.currentPage = 1; loadRecords() }"', '@size-change="handleRecordPageSizeChange"'),
+              ],
+              '''const handleRecordPageChange = (page: number) => {
+            pagination.currentPage = page
+            loadRecords()
+          }
+
+          const handleRecordPageSizeChange = (size: number) => {
+            pagination.pageSize = size
+            pagination.currentPage = 1
+            loadRecords()
+          }
+          '''
+          )
+
+          exams = Path('admin-web/src/views/ExamsPage.vue')
+          text = exams.read_text(encoding='utf-8')
+          old = '''const onBankSizeChange = (s: number) => {
+            bankQuery.pageSize = s
+            bankQuery.page = 1
+            loadBank()
+          }
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f'ExamsPage.vue: expected one unused size handler, got {text.count(old)}')
+          exams.write_text(text.replace(old, '', 1), encoding='utf-8')
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+          cache: npm
+          cache-dependency-path: admin-web/package-lock.json
+
+      - name: Verify administrator application
+        working-directory: admin-web
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts
+          npm run typecheck
+          VITE_BASE_PATH=/admin/ npm run build
+
+      - name: Commit fixes and retire workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/fix-admin-types.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add admin-web/src .github/workflows/fix-admin-types.yml
+          git commit -m "Fix administrator TypeScript regressions"
+          git push origin HEAD:agent/phase2-security-stability
