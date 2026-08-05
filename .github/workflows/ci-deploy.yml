@@ -41,7 +41,11 @@ jobs:
         working-directory: backend
         run: |
           npm ci
-          find src -name '*.js' -print0 | xargs -0 -n1 node --check
+          find src test -name '*.js' -print0 | xargs -0 -n1 node --check
+
+      - name: Test backend API and domain rules
+        working-directory: backend
+        run: npm test
 
       - name: Report backend dependency audit
         continue-on-error: true

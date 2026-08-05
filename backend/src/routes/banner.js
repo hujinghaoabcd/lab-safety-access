@@ -2,14 +2,8 @@ const express = require('express');
 const router = express.Router();
 const bannerController = require('../controllers/bannerController');
 
-// H5前端接口（无需认证）
+// Public student-facing endpoint. All management endpoints live under
+// /api/admin/banner and are protected by the administrator router.
 router.get('/list', bannerController.getBanners);
 
-// 后台管理接口（需要认证）
-router.get('/', bannerController.getAllBanners);
-router.post('/', bannerController.createBanner);
-router.put('/:id', bannerController.updateBanner);
-router.delete('/:id', bannerController.deleteBanner);
-
 module.exports = router;
-
