@@ -432,11 +432,6 @@ const onBankPageChange = (p: number) => {
   bankQuery.page = p
   loadBank()
 }
-const onBankSizeChange = (s: number) => {
-  bankQuery.pageSize = s
-  bankQuery.page = 1
-  loadBank()
-}
 
 const removeFromExam = (q: QuestionLite) => {
   selectedInExam.value = selectedInExam.value.filter(x => x.id !== q.id)

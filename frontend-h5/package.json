@@ -1,33 +1,42 @@
 {
   "name": "lab-safety-access-h5",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "实验室安全教育与准入考试系统 - H5学生端",
   "type": "module",
+  "engines": {
+    "node": ">=24.15.0 <25"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "typecheck": "vue-tsc --noEmit",
+    "audit": "npm audit --audit-level=high",
     "preview": "vite preview"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
-    "axios": "^1.6.8",
+    "axios": "^1.18.1",
     "element-plus": "^2.13.0",
     "html2canvas": "^1.4.1",
-    "jspdf": "^3.0.4",
+    "jspdf": "^4.2.1",
     "pdfjs-dist": "^5.4.449",
-    "pinia": "^2.1.7",
-    "vant": "^4.8.7",
-    "vue": "^3.4.21",
-    "vue-router": "^4.3.0"
+    "pinia": "^2.3.1",
+    "vant": "^4.9.21",
+    "vue": "^3.5.40",
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "@vant/auto-import-resolver": "^1.2.1",
-    "@vitejs/plugin-vue": "^5.0.4",
-    "typescript": "^5.4.3",
-    "unplugin-auto-import": "^0.17.5",
-    "unplugin-vue-components": "^0.26.0",
-    "vite": "^5.2.6",
-    "vue-tsc": "^2.0.7"
+    "@vant/auto-import-resolver": "^1.3.0",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "typescript": "^5.9.3",
+    "unplugin-auto-import": "^20.3.0",
+    "unplugin-vue-components": "^31.0.0",
+    "vite": "^8.1.5",
+    "vue-tsc": "^3.3.8"
+  },
+  "overrides": {
+    "dompurify": "3.4.12",
+    "lodash": "4.18.1",
+    "lodash-es": "4.18.1"
   }
 }

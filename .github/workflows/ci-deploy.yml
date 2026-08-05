@@ -26,16 +26,48 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Audit reachable Git history
+        id: history_audit
+        continue-on-error: true
+        run: bash scripts/scan-sensitive-history.sh history-audit
+
+      - name: Upload sanitized history audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: history-audit-${{ github.sha }}
+          path: history-audit/
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24.19.0
           cache: npm
           cache-dependency-path: |
             backend/package-lock.json
             frontend-h5/package-lock.json
             admin-web/package-lock.json
+
+      - name: Verify current source excludes retired risks
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e backend/src/controllers/adminController.js
+          if grep -RInE \
+            "require\(['\"](xlsx|sqlite3)['\"]\)|ucas1234|process\.env\.(JWT_SECRET|ADMIN_PASSWORD)[[:space:]]*\|\|[[:space:]]*['\"]" \
+            backend/src; then
+            echo "Retired dependency, credential, or weak secret fallback found in current backend source." >&2
+            exit 1
+          fi
+          if grep -Eq '"(xlsx|sqlite3)"[[:space:]]*:' backend/package-lock.json; then
+            echo "Retired backend package remains in package-lock.json." >&2
+            exit 1
+          fi
 
       - name: Verify backend dependencies and syntax
         working-directory: backend
@@ -43,21 +75,19 @@ jobs:
           npm ci
           find src test -name '*.js' -print0 | xargs -0 -n1 node --check
 
-      - name: Test backend API and domain rules
+      - name: Test backend API, migrations, and domain rules
         working-directory: backend
         run: npm test
 
-      - name: Report backend dependency audit
-        continue-on-error: true
+      - name: Audit backend runtime dependencies
         working-directory: backend
-        run: npm audit --audit-level=critical
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Install student dependencies
         working-directory: frontend-h5
         run: npm ci
 
-      - name: Report student TypeScript debt
-        continue-on-error: true
+      - name: Type-check student application
         working-directory: frontend-h5
         run: npm run typecheck
 
@@ -65,17 +95,15 @@ jobs:
         working-directory: frontend-h5
         run: npm run build
 
-      - name: Report student dependency audit
-        continue-on-error: true
+      - name: Audit student dependencies
         working-directory: frontend-h5
-        run: npm audit --audit-level=critical
+        run: npm audit --audit-level=high
 
       - name: Install administrator dependencies
         working-directory: admin-web
         run: npm ci
 
-      - name: Report administrator TypeScript debt
-        continue-on-error: true
+      - name: Type-check administrator application
         working-directory: admin-web
         run: npm run typecheck
 
@@ -85,13 +113,15 @@ jobs:
           VITE_BASE_PATH: /admin/
         run: npm run build
 
-      - name: Report administrator dependency audit
-        continue-on-error: true
+      - name: Audit administrator dependencies
         working-directory: admin-web
-        run: npm audit --audit-level=critical
+        run: npm audit --audit-level=high
 
       - name: Validate production Compose file
         run: docker compose --env-file .env.example -f docker-compose.prod.yml config
+
+      - name: Build production backend image
+        run: docker build --tag lab-safety-backend:ci --file backend/Dockerfile backend
 
   publish:
     needs: verify

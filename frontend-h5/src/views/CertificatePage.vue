@@ -20,8 +20,16 @@ interface Certificate {
   department: string
 }
 
+type CertificateTagType = 'primary' | 'success' | 'warning'
+
+interface GradeLevel {
+  level: string
+  color: string
+  tag: CertificateTagType
+}
+
 // 计算成绩等级
-const getGradeLevel = (score: number) => {
+const getGradeLevel = (score: number): GradeLevel => {
   if (score >= 90) return { level: '优秀', color: '#FFD700', tag: 'warning' }
   if (score >= 80) return { level: '良好', color: '#07c160', tag: 'success' }
   return { level: '及格', color: '#0475FA', tag: 'primary' }
