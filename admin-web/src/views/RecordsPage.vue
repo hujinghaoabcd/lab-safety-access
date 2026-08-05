@@ -124,6 +124,17 @@ const handleDelete = async (row: Record) => {
     ElMessage.error(err?.message || '删除失败')
   }
 }
+const handleRecordPageChange = (page: number) => {
+  pagination.currentPage = page
+  loadRecords()
+}
+
+const handleRecordPageSizeChange = (size: number) => {
+  pagination.pageSize = size
+  pagination.currentPage = 1
+  loadRecords()
+}
+
 </script>
 
 <template>
@@ -183,8 +194,8 @@ const handleDelete = async (row: Record) => {
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
           layout="total, sizes, prev, pager, next, jumper"
-          @current-change="(page) => { pagination.currentPage = page; loadRecords() }"
-          @size-change="(size) => { pagination.pageSize = size; pagination.currentPage = 1; loadRecords() }"
+          @current-change="handleRecordPageChange"
+          @size-change="handleRecordPageSizeChange"
         />
       </div>
     </div>
