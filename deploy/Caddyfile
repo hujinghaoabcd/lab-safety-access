@@ -1,0 +1,34 @@
+{$SITE_ADDRESS} {
+  encode zstd gzip
+
+  header {
+    -Server
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  }
+
+  handle /api/* {
+    reverse_proxy backend:4000
+  }
+
+  handle /uploads/* {
+    reverse_proxy backend:4000
+  }
+
+  redir /admin /admin/ 308
+
+  handle_path /admin/* {
+    root * /srv/admin
+    try_files {path} /index.html
+    file_server
+  }
+
+  handle {
+    root * /srv/student
+    try_files {path} /index.html
+    file_server
+  }
+}
