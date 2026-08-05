@@ -1,6 +1,5 @@
 <template>
   <div class="desktop-wrongbook">
-    <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
         <div class="header-icon error">
@@ -13,7 +12,6 @@
       </div>
     </div>
 
-    <!-- 筛选栏 -->
     <div class="filter-bar">
       <el-radio-group v-model="filterType" size="default">
         <el-radio-button label="all">全部 ({{ counts.all }})</el-radio-button>
@@ -26,7 +24,6 @@
       </el-button>
     </div>
 
-    <!-- 题目列表 -->
     <div class="questions-section">
       <div class="section-title">错题列表</div>
 
@@ -80,6 +77,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import type { TagProps } from 'element-plus'
 import { Close, InfoFilled, Clock } from '@element-plus/icons-vue'
 import { getWrongBook, removeWrongQuestion } from '@/api/exam'
 
@@ -112,8 +110,12 @@ const counts = computed(() => ({
   '判断题': allQuestions.value.filter(q => q.type === '判断题').length
 }))
 
-const getTypeTag = (type: string) => {
-  const map: Record<string, string> = { '单选题': 'primary', '多选题': 'success', '判断题': 'warning' }
+const getTypeTag = (type: string): TagProps['type'] => {
+  const map: Record<string, TagProps['type']> = {
+    '单选题': 'primary',
+    '多选题': 'success',
+    '判断题': 'warning'
+  }
   return map[type] || 'info'
 }
 
@@ -152,7 +154,7 @@ const clearAll = async () => {
   }
 }
 
-const retryQuestion = () => router.push('/exam-center')
+const retryQuestion = (_question?: WrongQuestion) => router.push('/exam-center')
 
 onMounted(() => loadWrongBook())
 </script>
@@ -162,7 +164,6 @@ onMounted(() => loadWrongBook())
   padding: 0;
 }
 
-/* 页面头部 */
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -212,7 +213,6 @@ onMounted(() => loadWrongBook())
   margin: 0;
 }
 
-/* 筛选栏 */
 .filter-bar {
   display: flex;
   justify-content: space-between;
@@ -224,7 +224,6 @@ onMounted(() => loadWrongBook())
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
-/* 题目列表 */
 .questions-section {
   background: #fff;
   border-radius: 8px;
