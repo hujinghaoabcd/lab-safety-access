@@ -89,8 +89,56 @@ jobs:
       - name: Validate production Compose file
         run: docker compose --env-file .env.example -f docker-compose.prod.yml config
 
-  deploy:
+  package:
     needs: verify
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'push' && vars.AUTO_DEPLOY_ENABLED == 'true') ||
+       (github.event_name == 'workflow_dispatch' && inputs.deploy == true))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out verified source
+        uses: actions/checkout@v4
+
+      - name: Build production images on GitHub
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --pull \
+            --tag "lab-safety-backend:${GITHUB_SHA}" \
+            --file backend/Dockerfile \
+            backend
+          docker build --pull \
+            --tag "lab-safety-web:${GITHUB_SHA}" \
+            --file deploy/web.Dockerfile \
+            .
+
+      - name: Create transferable image archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="lab-safety-images-${GITHUB_SHA}.tar.gz"
+          docker save \
+            "lab-safety-backend:${GITHUB_SHA}" \
+            "lab-safety-web:${GITHUB_SHA}" \
+            | gzip -1 > "$archive"
+          sha256sum "$archive" > "${archive}.sha256"
+          ls -lh "$archive" "${archive}.sha256"
+
+      - name: Store deployment package
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-images-${{ github.sha }}
+          path: |
+            lab-safety-images-${{ github.sha }}.tar.gz
+            lab-safety-images-${{ github.sha }}.tar.gz.sha256
+          retention-days: 1
+          if-no-files-found: error
+
+  deploy:
+    needs:
+      - verify
+      - package
     if: >-
       github.ref == 'refs/heads/main' &&
       ((github.event_name == 'push' && vars.AUTO_DEPLOY_ENABLED == 'true') ||
@@ -104,8 +152,14 @@ jobs:
       DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
       DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
     steps:
-      - name: Check out verified source
+      - name: Check out deployment configuration
         uses: actions/checkout@v4
+
+      - name: Download verified image package
+        uses: actions/download-artifact@v4
+        with:
+          name: production-images-${{ github.sha }}
+          path: release
 
       - name: Validate deployment secrets
         shell: bash
@@ -131,27 +185,82 @@ jobs:
           ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
             "mkdir -p '$DEPLOY_PATH'"
 
-      - name: Synchronize application source
+      - name: Transfer images and Compose configuration
         shell: bash
         run: |
-          rsync -az --delete \
-            --exclude='.git/' \
-            --exclude='.env' \
-            --exclude='**/node_modules/' \
-            --exclude='**/dist/' \
-            --exclude='runtime/' \
-            -e "ssh -p $DEPLOY_PORT" \
-            ./ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
-
-      - name: Build and restart services
-        shell: bash
-        run: |
-          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "bash -se" <<EOF
           set -euo pipefail
-          cd "$DEPLOY_PATH"
-          test -f .env || { echo 'Server .env is missing. Copy .env.example and fill secrets first.'; exit 1; }
-          docker compose --env-file .env -f docker-compose.prod.yml up -d --build --remove-orphans
-          docker compose --env-file .env -f docker-compose.prod.yml exec -T backend \
-            node -e "fetch('http://127.0.0.1:4000/health').then(r=>{if(!r.ok)process.exit(1);return r.text()}).then(console.log).catch(e=>{console.error(e);process.exit(1)})"
-          docker image prune -f
-          EOF
+          rsync -az \
+            -e "ssh -p $DEPLOY_PORT" \
+            docker-compose.prod.yml \
+            release/lab-safety-images-${GITHUB_SHA}.tar.gz \
+            release/lab-safety-images-${GITHUB_SHA}.tar.gz.sha256 \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+
+      - name: Load, restart, verify, and roll back on failure
+        shell: bash
+        run: |
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash -se -- '$DEPLOY_PATH' '$GITHUB_SHA'" <<'REMOTE'
+          set -euo pipefail
+          deploy_path="$1"
+          new_tag="$2"
+          archive="lab-safety-images-${new_tag}.tar.gz"
+          checksum="${archive}.sha256"
+
+          cd "$deploy_path"
+          test -f .env || {
+            echo 'Server .env is missing. Create it before the first deployment.'
+            exit 1
+          }
+          command -v docker >/dev/null || {
+            echo 'Docker is not installed on the server.'
+            exit 1
+          }
+          command -v curl >/dev/null || {
+            echo 'curl is not installed on the server.'
+            exit 1
+          }
+
+          sha256sum -c "$checksum"
+          old_tag="$(cat .current-image-tag 2>/dev/null || true)"
+          sudo docker load --input "$archive"
+
+          start_release() {
+            sudo env IMAGE_TAG="$1" docker compose \
+              --env-file .env \
+              --file docker-compose.prod.yml \
+              up -d --no-build --remove-orphans
+          }
+
+          start_release "$new_tag"
+
+          healthy=false
+          for _ in $(seq 1 24); do
+            if curl -fsS http://127.0.0.1/api/health >/tmp/lab-safety-health.json 2>/dev/null; then
+              healthy=true
+              break
+            fi
+            sleep 5
+          done
+
+          if [ "$healthy" != true ]; then
+            echo 'New release failed its health check.'
+            sudo env IMAGE_TAG="$new_tag" docker compose \
+              --env-file .env \
+              --file docker-compose.prod.yml \
+              logs --tail=200 || true
+
+            if [ -n "$old_tag" ]; then
+              echo "Rolling back to $old_tag"
+              start_release "$old_tag"
+            else
+              echo 'No previous release is available for rollback.'
+            fi
+            exit 1
+          fi
+
+          printf '%s\n' "$new_tag" > .current-image-tag
+          rm -f "$archive" "$checksum" /tmp/lab-safety-health.json
+          sudo docker image prune -f
+          echo "Release $new_tag is healthy."
+          REMOTE
