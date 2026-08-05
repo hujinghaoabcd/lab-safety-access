@@ -13,6 +13,7 @@ const recordsRoutes = require('./routes/records');
 const wrongbookRoutes = require('./routes/wrongbook');
 const qualificationRoutes = require('./routes/qualification');
 const adminRoutes = require('./routes/admin');
+const databaseBackupRoutes = require('./routes/databaseBackups');
 const bannerRoutes = require('./routes/banner');
 const announcementRoutes = require('./routes/announcement');
 
@@ -21,8 +22,6 @@ const PORT = Number(process.env.PORT || 4000);
 const isProduction = process.env.NODE_ENV === 'production';
 
 const validateProductionConfiguration = () => {
-  // Resolving the secret at startup makes a missing/weak production secret a
-  // hard deployment failure instead of a latent authentication vulnerability.
   getJwtSecret();
 
   if (isProduction) {
@@ -44,7 +43,6 @@ if (isProduction) {
 }
 app.disable('x-powered-by');
 
-// Basic security headers without adding another runtime dependency.
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -60,8 +58,6 @@ const allowedOrigins = String(process.env.CORS_ORIGINS || '')
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Non-browser clients and same-origin reverse-proxy traffic do not need a
-    // permissive CORS response. Development remains convenient by default.
     if (!origin || !isProduction || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
@@ -111,6 +107,7 @@ app.use('/api/records', recordsRoutes);
 app.use('/api/wrongbook', wrongbookRoutes);
 app.use('/api/qualification', qualificationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/db-backups', databaseBackupRoutes);
 app.use('/api/banner', bannerRoutes);
 app.use('/api/announcement', announcementRoutes);
 
