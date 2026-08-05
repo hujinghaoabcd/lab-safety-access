@@ -1,5 +1,6 @@
-const { dbGet } = require('../database/db');
+const { dbGet, dbRun } = require('../database/db');
 const { generateToken } = require('../middleware/auth');
+const { hashPassword, isHashedPassword, verifyPassword } = require('../utils/password');
 const { success, error } = require('../utils/response');
 
 /**
@@ -14,18 +15,29 @@ const login = async (req, res) => {
 
   try {
     const user = await dbGet(
-      'SELECT * FROM users WHERE student_id = ? AND password = ? AND status = 1',
-      [username, password]
+      'SELECT * FROM users WHERE student_id = ? AND status = 1',
+      [String(username).trim()]
     );
 
-    if (!user) {
+    if (!user || !(await verifyPassword(String(password), user.password))) {
       return error(res, '用户名或密码错误', 401);
+    }
+
+    // Existing databases may still contain legacy plaintext passwords. After
+    // the first successful login, transparently migrate that row to scrypt.
+    if (!isHashedPassword(user.password)) {
+      const passwordHash = await hashPassword(String(password));
+      await dbRun(
+        'UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [passwordHash, user.id]
+      );
     }
 
     const token = generateToken({
       id: user.id,
       username: user.student_id,
-      name: user.name
+      name: user.name,
+      role: 'student'
     });
 
     const userInfo = {
@@ -33,13 +45,13 @@ const login = async (req, res) => {
       name: user.name,
       studentId: user.student_id,
       department: user.department,
-      avatar: null
+      avatar: user.avatar || null
     };
 
-    success(res, { token, userInfo }, '登录成功');
+    return success(res, { token, userInfo }, '登录成功');
   } catch (err) {
     console.error('登录错误:', err);
-    error(res, '登录失败，请稍后重试', 500);
+    return error(res, '登录失败，请稍后重试', 500);
   }
 };
 
@@ -54,4 +66,3 @@ module.exports = {
   login,
   logout
 };
-
