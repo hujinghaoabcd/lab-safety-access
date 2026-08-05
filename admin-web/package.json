@@ -1,8 +1,11 @@
 {
   "name": "lab-safety-admin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "实验室安全教育考试系统 - 后台管理",
   "type": "module",
+  "engines": {
+    "node": ">=24.15.0 <25"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -10,22 +13,22 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@element-plus/icons-vue": "^2.3.0",
+    "@element-plus/icons-vue": "^2.3.2",
     "@tsparticles/slim": "^3.9.1",
     "@tsparticles/vue3": "^3.0.1",
-    "axios": "^1.6.0",
-    "dayjs": "^1.11.0",
-    "echarts": "^5.4.0",
-    "element-plus": "^2.4.0",
-    "pinia": "^2.1.0",
-    "vue": "^3.4.0",
-    "vue-router": "^4.2.0"
+    "axios": "^1.18.1",
+    "dayjs": "^1.11.19",
+    "echarts": "^6.1.0",
+    "element-plus": "^2.13.0",
+    "pinia": "^2.3.1",
+    "vue": "^3.5.40",
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.0.0",
-    "sass": "^1.69.0",
-    "typescript": "^5.3.0",
-    "vite": "^5.0.0",
-    "vue-tsc": "^1.8.0"
+    "@vitejs/plugin-vue": "^6.0.8",
+    "sass": "^1.97.3",
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5",
+    "vue-tsc": "^3.3.8"
   }
 }
