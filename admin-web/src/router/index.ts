@@ -72,21 +72,21 @@ const routes: RouteRecordRaw[] = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes
 })
 
-// 路由守卫
 router.beforeEach((to, _from, next) => {
   document.title = `${to.meta.title || '后台管理'} - 实验室安全教育考试系统`
-  
+
   const token = localStorage.getItem('admin_token')
   if (to.path !== '/login' && !token) {
     next('/login')
+  } else if (to.path === '/login' && token) {
+    next('/dashboard')
   } else {
     next()
   }
 })
 
 export default router
-
