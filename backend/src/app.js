@@ -1,11 +1,10 @@
 const express = require('express');
 const cors = require('cors');
-const multer = require('multer');
 const path = require('path');
 const { initDatabase } = require('./database/db');
+const { getJwtSecret } = require('./middleware/auth');
 const logger = require('./utils/logger');
 
-// 导入路由
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const learningRoutes = require('./routes/learning');
@@ -18,58 +17,92 @@ const bannerRoutes = require('./routes/banner');
 const announcementRoutes = require('./routes/announcement');
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = Number(process.env.PORT || 4000);
+const isProduction = process.env.NODE_ENV === 'production';
 
-// 初始化数据库
-initDatabase().catch(err => {
-  logger.error('数据库初始化失败', { error: err.message, stack: err.stack });
-});
+const validateProductionConfiguration = () => {
+  // Resolving the secret at startup makes a missing/weak production secret a
+  // hard deployment failure instead of a latent authentication vulnerability.
+  getJwtSecret();
 
-// 中间件
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+  if (isProduction) {
+    const required = ['ADMIN_USERNAME', 'ADMIN_PASSWORD', 'DEFAULT_USER_PASSWORD'];
+    const missing = required.filter((name) => !process.env[name]);
+    if (missing.length) {
+      throw new Error(`生产环境缺少必要变量: ${missing.join(', ')}`);
+    }
+    if (process.env.DEFAULT_USER_PASSWORD.length < 8) {
+      throw new Error('DEFAULT_USER_PASSWORD 至少需要 8 位');
+    }
+  }
+};
 
-// 文件上传配置（供部分路由复用）
-const upload = multer({ storage: multer.memoryStorage() });
-app.locals.upload = upload;
+validateProductionConfiguration();
 
-// 静态资源：头像等上传文件
-const uploadsPath = path.join(__dirname, '..', 'uploads');
-// 直接访问（如 http://localhost:4000/uploads/avatars/xxx.png）
-app.use('/uploads', express.static(uploadsPath));
-// 通过前端代理访问（如 http://localhost:3000/api/uploads/avatars/xxx.png）
-app.use('/api/uploads', express.static(uploadsPath));
+if (isProduction) {
+  app.set('trust proxy', 1);
+}
+app.disable('x-powered-by');
 
-// 静态资源：数据库备份文件（仅管理端使用）
-const backupsPath = path.join(__dirname, '..', 'data', 'backups');
-app.use('/api/db-backups', express.static(backupsPath));
-
-// 请求日志中间件
-app.use((req, res, next) => {
-  const startTime = Date.now();
-  
-  // 记录请求开始
-  logger.http(`${req.method} ${req.path}`, {
-    ip: req.ip,
-    userAgent: req.get('user-agent'),
-    query: req.query
-  });
-  
-  // 监听响应完成
-  res.on('finish', () => {
-    const duration = Date.now() - startTime;
-    logger.http(`${req.method} ${req.path} ${res.statusCode}`, {
-      statusCode: res.statusCode,
-      duration: `${duration}ms`,
-      ip: req.ip
-    });
-  });
-  
+// Basic security headers without adding another runtime dependency.
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   next();
 });
 
-// API 路由
+const allowedOrigins = String(process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Non-browser clients and same-origin reverse-proxy traffic do not need a
+    // permissive CORS response. Development remains convenient by default.
+    if (!origin || !isProduction || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, false);
+  },
+  methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 600
+}));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+
+const uploadsPath = path.join(__dirname, '..', 'uploads');
+const uploadStaticOptions = {
+  dotfiles: 'deny',
+  fallthrough: true,
+  index: false,
+  maxAge: isProduction ? '1h' : 0
+};
+app.use('/uploads', express.static(uploadsPath, uploadStaticOptions));
+app.use('/api/uploads', express.static(uploadsPath, uploadStaticOptions));
+
+app.use((req, res, next) => {
+  const startTime = Date.now();
+  logger.http(`${req.method} ${req.path}`, {
+    ip: req.ip,
+    userAgent: req.get('user-agent'),
+    queryKeys: Object.keys(req.query || {})
+  });
+
+  res.on('finish', () => {
+    logger.http(`${req.method} ${req.path} ${res.statusCode}`, {
+      statusCode: res.statusCode,
+      durationMs: Date.now() - startTime,
+      ip: req.ip
+    });
+  });
+
+  next();
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/learning', learningRoutes);
@@ -81,8 +114,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/banner', bannerRoutes);
 app.use('/api/announcement', announcementRoutes);
 
-// 健康检查
-app.get('/api/health', (req, res) => {
+const healthResponse = (_req, res) => {
   res.json({
     code: 0,
     message: 'OK',
@@ -91,9 +123,10 @@ app.get('/api/health', (req, res) => {
       timestamp: new Date().toISOString()
     }
   });
-});
+};
+app.get('/health', healthResponse);
+app.get('/api/health', healthResponse);
 
-// 404 处理
 app.use((req, res) => {
   res.status(404).json({
     code: 404,
@@ -101,8 +134,7 @@ app.use((req, res) => {
   });
 });
 
-// 全局错误处理
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   logger.error('请求处理错误', {
     error: err.message,
     stack: err.stack,
@@ -110,21 +142,36 @@ app.use((err, req, res, next) => {
     method: req.method,
     ip: req.ip
   });
-  
-  res.status(500).json({
+
+  if (err && (err.name === 'MulterError' || /仅支持|文件过大/.test(err.message || ''))) {
+    return res.status(400).json({
+      code: 400,
+      message: err.code === 'LIMIT_FILE_SIZE' ? '上传文件超过大小限制' : err.message
+    });
+  }
+
+  return res.status(500).json({
     code: 500,
     message: '服务器内部错误',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    error: isProduction ? undefined : err.message
   });
 });
 
-app.listen(PORT, () => {
-  logger.info('服务器启动成功', {
-    port: PORT,
-    env: process.env.NODE_ENV || 'development',
-    apiUrl: `http://localhost:${PORT}/api`
+initDatabase()
+  .then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
+      logger.info('服务器启动成功', {
+        port: PORT,
+        env: process.env.NODE_ENV || 'development'
+      });
+    });
+  })
+  .catch((err) => {
+    logger.error('数据库初始化失败，服务未启动', {
+      error: err.message,
+      stack: err.stack
+    });
+    process.exitCode = 1;
   });
-});
 
 module.exports = app;
-
