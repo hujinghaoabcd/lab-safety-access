@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
-    "init-db": "node src/database/init.js"
+    "init-db": "node src/database/init.js",
+    "test": "node --test --test-concurrency=1"
   },
   "dependencies": {
     "cors": "^2.8.5",

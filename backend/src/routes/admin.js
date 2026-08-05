@@ -5,6 +5,8 @@ const path = require('path');
 const fs = require('fs');
 const adminController = require('../controllers/adminController');
 const secureAdminController = require('../controllers/secureAdminController');
+const secureExamAdminController = require('../controllers/secureExamAdminController');
+const secureExportController = require('../controllers/secureExportController');
 const bannerController = require('../controllers/bannerController');
 const announcementController = require('../controllers/announcementController');
 const learningController = require('../controllers/learningController');
@@ -38,11 +40,11 @@ const databaseUpload = multer({
 
 const validateSQLiteFile = (req, res, next) => {
   if (!req.file || req.file.buffer.length < 16) {
-    return res.status(400).json({ code: 400, message: '数据库文件无效' });
+    return res.status(400).json({ code: 400, message: '数据库文件无效', data: null });
   }
   const header = req.file.buffer.subarray(0, 16).toString('binary');
   if (header !== 'SQLite format 3\u0000') {
-    return res.status(400).json({ code: 400, message: '文件不是有效的 SQLite 数据库' });
+    return res.status(400).json({ code: 400, message: '文件不是有效的 SQLite 数据库', data: null });
   }
   return next();
 };
@@ -51,7 +53,8 @@ const requireDatabaseMaintenanceEnabled = (_req, res, next) => {
   if (process.env.ALLOW_DANGEROUS_DB_OPERATIONS !== 'true') {
     return res.status(403).json({
       code: 403,
-      message: '数据库清空和恢复功能已在服务器配置中禁用'
+      message: '数据库清空和恢复功能已在服务器配置中禁用',
+      data: null
     });
   }
   return next();
@@ -105,12 +108,12 @@ router.put('/users/:id/status', adminController.toggleUserStatus);
 router.put('/users/:id/reset-password', secureAdminController.resetUserPassword);
 
 router.get('/exams', adminController.getExams);
-router.post('/exams', adminController.createExam);
-router.put('/exams/:id', adminController.updateExam);
+router.post('/exams', secureExamAdminController.createExam);
+router.put('/exams/:id', secureExamAdminController.updateExam);
 router.delete('/exams/:id', adminController.deleteExam);
-router.put('/exams/:id/status', adminController.toggleExamStatus);
+router.put('/exams/:id/status', secureExamAdminController.toggleExamStatus);
 router.get('/exams/:id/assignments', adminController.getExamAssignments);
-router.put('/exams/:id/assignments', adminController.updateExamAssignments);
+router.put('/exams/:id/assignments', secureExamAdminController.updateExamAssignments);
 router.get('/exams/:id/questions', adminController.getExamQuestions);
 router.post('/exams/:id/questions/config', adminController.configExamQuestions);
 router.post('/exams/:id/questions/auto-select', adminController.autoSelectQuestions);
@@ -125,12 +128,12 @@ router.put('/questions/:id', adminController.updateQuestion);
 router.delete('/questions/:id', adminController.deleteQuestion);
 
 router.get('/records', adminController.getRecords);
-router.get('/records/export', adminController.exportRecords);
+router.get('/records/export', secureExportController.exportRecords);
 router.get('/records/:id', adminController.getRecordDetail);
 router.delete('/records/:id', adminController.deleteRecord);
 
 router.get('/certificates', adminController.getCertificates);
-router.get('/certificates/export', adminController.exportCertificates);
+router.get('/certificates/export', secureExportController.exportCertificates);
 router.post('/certificates', adminController.issueCertificate);
 router.put('/certificates/:id/revoke', adminController.revokeCertificate);
 router.put('/certificates/:id/reissue', adminController.reissueCertificate);
