@@ -66,13 +66,20 @@ jobs:
         working-directory: frontend-h5
         run: npm audit --audit-level=critical
 
+      - name: Install administrator dependencies
+        working-directory: admin-web
+        run: npm ci
+
+      - name: Report administrator TypeScript debt
+        continue-on-error: true
+        working-directory: admin-web
+        run: npm run typecheck
+
       - name: Build administrator application
         working-directory: admin-web
         env:
           VITE_BASE_PATH: /admin/
-        run: |
-          npm ci
-          npm run build
+        run: npm run build
 
       - name: Report administrator dependency audit
         continue-on-error: true
