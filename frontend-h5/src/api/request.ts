@@ -26,8 +26,8 @@ service.interceptors.request.use(
 )
 
 service.interceptors.response.use(
-  (response: AxiosResponse<ApiResponse>) => {
-    const payload = response.data
+  (response: AxiosResponse) => {
+    const payload = response.data as ApiResponse<unknown>
     if (payload.code !== 0 && payload.code !== 200) {
       showToast({
         message: payload.message || '请求失败',
@@ -44,10 +44,10 @@ service.interceptors.response.use(
 
       return Promise.reject(new Error(payload.message || '请求失败'))
     }
-    return payload
+    return response
   },
   (unknownError: unknown) => {
-    const requestError = unknownError as AxiosError<ApiResponse>
+    const requestError = unknownError as AxiosError<ApiResponse<unknown>>
     console.error('Request error:', requestError)
 
     const status = requestError.response?.status
@@ -74,23 +74,33 @@ service.interceptors.response.use(
   }
 )
 
-// The response interceptor returns the API envelope rather than AxiosResponse.
-// Axios's second generic parameter declares that runtime return type.
 export const request = {
-  get<T = ApiResponse>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    return service.get<T, T>(url, config)
+  async get<T = ApiResponse>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    const response = await service.get<T>(url, config)
+    return response.data
   },
 
-  post<T = ApiResponse>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
-    return service.post<T, T, unknown>(url, data, config)
+  async post<T = ApiResponse>(
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig
+  ): Promise<T> {
+    const response = await service.post<T>(url, data, config)
+    return response.data
   },
 
-  put<T = ApiResponse>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
-    return service.put<T, T, unknown>(url, data, config)
+  async put<T = ApiResponse>(
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig
+  ): Promise<T> {
+    const response = await service.put<T>(url, data, config)
+    return response.data
   },
 
-  delete<T = ApiResponse>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    return service.delete<T, T>(url, config)
+  async delete<T = ApiResponse>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    const response = await service.delete<T>(url, config)
+    return response.data
   }
 }
 
