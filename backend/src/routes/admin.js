@@ -10,6 +10,7 @@ const secureExamAdminController = require('../controllers/secureExamAdminControl
 const secureExportController = require('../controllers/secureExportController');
 const secureQuestionController = require('../controllers/secureQuestionController');
 const secureQuestionAssignmentController = require('../controllers/secureQuestionAssignmentController');
+const secureDeletionController = require('../controllers/secureDeletionController');
 const databaseMaintenanceController = require('../controllers/databaseMaintenanceController');
 const bannerController = require('../controllers/bannerController');
 const announcementController = require('../controllers/announcementController');
@@ -119,18 +120,18 @@ router.get('/dashboard/recent-exams', adminController.getRecentExams);
 
 router.get('/users', adminController.getUsers);
 router.post('/users', secureAdminController.createUser);
-router.delete('/users/batch', adminController.batchDeleteUsers);
-router.post('/users/batch-delete', adminController.batchDeleteUsers);
+router.delete('/users/batch', secureDeletionController.batchDeleteUsers);
+router.post('/users/batch-delete', secureDeletionController.batchDeleteUsers);
 router.post('/users/import', excelUpload.single('file'), secureAdminController.batchImportUsers);
 router.put('/users/:id', adminController.updateUser);
-router.delete('/users/:id', adminController.deleteUser);
+router.delete('/users/:id', secureDeletionController.deleteUser);
 router.put('/users/:id/status', adminController.toggleUserStatus);
 router.put('/users/:id/reset-password', secureAdminController.resetUserPassword);
 
 router.get('/exams', adminController.getExams);
 router.post('/exams', secureExamAdminController.createExam);
 router.put('/exams/:id', secureExamAdminController.updateExam);
-router.delete('/exams/:id', adminController.deleteExam);
+router.delete('/exams/:id', secureDeletionController.deleteExam);
 router.put('/exams/:id/status', secureExamAdminController.toggleExamStatus);
 router.get('/exams/:id/assignments', adminController.getExamAssignments);
 router.put('/exams/:id/assignments', secureExamAdminController.updateExamAssignments);
@@ -152,15 +153,15 @@ router.post(
   secureQuestionController.importQuestions
 );
 router.post('/questions', adminController.createQuestion);
-router.delete('/questions/batch', adminController.batchDeleteQuestions);
-router.post('/questions/batch-delete', adminController.batchDeleteQuestions);
+router.delete('/questions/batch', secureDeletionController.batchDeleteQuestions);
+router.post('/questions/batch-delete', secureDeletionController.batchDeleteQuestions);
 router.put('/questions/:id', adminController.updateQuestion);
-router.delete('/questions/:id', adminController.deleteQuestion);
+router.delete('/questions/:id', secureDeletionController.deleteQuestion);
 
 router.get('/records', adminController.getRecords);
 router.get('/records/export', secureExportController.exportRecords);
 router.get('/records/:id', adminController.getRecordDetail);
-router.delete('/records/:id', adminController.deleteRecord);
+router.delete('/records/:id', secureDeletionController.deleteRecord);
 
 router.get('/certificates', adminController.getCertificates);
 router.get('/certificates/export', secureExportController.exportCertificates);
