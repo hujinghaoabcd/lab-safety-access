@@ -1,0 +1,54 @@
+name: Refresh patched backend lockfile
+
+on:
+  push:
+    branches:
+      - agent/phase2-security-stability
+    paths:
+      - backend/package.json
+      - .github/workflows/phase2-backend-lockfile.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: phase2-backend-lockfile
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    if: ${{ !contains(github.event.head_commit.message, '[backend-lockfile]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out phase 2 branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/phase2-security-stability
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+
+      - name: Refresh and audit-fix backend lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund \
+            --prefix backend
+          npm audit fix --package-lock-only --omit=dev --ignore-scripts --no-fund \
+            --prefix backend || true
+
+      - name: Commit backend lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add backend/package-lock.json
+          if git diff --cached --quiet; then
+            echo "Backend lockfile is already current."
+            exit 0
+          fi
+          git commit -m "Refresh patched backend lockfile [backend-lockfile]"
+          git push origin HEAD:agent/phase2-security-stability
