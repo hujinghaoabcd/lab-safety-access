@@ -116,6 +116,17 @@ const handleStatusChange = async (row: Announcement) => {
     loadAnnouncements() // 恢复原状态
   }
 }
+const handleAnnouncementPageChange = (page: number) => {
+  pagination.currentPage = page
+  loadAnnouncements()
+}
+
+const handleAnnouncementPageSizeChange = (size: number) => {
+  pagination.pageSize = size
+  pagination.currentPage = 1
+  loadAnnouncements()
+}
+
 </script>
 
 <template>
@@ -160,8 +171,8 @@ const handleStatusChange = async (row: Announcement) => {
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
           layout="total, sizes, prev, pager, next, jumper"
-          @current-change="page => { pagination.currentPage = page; loadAnnouncements() }"
-          @size-change="size => { pagination.pageSize = size; pagination.currentPage = 1; loadAnnouncements() }"
+          @current-change="handleAnnouncementPageChange"
+          @size-change="handleAnnouncementPageSizeChange"
         />
       </div>
     </div>
