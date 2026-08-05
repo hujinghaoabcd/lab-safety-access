@@ -4,7 +4,7 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
-report_dir="${1:-.history-audit}"
+report_dir="${1:-history-audit}"
 mkdir -p "$report_dir"
 paths_report="$report_dir/sensitive-paths.txt"
 secrets_report="$report_dir/suspected-secret-paths.txt"
@@ -20,7 +20,6 @@ while IFS=' ' read -r object_id object_path; do
 
   case "$lower_path" in
     *.xlsx|*.xls|*.db|*.sqlite|*.sqlite3|*.pem|*.key|*.p12|*.pfx|*.env|*.env.*)
-      # Public templates and examples contain no real credentials/data.
       case "$lower_path" in
         .env.example|*/.env.example|*template*.xlsx|*template*.xls) continue ;;
       esac
@@ -33,15 +32,20 @@ done < <(git rev-list --objects --all)
 sort -u -o "$paths_report" "$paths_report"
 
 secret_regex='BEGIN ([A-Z ]+ )?PRIVATE KEY|JWT_SECRET[[:space:]]*[:=][[:space:]]*[^$<{[:space:]][^[:space:]]+|ADMIN_PASSWORD[[:space:]]*[:=][[:space:]]*[^$<{[:space:]][^[:space:]]+|DEPLOY_SSH_KEY|HISTORICAL_ADMIN_PASSWORD_REMOVED'
+temporary_secret_paths="$report_dir/.suspected-secret-paths.tmp"
+: > "$temporary_secret_paths"
 
-# Search every reachable revision but emit filenames only. This avoids placing
-# any matching secret value or surrounding source line into CI logs/artifacts.
+# Search every reachable revision but emit unique paths only. The matching
+# values and source lines never leave Git.
 while IFS= read -r commit; do
   git grep -I -l -E "$secret_regex" "$commit" -- 2>/dev/null \
-    | sed "s#^${commit}:#${commit}\t#" >> "$secrets_report" || true
+    | sed -E 's/^[0-9a-f]{40}://' >> "$temporary_secret_paths" || true
 done < <(git rev-list --all)
 
-sort -u -o "$secrets_report" "$secrets_report"
+grep -v -E '^(scripts/scan-sensitive-history\.sh|docs/security-review\.md)$' \
+  "$temporary_secret_paths" \
+  | sort -u > "$secrets_report" || true
+rm -f "$temporary_secret_paths"
 
 path_count="$(wc -l < "$paths_report" | tr -d ' ')"
 secret_path_count="$(wc -l < "$secrets_report" | tr -d ' ')"
