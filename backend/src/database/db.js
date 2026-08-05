@@ -1,8 +1,8 @@
 /**
  * SQLite configuration, migrations, backup, and Promise-compatible helpers.
  *
- * Node 24's built-in SQLite binding removes the unmaintained node-sqlite3
- * native build chain while preserving the asynchronous controller contract.
+ * Node 24's built-in SQLite binding removes the node-sqlite3 native build
+ * chain while preserving the asynchronous controller contract.
  */
 
 const { DatabaseSync, backup } = require('node:sqlite');
@@ -51,17 +51,22 @@ const bind = (statement, method, params = []) => {
   return statement[method](...values);
 };
 
+const toPlainRow = (row) => {
+  if (!row || typeof row !== 'object') return row;
+  return Object.fromEntries(Object.entries(row));
+};
+
 const normalizeRunResult = (result) => ({
   lastID: Number(result.lastInsertRowid || 0),
   changes: Number(result.changes || 0)
 });
 
 const queryOn = async (connection, sql, params = []) => (
-  bind(connection.prepare(sql), 'all', params)
+  bind(connection.prepare(sql), 'all', params).map(toPlainRow)
 );
 
 const getOn = async (connection, sql, params = []) => (
-  bind(connection.prepare(sql), 'get', params)
+  toPlainRow(bind(connection.prepare(sql), 'get', params))
 );
 
 const runOn = async (connection, sql, params = []) => (
@@ -151,7 +156,7 @@ const verifyDatabaseFile = async (filePath) => {
       verificationDb.prepare('PRAGMA foreign_key_check'),
       'all',
       []
-    );
+    ).map(toPlainRow);
     return {
       valid: true,
       sizeBytes: stat.size,
@@ -348,5 +353,6 @@ module.exports = {
   checkDatabase,
   closeDatabase,
   DB_PATH,
-  BACKUP_DIR
+  BACKUP_DIR,
+  toPlainRow
 };
