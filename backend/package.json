@@ -27,5 +27,14 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
+  },
+  "overrides": {
+    "exceljs": {
+      "uuid": "11.1.1"
+    },
+    "express": {
+      "path-to-regexp": "0.1.13"
+    },
+    "minimatch@3.1.2": "3.1.4"
   }
 }
