@@ -50,16 +50,37 @@ const getProfile = async (req, res) => {
   }
 };
 
+const identityFieldChanged = (body, user) => {
+  const comparisons = [
+    ['name', user.name],
+    ['department', user.department],
+    ['class', user.class],
+    ['studentId', user.student_id],
+    ['student_id', user.student_id]
+  ];
+  for (const [field, currentValue] of comparisons) {
+    if (body[field] !== undefined
+        && String(body[field] ?? '').trim() !== String(currentValue ?? '').trim()) {
+      return true;
+    }
+  }
+  if (body.status !== undefined && Number(body.status) !== Number(user.status)) {
+    return true;
+  }
+  return false;
+};
+
 /**
- * Students may update contact fields only. Name, department, class, student ID,
- * and account status define authorization scope and remain administrator-owned.
+ * Students may update contact fields only. For compatibility, the existing
+ * mobile/desktop forms may echo unchanged identity fields; those values are
+ * ignored. Any actual identity or assignment-scope change is rejected.
  */
 const updateProfile = async (req, res) => {
   try {
     const body = req.body || {};
-    const forbiddenFields = ['name', 'department', 'class', 'studentId', 'student_id', 'status'];
-    const attempted = forbiddenFields.filter((field) => body[field] !== undefined);
-    if (attempted.length) {
+    const currentUser = await dbGet(PROFILE_SELECT, [req.user.id]);
+    if (!currentUser) return error(res, '用户不存在', 404);
+    if (identityFieldChanged(body, currentUser)) {
       return error(res, '姓名、学号、院系和班级只能由管理员修改', 403);
     }
 
@@ -153,7 +174,7 @@ const changePassword = async (req, res) => {
       return error(res, err.message, 400);
     }
     console.error('修改密码错误:', err);
-    return error(res, '修改密码失败', 500);
+    return error(res, '密码修改失败', 500);
   }
 };
 
@@ -236,5 +257,6 @@ module.exports = {
   getProfileStats,
   changePassword,
   changeAvatar,
-  matchesImageSignature
+  matchesImageSignature,
+  identityFieldChanged
 };
