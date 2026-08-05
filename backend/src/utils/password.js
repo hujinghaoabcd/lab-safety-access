@@ -15,8 +15,13 @@ const validatePassword = (password) => {
   }
 };
 
+// Validation is deliberately separate from hashing. This allows legacy
+// six-character plaintext passwords to be converted to a hash after a valid
+// login while enforcing stronger rules for all newly created passwords.
 const hashPassword = async (password) => {
-  validatePassword(password);
+  if (typeof password !== 'string' || password.length === 0) {
+    throw new Error('密码不能为空');
+  }
   const salt = crypto.randomBytes(16).toString('hex');
   const derivedKey = await scryptAsync(password, salt, KEY_LENGTH);
   return `${HASH_PREFIX}$${salt}$${derivedKey.toString('hex')}`;
