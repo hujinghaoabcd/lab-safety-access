@@ -43,11 +43,28 @@ jobs:
           npm ci
           find src -name '*.js' -print0 | xargs -0 -n1 node --check
 
+      - name: Report backend dependency audit
+        continue-on-error: true
+        working-directory: backend
+        run: npm audit --audit-level=critical
+
+      - name: Install student dependencies
+        working-directory: frontend-h5
+        run: npm ci
+
+      - name: Report student TypeScript debt
+        continue-on-error: true
+        working-directory: frontend-h5
+        run: npm run typecheck
+
       - name: Build student application
         working-directory: frontend-h5
-        run: |
-          npm ci
-          npm run build
+        run: npm run build
+
+      - name: Report student dependency audit
+        continue-on-error: true
+        working-directory: frontend-h5
+        run: npm audit --audit-level=critical
 
       - name: Build administrator application
         working-directory: admin-web
@@ -56,6 +73,11 @@ jobs:
         run: |
           npm ci
           npm run build
+
+      - name: Report administrator dependency audit
+        continue-on-error: true
+        working-directory: admin-web
+        run: npm audit --audit-level=critical
 
       - name: Validate production Compose file
         run: docker compose --env-file .env.example -f docker-compose.prod.yml config
