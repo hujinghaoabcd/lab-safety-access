@@ -1,0 +1,165 @@
+name: CI and Deploy
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Publish a production release after verification
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lab-safety-access-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend-h5/package-lock.json
+            admin-web/package-lock.json
+
+      - name: Verify backend dependencies and syntax
+        working-directory: backend
+        run: |
+          npm ci
+          find src -name '*.js' -print0 | xargs -0 -n1 node --check
+
+      - name: Report backend dependency audit
+        continue-on-error: true
+        working-directory: backend
+        run: npm audit --audit-level=critical
+
+      - name: Install student dependencies
+        working-directory: frontend-h5
+        run: npm ci
+
+      - name: Report student TypeScript debt
+        continue-on-error: true
+        working-directory: frontend-h5
+        run: npm run typecheck
+
+      - name: Build student application
+        working-directory: frontend-h5
+        run: npm run build
+
+      - name: Report student dependency audit
+        continue-on-error: true
+        working-directory: frontend-h5
+        run: npm audit --audit-level=critical
+
+      - name: Install administrator dependencies
+        working-directory: admin-web
+        run: npm ci
+
+      - name: Report administrator TypeScript debt
+        continue-on-error: true
+        working-directory: admin-web
+        run: npm run typecheck
+
+      - name: Build administrator application
+        working-directory: admin-web
+        env:
+          VITE_BASE_PATH: /admin/
+        run: npm run build
+
+      - name: Report administrator dependency audit
+        continue-on-error: true
+        working-directory: admin-web
+        run: npm audit --audit-level=critical
+
+      - name: Validate production Compose file
+        run: docker compose --env-file .env.example -f docker-compose.prod.yml config
+
+  release:
+    needs: verify
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'push' && vars.AUTO_DEPLOY_ENABLED == 'true') ||
+       (github.event_name == 'workflow_dispatch' && inputs.deploy == true))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: deploy-${{ github.sha }}
+    steps:
+      - name: Check out verified source
+        uses: actions/checkout@v4
+
+      - name: Build production images on GitHub
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --pull \
+            --tag "lab-safety-backend:${GITHUB_SHA}" \
+            --file backend/Dockerfile \
+            backend
+          docker build --pull \
+            --tag "lab-safety-web:${GITHUB_SHA}" \
+            --file deploy/web.Dockerfile \
+            .
+
+      - name: Create production bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf release-bundle
+          mkdir -p release-bundle
+
+          docker save \
+            "lab-safety-backend:${GITHUB_SHA}" \
+            "lab-safety-web:${GITHUB_SHA}" \
+            | gzip -1 > release-bundle/images.tar.gz
+
+          cp docker-compose.prod.yml release-bundle/docker-compose.prod.yml
+          printf '%s\n' "$GITHUB_SHA" > release-bundle/release-sha.txt
+
+          tar -C release-bundle -czf lab-safety-production.tar.gz \
+            images.tar.gz \
+            docker-compose.prod.yml \
+            release-sha.txt
+          sha256sum lab-safety-production.tar.gz \
+            > lab-safety-production.tar.gz.sha256
+          cp release-bundle/release-sha.txt ./release-sha.txt
+          ls -lh lab-safety-production.tar.gz*
+
+      - name: Publish immutable production release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" \
+              lab-safety-production.tar.gz \
+              lab-safety-production.tar.gz.sha256 \
+              release-sha.txt \
+              --clobber
+          else
+            gh release create "$RELEASE_TAG" \
+              lab-safety-production.tar.gz \
+              lab-safety-production.tar.gz.sha256 \
+              release-sha.txt \
+              --target "$GITHUB_SHA" \
+              --title "Production ${GITHUB_SHA::12}" \
+              --notes "Automated production bundle for commit ${GITHUB_SHA}." \
+              --latest
+          fi

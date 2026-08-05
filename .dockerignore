@@ -1,0 +1,15 @@
+.git
+.github
+**/node_modules
+**/dist
+**/*.log
+.env
+.env.*
+!.env.example
+backend/data
+backend/uploads
+backend/logs
+runtime
+*.db
+*.sqlite
+*.sqlite3

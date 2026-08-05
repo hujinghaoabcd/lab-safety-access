@@ -1,7 +1,9 @@
 const { dbGet, dbRun } = require('../database/db');
 const { success, error } = require('../utils/response');
+const { hashPassword, verifyPassword, validatePassword } = require('../utils/password');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 /**
  * 获取用户信息
@@ -17,7 +19,6 @@ const getProfile = async (req, res) => {
     }
 
     const { password, ...userInfo } = user;
-    // 转换字段名
     userInfo.studentId = user.student_id;
     userInfo.createdAt = user.created_at;
     userInfo.updatedAt = user.updated_at;
@@ -45,19 +46,19 @@ const updateProfile = async (req, res) => {
 
     if (phone !== undefined) {
       updateFields.push('phone = ?');
-      updateValues.push(phone);
+      updateValues.push(String(phone).trim());
     }
     if (email !== undefined) {
       updateFields.push('email = ?');
-      updateValues.push(email);
+      updateValues.push(String(email).trim());
     }
     if (name !== undefined) {
       updateFields.push('name = ?');
-      updateValues.push(name);
+      updateValues.push(String(name).trim());
     }
     if (department !== undefined) {
       updateFields.push('department = ?');
-      updateValues.push(department);
+      updateValues.push(String(department).trim());
     }
 
     if (updateFields.length === 0) {
@@ -111,7 +112,7 @@ const getProfileStats = async (req, res) => {
     const stats = {
       examCount: examCountResult.count || 0,
       passCount: passCountResult.count || 0,
-      certCount: certCountResult.count || 0,
+      certCount: certCountResult.count || 0
     };
 
     success(res, stats, '获取统计数据成功');
@@ -137,25 +138,30 @@ const changePassword = async (req, res) => {
   }
 
   try {
+    validatePassword(String(newPassword));
     const user = await dbGet('SELECT * FROM users WHERE id = ?', [userId]);
 
     if (!user) {
       return error(res, '用户不存在', 404);
     }
 
-    if (user.password !== oldPassword) {
+    if (!(await verifyPassword(String(oldPassword), user.password))) {
       return error(res, '旧密码不正确', 400);
     }
 
+    const passwordHash = await hashPassword(String(newPassword));
     await dbRun(
       'UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [newPassword, userId]
+      [passwordHash, userId]
     );
 
     success(res, null, '密码修改成功');
   } catch (err) {
+    if (err.message && err.message.includes('密码长度')) {
+      return error(res, err.message, 400);
+    }
     console.error('修改密码错误:', err);
-    error(res, '修改密码失败', 500);
+    return error(res, '修改密码失败', 500);
   }
 };
 
@@ -174,11 +180,20 @@ const changeAvatar = async (req, res) => {
     const uploadRoot = path.join(__dirname, '..', '..', 'uploads', 'avatars');
     await fs.promises.mkdir(uploadRoot, { recursive: true });
 
-    const ext = path.extname(file.originalname || '') || '.jpg';
-    const filename = `u${userId}_${Date.now()}${ext}`;
+    const extensionByMime = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp'
+    };
+    const ext = extensionByMime[file.mimetype];
+    if (!ext) {
+      return error(res, '仅支持 JPG、PNG 或 WebP 图片', 400);
+    }
+
+    const filename = `u${userId}_${Date.now()}_${crypto.randomBytes(6).toString('hex')}${ext}`;
     const filepath = path.join(uploadRoot, filename);
 
-    await fs.promises.writeFile(filepath, file.buffer);
+    await fs.promises.writeFile(filepath, file.buffer, { flag: 'wx' });
 
     const avatarUrl = `/uploads/avatars/${filename}`;
 
@@ -201,4 +216,3 @@ module.exports = {
   changePassword,
   changeAvatar
 };
-
