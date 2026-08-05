@@ -119,6 +119,8 @@ const createApp = () => {
   app.use('/api/qualification', qualificationRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/db-backups', databaseBackupRoutes);
+  // Compatibility alias for early phase-2 clients; both routes require admin JWT.
+  app.use('/api/database-backups', databaseBackupRoutes);
   app.use('/api/banner', bannerRoutes);
   app.use('/api/announcement', announcementRoutes);
 
