@@ -1,23 +1,15 @@
-const XLSX = require('xlsx');
 const { dbQuery } = require('../database/db');
+const { createWorkbookBuffer, safeSpreadsheetText } = require('../utils/spreadsheet');
 const { success, error } = require('../utils/response');
 
 const MAX_EXPORT_ROWS = 50_000;
 
-const safeSpreadsheetText = (value) => {
-  const text = String(value ?? '');
-  return /^[=+\-@]/.test(text) ? `'${text}` : text;
-};
-
-const createWorkbookPayload = (rows, sheetName, filenamePrefix) => {
-  const workbook = XLSX.utils.book_new();
-  const worksheet = XLSX.utils.json_to_sheet(rows);
-  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName.slice(0, 31));
-  const base64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
+const createWorkbookPayload = async (rows, columns, sheetName, filenamePrefix) => {
+  const buffer = await createWorkbookBuffer({ rows, columns, sheetName });
   const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
   return {
     fileName: `${filenamePrefix}_${timestamp}.xlsx`,
-    base64,
+    base64: buffer.toString('base64'),
     rowCount: rows.length
   };
 };
@@ -69,24 +61,44 @@ const exportRecords = async (req, res) => {
     }
 
     const data = rows.map((row, index) => ({
-      序号: index + 1,
-      记录ID: row.id,
-      学号: safeSpreadsheetText(row.studentId),
-      姓名: safeSpreadsheetText(row.studentName),
-      院系: safeSpreadsheetText(row.department),
-      班级: safeSpreadsheetText(row.className),
-      考试名称: safeSpreadsheetText(row.examName),
-      得分: row.score,
-      总分: row.totalScore,
-      百分制成绩: row.totalScore > 0
+      index: index + 1,
+      recordId: row.id,
+      studentId: safeSpreadsheetText(row.studentId),
+      studentName: safeSpreadsheetText(row.studentName),
+      department: safeSpreadsheetText(row.department),
+      className: safeSpreadsheetText(row.className),
+      examName: safeSpreadsheetText(row.examName),
+      score: row.score,
+      totalScore: row.totalScore,
+      percentage: row.totalScore > 0
         ? Math.round((row.score / row.totalScore) * 1000) / 10
         : 0,
-      状态: row.status,
-      用时: safeSpreadsheetText(row.duration),
-      提交时间: safeSpreadsheetText(row.submitTime)
+      status: row.status,
+      duration: safeSpreadsheetText(row.duration),
+      submitTime: safeSpreadsheetText(row.submitTime)
     }));
 
-    return success(res, createWorkbookPayload(data, '考试记录', '考试记录导出'), '导出成功');
+    const columns = [
+      { header: '序号', key: 'index', width: 10 },
+      { header: '记录ID', key: 'recordId', width: 12 },
+      { header: '学号', key: 'studentId', width: 20 },
+      { header: '姓名', key: 'studentName', width: 16 },
+      { header: '院系', key: 'department', width: 24 },
+      { header: '班级', key: 'className', width: 20 },
+      { header: '考试名称', key: 'examName', width: 28 },
+      { header: '得分', key: 'score', width: 10 },
+      { header: '总分', key: 'totalScore', width: 10 },
+      { header: '百分制成绩', key: 'percentage', width: 14 },
+      { header: '状态', key: 'status', width: 12 },
+      { header: '用时', key: 'duration', width: 16 },
+      { header: '提交时间', key: 'submitTime', width: 22 }
+    ];
+
+    return success(
+      res,
+      await createWorkbookPayload(data, columns, '考试记录', '考试记录导出'),
+      '导出成功'
+    );
   } catch (err) {
     console.error('导出考试记录错误:', err);
     return error(res, '导出考试记录失败', 500);
@@ -145,20 +157,38 @@ const exportCertificates = async (req, res) => {
     }
 
     const data = rows.map((row, index) => ({
-      序号: index + 1,
-      证书编号: safeSpreadsheetText(row.certificateNo),
-      学号: safeSpreadsheetText(row.studentId),
-      姓名: safeSpreadsheetText(row.studentName),
-      院系: safeSpreadsheetText(row.department),
-      班级: safeSpreadsheetText(row.className),
-      考试名称: safeSpreadsheetText(row.examName),
-      分数: row.score,
-      等级: row.grade,
-      发证日期: safeSpreadsheetText(row.issueDate),
-      状态: Number(row.status) === 1 ? '有效' : '已撤销'
+      index: index + 1,
+      certificateNo: safeSpreadsheetText(row.certificateNo),
+      studentId: safeSpreadsheetText(row.studentId),
+      studentName: safeSpreadsheetText(row.studentName),
+      department: safeSpreadsheetText(row.department),
+      className: safeSpreadsheetText(row.className),
+      examName: safeSpreadsheetText(row.examName),
+      score: row.score,
+      grade: row.grade,
+      issueDate: safeSpreadsheetText(row.issueDate),
+      status: Number(row.status) === 1 ? '有效' : '已撤销'
     }));
 
-    return success(res, createWorkbookPayload(data, '证书', '证书导出'), '导出成功');
+    const columns = [
+      { header: '序号', key: 'index', width: 10 },
+      { header: '证书编号', key: 'certificateNo', width: 28 },
+      { header: '学号', key: 'studentId', width: 20 },
+      { header: '姓名', key: 'studentName', width: 16 },
+      { header: '院系', key: 'department', width: 24 },
+      { header: '班级', key: 'className', width: 20 },
+      { header: '考试名称', key: 'examName', width: 28 },
+      { header: '分数', key: 'score', width: 10 },
+      { header: '等级', key: 'grade', width: 12 },
+      { header: '发证日期', key: 'issueDate', width: 16 },
+      { header: '状态', key: 'status', width: 12 }
+    ];
+
+    return success(
+      res,
+      await createWorkbookPayload(data, columns, '证书', '证书导出'),
+      '导出成功'
+    );
   } catch (err) {
     console.error('导出证书错误:', err);
     return error(res, '导出证书失败', 500);
@@ -168,5 +198,6 @@ const exportCertificates = async (req, res) => {
 module.exports = {
   exportRecords,
   exportCertificates,
-  safeSpreadsheetText
+  safeSpreadsheetText,
+  createWorkbookPayload
 };
