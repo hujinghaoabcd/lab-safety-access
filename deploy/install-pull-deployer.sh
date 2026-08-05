@@ -10,14 +10,18 @@ fi
 SOURCE_REF="${SOURCE_REF:-main}"
 RAW_BASE="https://raw.githubusercontent.com/hujinghaoabcd/lab-safety-access/${SOURCE_REF}"
 
-$SUDO curl -fL --retry 5 --retry-all-errors \
+$SUDO systemctl disable --now lab-safety-update.timer >/dev/null 2>&1 || true
+$SUDO systemctl stop lab-safety-update.service >/dev/null 2>&1 || true
+$SUDO rm -rf /tmp/lab-safety-release.*
+
+$SUDO curl -fL --retry 5 --retry-delay 3 --retry-all-errors \
   "$RAW_BASE/deploy/release-updater.sh" \
   -o /usr/local/sbin/lab-safety-release-update
 $SUDO chmod 755 /usr/local/sbin/lab-safety-release-update
 
 $SUDO tee /etc/systemd/system/lab-safety-update.service >/dev/null <<'EOF'
 [Unit]
-Description=Update Lab Safety Access from the latest verified GitHub release
+Description=Update Lab Safety Access from verified GitHub chunks
 Wants=network-online.target
 After=network-online.target docker.service
 Requires=docker.service
@@ -25,6 +29,7 @@ Requires=docker.service
 [Service]
 Type=oneshot
 ExecStart=/usr/local/sbin/lab-safety-release-update
+TimeoutStartSec=45min
 Nice=10
 IOSchedulingClass=best-effort
 IOSchedulingPriority=6
@@ -32,11 +37,11 @@ EOF
 
 $SUDO tee /etc/systemd/system/lab-safety-update.timer >/dev/null <<'EOF'
 [Unit]
-Description=Check for Lab Safety Access releases periodically
+Description=Check for Lab Safety Access deployments periodically
 
 [Timer]
 OnBootSec=2min
-OnUnitActiveSec=5min
+OnUnitInactiveSec=5min
 RandomizedDelaySec=30s
 Persistent=true
 Unit=lab-safety-update.service
@@ -46,9 +51,12 @@ WantedBy=timers.target
 EOF
 
 $SUDO systemctl daemon-reload
+$SUDO systemctl reset-failed lab-safety-update.service >/dev/null 2>&1 || true
 $SUDO systemctl enable --now lab-safety-update.timer
-$SUDO systemctl start lab-safety-update.service || true
+$SUDO systemctl start --no-block lab-safety-update.service
 
-printf '\nKeyless pull deployment is installed.\n'
+printf '\nChunked keyless deployment is installed.\n'
+printf 'The first update is running in the background. Follow it with:\n'
+printf '  sudo journalctl -fu lab-safety-update.service\n\n'
 $SUDO systemctl status lab-safety-update.timer --no-pager || true
 $SUDO systemctl list-timers lab-safety-update.timer --no-pager || true
