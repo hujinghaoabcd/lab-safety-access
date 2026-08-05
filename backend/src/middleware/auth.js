@@ -1,6 +1,20 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = 'lab-safety-access-secret-key-2024';
+const DEVELOPMENT_SECRET = 'development-only-change-me';
+
+const getJwtSecret = () => {
+  const configuredSecret = process.env.JWT_SECRET;
+
+  if (configuredSecret && configuredSecret.length >= 32) {
+    return configuredSecret;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('生产环境必须配置至少 32 位的 JWT_SECRET');
+  }
+
+  return DEVELOPMENT_SECRET;
+};
 
 /**
  * JWT 认证中间件
@@ -15,11 +29,19 @@ const authMiddleware = (req, res, next) => {
     });
   }
 
-  const token = authHeader.split(' ')[1];
+  const token = authHeader.slice('Bearer '.length).trim();
+  if (!token) {
+    return res.status(401).json({
+      code: 401,
+      message: '未提供有效的认证令牌'
+    });
+  }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
+    req.user = jwt.verify(token, getJwtSecret(), {
+      algorithms: ['HS256'],
+      issuer: 'lab-safety-access'
+    });
     next();
   } catch (error) {
     return res.status(401).json({
@@ -29,16 +51,32 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
+const requireRole = (...roles) => (req, res, next) => {
+  if (!req.user || !roles.includes(req.user.role)) {
+    return res.status(403).json({
+      code: 403,
+      message: '没有权限执行此操作'
+    });
+  }
+  next();
+};
+
 /**
  * 生成 JWT Token
  */
-const generateToken = (payload) => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
-};
+const generateToken = (payload, options = {}) => jwt.sign(
+  payload,
+  getJwtSecret(),
+  {
+    algorithm: 'HS256',
+    issuer: 'lab-safety-access',
+    expiresIn: options.expiresIn || '8h'
+  }
+);
 
 module.exports = {
   authMiddleware,
+  requireRole,
   generateToken,
-  JWT_SECRET
+  getJwtSecret
 };
-
