@@ -1,6 +1,10 @@
 const { createDatabaseBackup, getMigrationStatus, dbQuery } = require('../database/db');
 const { success, error } = require('../utils/response');
 
+const backupDownloadUrl = (filename) => (
+  `/api/db-backups/${encodeURIComponent(filename)}`
+);
+
 const createBackup = async (_req, res) => {
   try {
     const backup = await createDatabaseBackup({ reason: 'admin_manual' });
@@ -8,7 +12,7 @@ const createBackup = async (_req, res) => {
       filename: backup.filename,
       sha256: backup.sha256,
       sizeBytes: backup.sizeBytes,
-      downloadUrl: `/api/database-backups/${encodeURIComponent(backup.filename)}`,
+      downloadUrl: backupDownloadUrl(backup.filename),
       foreignKeyIssueCount: backup.foreignKeyIssues.length
     }, '数据库备份已创建；在线清空操作已取消');
   } catch (err) {
@@ -28,7 +32,7 @@ const listBackups = async (_req, res) => {
     `);
     return success(res, rows.map((row) => ({
       ...row,
-      downloadUrl: `/api/database-backups/${encodeURIComponent(row.filename)}`
+      downloadUrl: backupDownloadUrl(row.filename)
     })));
   } catch (err) {
     console.error('获取数据库备份列表失败:', err);
@@ -55,5 +59,6 @@ module.exports = {
   createBackup,
   listBackups,
   migrationStatus,
-  rejectOnlineRestore
+  rejectOnlineRestore,
+  backupDownloadUrl
 };
