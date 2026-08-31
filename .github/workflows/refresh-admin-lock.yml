@@ -1,0 +1,50 @@
+name: Refresh Admin Lockfile
+
+on:
+  push:
+    branches:
+      - agent/phase3-session-hardening
+    paths:
+      - admin-web/package.json
+      - .github/workflows/refresh-admin-lock.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-admin-lock-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/phase3-session-hardening
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+          cache: npm
+          cache-dependency-path: admin-web/package-lock.json
+
+      - name: Regenerate package lock only
+        working-directory: admin-web
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Commit synchronized lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- admin-web/package-lock.json; then
+            echo "Lockfile is already synchronized."
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add admin-web/package-lock.json
+          git commit -m "Sync administrator dependency lockfile"
+          git push origin HEAD:agent/phase3-session-hardening
