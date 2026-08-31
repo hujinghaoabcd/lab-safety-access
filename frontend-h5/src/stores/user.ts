@@ -22,12 +22,6 @@ export const useUserStore = defineStore('user', () => {
     authenticated.value = value
   }
 
-  // Transitional compatibility for the older login components. The argument
-  // is deliberately ignored: no JWT or other secret is persisted.
-  function setToken(_unusedToken?: string) {
-    authenticated.value = true
-  }
-
   function setUserInfo(info: UserInfo) {
     userInfo.value = info
     authenticated.value = true
@@ -52,7 +46,6 @@ export const useUserStore = defineStore('user', () => {
     userInfo,
     isLoggedIn,
     setAuthenticated,
-    setToken,
     setUserInfo,
     logout
   }

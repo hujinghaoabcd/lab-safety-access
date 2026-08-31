@@ -151,12 +151,11 @@ const handleLogin = async () => {
     await formRef.value.validate()
     loading.value = true
     
-    const res = await adminApi.login({
+    await adminApi.login({
       username: loginForm.username,
       password: loginForm.password
     })
     
-    localStorage.setItem('admin_token', res.token)
     ElMessage.success('登录成功')
     router.replace('/dashboard')
   } catch (err: any) {
