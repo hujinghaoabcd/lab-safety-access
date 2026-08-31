@@ -16,6 +16,7 @@ const examRoutes = require('./routes/exam');
 const recordsRoutes = require('./routes/records');
 const wrongbookRoutes = require('./routes/wrongbook');
 const qualificationRoutes = require('./routes/qualification');
+const adminAuthRoutes = require('./routes/adminAuth');
 const adminRoutes = require('./routes/admin');
 const databaseBackupRoutes = require('./routes/databaseBackups');
 const bannerRoutes = require('./routes/banner');
@@ -70,12 +71,43 @@ const createApp = () => {
       }
       return callback(new Error('CORS_ORIGIN_DENIED'));
     },
+    credentials: true,
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     maxAge: 600
   }));
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: false, limit: '2mb' }));
+
+  // HttpOnly cookies remove JWT access from browser JavaScript. SameSite=Strict
+  // is the primary CSRF boundary; this request-origin check adds a second
+  // browser-side barrier for all state-changing requests while preserving
+  // Bearer-token scripts and tests that do not send an Origin header.
+  app.use((req, res, next) => {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+
+    const origin = req.get('origin');
+    const fetchSite = String(req.get('sec-fetch-site') || '').toLowerCase();
+    if (!origin) {
+      if (fetchSite === 'cross-site') {
+        return res.status(403).json({ code: 403, message: '跨站请求被拒绝', data: null });
+      }
+      return next();
+    }
+
+    let sameOrigin = false;
+    try {
+      const parsedOrigin = new URL(origin);
+      sameOrigin = parsedOrigin.host === req.get('host');
+    } catch (_) {
+      sameOrigin = false;
+    }
+
+    if (!sameOrigin && !allowedOrigins.includes(origin)) {
+      return res.status(403).json({ code: 403, message: '跨站请求被拒绝', data: null });
+    }
+    return next();
+  });
 
   const uploadsPath = path.join(__dirname, '..', 'uploads');
   const uploadStaticOptions = {
@@ -117,6 +149,9 @@ const createApp = () => {
   app.use('/api/records', recordsRoutes);
   app.use('/api/wrongbook', wrongbookRoutes);
   app.use('/api/qualification', qualificationRoutes);
+  // Session routes are mounted first so the hardened login/logout/session
+  // handlers take precedence over the legacy admin login route during migration.
+  app.use('/api/admin', adminAuthRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/db-backups', databaseBackupRoutes);
   // Compatibility alias for early phase-2 clients; both routes require admin JWT.
