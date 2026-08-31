@@ -61,3 +61,5 @@ jobs:
           deploy_after="$(git ls-remote origin refs/heads/deploy-artifacts | awk '{print $1}')"
           test "$deploy_before" = "$deploy_after"
           echo "Confirmed history purge finished; deploy-artifacts is unchanged."
+
+          # Retry marker: explicit refspec pushes are enabled by the purge tool.
