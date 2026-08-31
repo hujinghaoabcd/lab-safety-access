@@ -25,13 +25,16 @@ const login = (req, res) => {
     role: 'admin'
   };
   const token = generateToken(userInfo, { expiresIn: '4h' });
-  setSessionCookie(res, 'admin', token, { maxAgeSeconds: ADMIN_SESSION_SECONDS });
+  setSessionCookie(res, 'admin', token, {
+    maxAgeSeconds: ADMIN_SESSION_SECONDS,
+    secure: req.secure
+  });
 
   return success(res, { userInfo }, '登录成功');
 };
 
-const logout = (_req, res) => {
-  clearSessionCookie(res, 'admin');
+const logout = (req, res) => {
+  clearSessionCookie(res, 'admin', { secure: req.secure });
   return success(res, null, '登出成功');
 };
 
