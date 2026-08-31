@@ -1,6 +1,11 @@
 import axios from 'axios'
-import type { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import type { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { showToast, showLoadingToast, closeToast } from 'vant'
+import { clearStudentSession } from '@/utils/session'
+
+// One-time cleanup for browsers that used the pre-cookie authentication flow.
+// This value is no longer read or written anywhere in the API client.
+localStorage.removeItem('token')
 
 interface ApiResponse<T = unknown> {
   code: number
@@ -8,22 +13,14 @@ interface ApiResponse<T = unknown> {
   data: T
 }
 
-const service: AxiosInstance = axios.create({
+const service = axios.create({
   baseURL: '/api',
   timeout: 30000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   }
 })
-
-service.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token')
-    if (token) config.headers.Authorization = `Bearer ${token}`
-    return config
-  },
-  (error: AxiosError) => Promise.reject(error)
-)
 
 service.interceptors.response.use(
   (response: AxiosResponse) => {
@@ -37,7 +34,7 @@ service.interceptors.response.use(
       if (payload.code === 401) {
         const url = response.config?.url || ''
         if (!url.includes('/auth/login')) {
-          localStorage.removeItem('token')
+          clearStudentSession()
           window.location.href = '/login'
         }
       }
@@ -61,7 +58,7 @@ service.interceptors.response.use(
         return Promise.reject(new Error(message))
       }
 
-      localStorage.removeItem('token')
+      clearStudentSession()
       showToast({ message: '登录已过期，请重新登录', type: 'fail' })
       setTimeout(() => {
         window.location.href = '/login'

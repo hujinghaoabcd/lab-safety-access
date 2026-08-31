@@ -30,7 +30,6 @@ const handleLogin = async () => {
   loading.value = true
   try {
     const res = await login(formData.value)
-    userStore.setToken(res.data.token)
     userStore.setUserInfo(res.data.userInfo)
     showToast('登录成功')
     router.push('/dashboard')
