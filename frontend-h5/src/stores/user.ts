@@ -12,33 +12,31 @@ export interface UserInfo {
 }
 
 export const useUserStore = defineStore('user', () => {
-  const token = ref<string>(localStorage.getItem('token') || '')
+  const authenticated = ref(false)
   const userInfo = ref<UserInfo | null>(null)
 
-  const isLoggedIn = computed(() => !!token.value)
+  const isLoggedIn = computed(() => authenticated.value)
 
-  function setToken(newToken: string) {
-    token.value = newToken
-    localStorage.setItem('token', newToken)
+  function setAuthenticated(value: boolean) {
+    authenticated.value = value
   }
 
   function setUserInfo(info: UserInfo) {
     userInfo.value = info
+    authenticated.value = true
   }
 
   function logout() {
-    token.value = ''
+    authenticated.value = false
     userInfo.value = null
-    localStorage.removeItem('token')
   }
 
   return {
-    token,
+    authenticated,
     userInfo,
     isLoggedIn,
-    setToken,
+    setAuthenticated,
     setUserInfo,
     logout
   }
 })
-
