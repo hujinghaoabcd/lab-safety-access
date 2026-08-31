@@ -1,0 +1,41 @@
+name: History Purge Dry Run
+
+on:
+  push:
+    branches:
+      - maintenance/history-purge-prep
+    paths:
+      - scripts/purge-sensitive-history.sh
+      - docs/history-purge-runbook.md
+      - .github/workflows/history-purge-dry-run.yml
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out maintenance tooling
+        uses: actions/checkout@v4
+        with:
+          ref: maintenance/history-purge-prep
+
+      - name: Check purge script syntax
+        run: bash -n scripts/purge-sensitive-history.sh
+
+      - name: Install git-filter-repo
+        run: python3 -m pip install --user git-filter-repo
+
+      - name: Rewrite isolated mirror without pushing
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp scripts/purge-sensitive-history.sh /tmp/purge-sensitive-history.sh
+          git clone --mirror "https://github.com/${GITHUB_REPOSITORY}.git" /tmp/lab-safety-access.git
+          cd /tmp/lab-safety-access.git
+          deploy_before="$(git rev-parse refs/heads/deploy-artifacts)"
+          bash /tmp/purge-sensitive-history.sh
+          deploy_after="$(git rev-parse refs/heads/deploy-artifacts)"
+          test "$deploy_before" = "$deploy_after"
+          echo "Dry-run rewrite verified; deploy-artifacts ref unchanged."
