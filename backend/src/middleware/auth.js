@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const { getCookieSessionToken } = require('../utils/sessionCookie');
 
 const DEVELOPMENT_SECRET = 'development-only-change-me';
+const NON_TOKENS = new Set(['null', 'undefined', 'cookie-session']);
 
 const getJwtSecret = () => {
   const configuredSecret = process.env.JWT_SECRET;
@@ -21,7 +22,7 @@ const getRequestToken = (req) => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const bearerToken = authHeader.slice('Bearer '.length).trim();
-    if (bearerToken) return bearerToken;
+    if (bearerToken && !NON_TOKENS.has(bearerToken.toLowerCase())) return bearerToken;
   }
   return getCookieSessionToken(req);
 };
