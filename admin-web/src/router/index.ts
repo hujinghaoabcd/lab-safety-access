@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { checkAdminSession, clearAdminSession } from '@/utils/session'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -76,17 +77,28 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, from) => {
   document.title = `${to.meta.title || '后台管理'} - 实验室安全教育考试系统`
 
-  const token = localStorage.getItem('admin_token')
-  if (to.path !== '/login' && !token) {
-    next('/login')
-  } else if (to.path === '/login' && token) {
-    next('/dashboard')
-  } else {
-    next()
+  // Navigating to the login screen is also the canonical logout path used by
+  // the existing layout. Clear the HttpOnly cookie server-side; no browser
+  // token is needed to decide whether an admin route is protected.
+  if (to.path === '/login') {
+    if (from.path !== '/login') {
+      await fetch('/api/admin/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { Accept: 'application/json' }
+      }).catch(() => {})
+      clearAdminSession()
+      localStorage.removeItem('admin_token')
+    }
+    return true
   }
+
+  const authenticated = await checkAdminSession()
+  if (!authenticated) return '/login'
+  return true
 })
 
 export default router

@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
+const { getCookieSessionToken } = require('../utils/sessionCookie');
 
 const DEVELOPMENT_SECRET = 'development-only-change-me';
+const NON_TOKENS = new Set(['null', 'undefined', 'cookie-session']);
 
 const getJwtSecret = () => {
   const configuredSecret = process.env.JWT_SECRET;
@@ -16,20 +18,24 @@ const getJwtSecret = () => {
   return DEVELOPMENT_SECRET;
 };
 
+const getRequestToken = (req) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const bearerToken = authHeader.slice('Bearer '.length).trim();
+    if (bearerToken && !NON_TOKENS.has(bearerToken.toLowerCase())) return bearerToken;
+  }
+  return getCookieSessionToken(req);
+};
+
 /**
- * JWT 认证中间件
+ * JWT 认证中间件。
+ *
+ * 浏览器优先使用 HttpOnly Cookie；Bearer Token 继续保留给脚本、测试和
+ * 兼容客户端，因此迁移不会破坏现有 API 调用方式。
  */
 const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  const token = getRequestToken(req);
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      code: 401,
-      message: '未提供有效的认证令牌'
-    });
-  }
-
-  const token = authHeader.slice('Bearer '.length).trim();
   if (!token) {
     return res.status(401).json({
       code: 401,
@@ -78,5 +84,6 @@ module.exports = {
   authMiddleware,
   requireRole,
   generateToken,
-  getJwtSecret
+  getJwtSecret,
+  getRequestToken
 };

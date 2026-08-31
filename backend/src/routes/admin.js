@@ -23,7 +23,6 @@ const bannerController = require('../controllers/bannerController');
 const announcementController = require('../controllers/announcementController');
 const learningController = require('../controllers/learningController');
 const { authMiddleware, requireRole } = require('../middleware/auth');
-const { createRateLimit } = require('../middleware/rateLimit');
 
 const memoryStorage = multer.memoryStorage();
 const excelUpload = multer({
@@ -113,11 +112,6 @@ const validateUploadedPdfSignature = async (req, res, next) => {
   }
 };
 
-router.post(
-  '/login',
-  createRateLimit({ windowMs: 15 * 60 * 1000, max: 8 }),
-  secureAdminController.login
-);
 
 router.use(authMiddleware, requireRole('admin'));
 

@@ -1,10 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const { dbGet, dbRun, withTransaction, DB_PATH } = require('../database/db');
-const { generateToken } = require('../middleware/auth');
 const {
   hashPassword,
-  safeEqualText,
   validatePassword
 } = require('../utils/password');
 const { readWorksheetRows } = require('../utils/spreadsheet');
@@ -51,37 +49,6 @@ const normalizeUserRow = (row) => {
     email,
     suppliedPassword
   };
-};
-
-exports.login = (req, res) => {
-  const { username, password } = req.body || {};
-  const configuredUsername = process.env.ADMIN_USERNAME;
-  const configuredPassword = process.env.ADMIN_PASSWORD;
-
-  if (!configuredUsername || !configuredPassword) {
-    return error(res, '管理员账号尚未在服务器环境变量中配置', 503);
-  }
-
-  const valid = safeEqualText(username || '', configuredUsername)
-    && safeEqualText(password || '', configuredPassword);
-  if (!valid) return error(res, '用户名或密码错误', 401);
-
-  const token = generateToken({
-    id: 'admin',
-    username: configuredUsername,
-    name: process.env.ADMIN_DISPLAY_NAME || '系统管理员',
-    role: 'admin'
-  }, { expiresIn: '4h' });
-
-  return success(res, {
-    token,
-    userInfo: {
-      id: 'admin',
-      username: configuredUsername,
-      name: process.env.ADMIN_DISPLAY_NAME || '系统管理员',
-      role: 'admin'
-    }
-  }, '登录成功');
 };
 
 exports.createUser = async (req, res) => {
