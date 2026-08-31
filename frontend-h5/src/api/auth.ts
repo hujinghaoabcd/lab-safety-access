@@ -8,6 +8,9 @@ export interface LoginParams {
 export interface LoginResult {
   code: number
   data: {
+    // Compatibility-only field for the older mobile component. The server no
+    // longer returns a JWT here and the store does not persist this value.
+    token?: string
     userInfo: {
       id: string
       name: string
