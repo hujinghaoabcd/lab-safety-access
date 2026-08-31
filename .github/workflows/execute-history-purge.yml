@@ -1,4 +1,4 @@
-name: Execute Confirmed History Purge
+name: Compute Verified History Purge Map
 
 on:
   push:
@@ -8,14 +8,14 @@ on:
       - .github/workflows/execute-history-purge.yml
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: destructive-history-purge
   cancel-in-progress: false
 
 jobs:
-  purge:
+  map:
     runs-on: ubuntu-latest
     steps:
       - name: Check out purge tooling
@@ -27,21 +27,14 @@ jobs:
       - name: Install git-filter-repo
         run: python3 -m pip install --user git-filter-repo
 
-      - name: Rewrite and force-push confirmed source refs
+      - name: Rewrite isolated mirror and print verified ref map
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           cp scripts/purge-sensitive-history.sh /tmp/purge-sensitive-history.sh
           git clone --mirror "https://github.com/${GITHUB_REPOSITORY}.git" /tmp/lab-safety-access.git
           cd /tmp/lab-safety-access.git
 
-          deploy_before="$(git rev-parse refs/heads/deploy-artifacts)"
-
-          # Recover the confirmed historical value from the already-existing
-          # pre-purge maintenance commit. The workflow source itself therefore
-          # does not retain the old credential or an encoded copy of it.
           historical_admin_password="$(
             git show 4d47af36a109041082d72513e21fa71fb7bc6778:scripts/purge-sensitive-history.sh \
               | sed -n 's/^literal:\(.*\)==>HISTORICAL_ADMIN_PASSWORD_REMOVED$/\1/p' \
@@ -49,17 +42,16 @@ jobs:
           )"
           test -n "$historical_admin_password"
 
-          # Keep the public clone URL out of the repository history while using
-          # the ephemeral Actions token only for the verified force-push phase.
-          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-
           HISTORICAL_ADMIN_PASSWORD_VALUE="$historical_admin_password" \
-          CONFIRM_HISTORY_REWRITE=YES \
-          ALLOW_FORCE_PUSH=YES \
             bash /tmp/purge-sensitive-history.sh
 
-          deploy_after="$(git ls-remote origin refs/heads/deploy-artifacts | awk '{print $1}')"
-          test "$deploy_before" = "$deploy_after"
-          echo "Confirmed history purge finished; deploy-artifacts is unchanged."
-
-          # Retry marker: explicit refspec pushes are enabled by the purge tool.
+          echo "VERIFIED_REWRITTEN_REF_MAP_BEGIN"
+          while IFS= read -r ref; do
+            printf 'PURGE_MAP %s %s\n' "$ref" "$(git rev-parse "$ref")"
+          done < <(
+            git for-each-ref --format='%(refname)' refs/heads refs/tags \
+              | grep -v '^refs/heads/deploy-artifacts$' \
+              | sort
+          )
+          printf 'DEPLOY_ARTIFACTS %s\n' "$(git rev-parse refs/heads/deploy-artifacts)"
+          echo "VERIFIED_REWRITTEN_REF_MAP_END"
