@@ -8,8 +8,8 @@ export interface LoginParams {
 export interface LoginResult {
   code: number
   data: {
-    // Compatibility-only field for the older mobile component. The server no
-    // longer returns a JWT here and the store does not persist this value.
+    // Non-secret compatibility marker for existing login components. The real
+    // JWT is only in the HttpOnly cookie and is never exposed to JavaScript.
     token?: string
     userInfo: {
       id: string
@@ -23,8 +23,15 @@ export interface LoginResult {
 }
 
 // 登录：服务端通过 HttpOnly Cookie 建立会话，不向浏览器脚本返回 JWT。
-export function login(params: LoginParams) {
-  return request.post<LoginResult>('/auth/login', params)
+export async function login(params: LoginParams) {
+  const response = await request.post<LoginResult>('/auth/login', params)
+  return {
+    ...response,
+    data: {
+      ...response.data,
+      token: 'cookie-session'
+    }
+  }
 }
 
 // 获取用户信息
