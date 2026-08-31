@@ -2,8 +2,6 @@ const STUDENT_COOKIE = 'lab_student_session';
 const ADMIN_COOKIE = 'lab_admin_session';
 const COOKIE_PATH = '/api';
 
-const isProduction = () => process.env.NODE_ENV === 'production';
-
 const parseCookies = (cookieHeader = '') => {
   const cookies = {};
   for (const part of String(cookieHeader).split(';')) {
@@ -21,14 +19,18 @@ const parseCookies = (cookieHeader = '') => {
   return cookies;
 };
 
-const serializeCookie = (name, value, { maxAgeSeconds = 0 } = {}) => {
+const serializeCookie = (
+  name,
+  value,
+  { maxAgeSeconds = 0, secure = false } = {}
+) => {
   const attributes = [
     `${name}=${encodeURIComponent(value)}`,
     `Path=${COOKIE_PATH}`,
     'HttpOnly',
     'SameSite=Strict'
   ];
-  if (isProduction()) attributes.push('Secure');
+  if (secure) attributes.push('Secure');
   if (Number.isFinite(maxAgeSeconds)) {
     attributes.push(`Max-Age=${Math.max(0, Math.floor(maxAgeSeconds))}`);
   }
@@ -41,15 +43,15 @@ const cookieNameForRole = (role) => {
   throw new Error('不支持的会话角色');
 };
 
-const setSessionCookie = (res, role, token, { maxAgeSeconds } = {}) => {
+const setSessionCookie = (res, role, token, { maxAgeSeconds, secure = false } = {}) => {
   const name = cookieNameForRole(role);
-  res.append('Set-Cookie', serializeCookie(name, token, { maxAgeSeconds }));
+  res.append('Set-Cookie', serializeCookie(name, token, { maxAgeSeconds, secure }));
   res.setHeader('Cache-Control', 'no-store');
 };
 
-const clearSessionCookie = (res, role) => {
+const clearSessionCookie = (res, role, { secure = false } = {}) => {
   const name = cookieNameForRole(role);
-  res.append('Set-Cookie', serializeCookie(name, '', { maxAgeSeconds: 0 }));
+  res.append('Set-Cookie', serializeCookie(name, '', { maxAgeSeconds: 0, secure }));
   res.setHeader('Cache-Control', 'no-store');
 };
 
@@ -73,6 +75,7 @@ module.exports = {
   ADMIN_COOKIE,
   COOKIE_PATH,
   parseCookies,
+  serializeCookie,
   setSessionCookie,
   clearSessionCookie,
   getCookieSessionToken
