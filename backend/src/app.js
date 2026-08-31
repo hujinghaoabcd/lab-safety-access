@@ -96,14 +96,17 @@ const createApp = () => {
     }
 
     let sameOrigin = false;
+    let localDevelopmentOrigin = false;
     try {
       const parsedOrigin = new URL(origin);
       sameOrigin = parsedOrigin.host === req.get('host');
+      localDevelopmentOrigin = !isProduction()
+        && ['localhost', '127.0.0.1', '::1'].includes(parsedOrigin.hostname);
     } catch (_) {
       sameOrigin = false;
     }
 
-    if (!sameOrigin && !allowedOrigins.includes(origin)) {
+    if (!sameOrigin && !localDevelopmentOrigin && !allowedOrigins.includes(origin)) {
       return res.status(403).json({ code: 403, message: '跨站请求被拒绝', data: null });
     }
     return next();
