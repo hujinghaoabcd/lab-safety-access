@@ -50,7 +50,9 @@ lab-safety-access/
 
 学生密码使用 Node.js `scrypt` 哈希。旧数据库中的明文密码会在用户首次成功登录后自动升级为哈希，不需要停机批量迁移。
 
-除 `/api/admin/login` 外，全部管理端接口都要求有效的 `role=admin` JWT。数据库备份不再通过静态目录公开。
+浏览器登录使用 `HttpOnly + SameSite=Strict` Cookie 保存 JWT，真实 JWT 不再返回给前端 JavaScript，也不再保存到 `localStorage`。后端仍兼容 `Authorization: Bearer ...`，供脚本、自动化测试和非浏览器客户端使用。状态修改请求同时执行来源检查，降低 CSRF 风险。
+
+除 `/api/admin/login` 与幂等的 `/api/admin/logout` 外，管理端业务接口都要求有效的 `role=admin` JWT。数据库备份不再通过静态目录公开。
 
 复制环境变量模板：
 
@@ -62,7 +64,7 @@ cp .env.example .env
 
 ## 本地开发
 
-要求 Node.js 20 或更高版本。
+要求 **Node.js 24.15–24.x**；当前 CI 与生产镜像固定使用 Node.js 24.19。
 
 ### 后端
 
@@ -124,10 +126,11 @@ docker compose --env-file .env -f docker-compose.prod.yml up -d --build
 
 `.github/workflows/ci-deploy.yml` 会执行：
 
-- 后端依赖安装与 JavaScript 语法检查；
-- 学生端生产构建；
-- 管理端生产构建；
-- Docker Compose 配置校验。
+- 后端依赖安装、JavaScript 语法检查和真实 HTTP/SQLite 回归测试；
+- 学生端类型检查与生产构建；
+- 管理端类型检查与生产构建；
+- 高危依赖审计；
+- Docker Compose 配置校验和生产后端镜像构建。
 
 自动部署默认关闭。配置部署 Secrets 后，将仓库变量 `AUTO_DEPLOY_ENABLED` 设为 `true` 才会在 `main` 更新后发布；也可以从 Actions 页面手动触发。
 
@@ -143,6 +146,8 @@ docker compose --env-file .env -f docker-compose.prod.yml up -d --build
 ## 数据与隐私
 
 仓库中只允许保留匿名模板，不应提交真实学生名单、手机号、邮箱、头像、证书、数据库或备份。若敏感文件曾进入 Git 历史，仅在新提交中删除并不足够，还需要清理仓库历史并评估是否需要更换相关凭据。
+
+**当前历史清理仍是单独的维护操作。** `docs/phase2-security-stability.md` 已记录历史学生表格和旧凭据路径的遗留风险；在完成 Git 历史重写前，不应把“当前源码已删除”理解为“历史对象已经从公开仓库消失”。
 
 ## License
 
