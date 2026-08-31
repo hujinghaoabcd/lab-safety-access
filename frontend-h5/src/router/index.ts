@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { isDesktop } from '@/utils/device'
+import { checkStudentSession } from '@/utils/session'
 
 // 动态加载组件：桌面端优先，如果不存在则使用移动端
 const loadComponent = (desktopComponent: () => Promise<any>, mobileComponent: () => Promise<any>) => {
@@ -168,19 +169,19 @@ const router = createRouter({
   routes
 })
 
-// 路由守卫
-router.beforeEach((to, _from, next) => {
-  // 设置页面标题
+router.beforeEach(async (to) => {
   document.title = `${to.meta.title || '实验室安全'} - 实验室安全教育考试系统`
-  
-  // 检查是否需要登录
-  const token = localStorage.getItem('token')
-  if (to.meta.requiresAuth && !token) {
-    next('/login')
-  } else {
-    next()
+
+  if (to.meta.requiresAuth) {
+    const authenticated = await checkStudentSession()
+    if (!authenticated) return '/login'
   }
+
+  if (to.path === '/login' && await checkStudentSession()) {
+    return '/dashboard'
+  }
+
+  return true
 })
 
 export default router
-
