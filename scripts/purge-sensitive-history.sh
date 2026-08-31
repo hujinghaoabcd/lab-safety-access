@@ -18,6 +18,12 @@ if ! command -v git-filter-repo >/dev/null 2>&1 && ! git filter-repo --help >/de
   exit 1
 fi
 
+historical_admin_password="${HISTORICAL_ADMIN_PASSWORD_VALUE:-}"
+if [ -z "$historical_admin_password" ]; then
+  echo "ERROR: HISTORICAL_ADMIN_PASSWORD_VALUE is required for the confirmed historical credential replacement." >&2
+  exit 1
+fi
+
 origin_url="$(git remote get-url origin 2>/dev/null || true)"
 if [ -z "$origin_url" ]; then
   echo "ERROR: origin remote is required." >&2
@@ -48,8 +54,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
-cat > "$replacement_file" <<'EOF'
-literal:HISTORICAL_ADMIN_PASSWORD_REMOVED==>HISTORICAL_ADMIN_PASSWORD_REMOVED
+# The historical password value is supplied only at execution time so the
+# current repository does not retain the leaked literal merely to purge it.
+printf 'literal:%s==>HISTORICAL_ADMIN_PASSWORD_REMOVED\n' "$historical_admin_password" > "$replacement_file"
+cat >> "$replacement_file" <<'EOF'
 regex:process\.env\.JWT_SECRET\s*\|\|\s*['\"][^'\"]*['\"]==>process.env.JWT_SECRET
 regex:process\.env\.ADMIN_PASSWORD\s*\|\|\s*['\"][^'\"]*['\"]==>process.env.ADMIN_PASSWORD
 EOF
@@ -92,7 +100,14 @@ while IFS=' ' read -r _object_id object_path; do
   esac
 done < <(git rev-list --objects "${rewritten_refs[@]}")
 
-secret_regex="BEGIN ([A-Z ]+ )?PRIVATE KEY|HISTORICAL_ADMIN_PASSWORD_REMOVED|process\\.env\\.JWT_SECRET[[:space:]]*\\|\\|[[:space:]]*['\"]|process\\.env\\.ADMIN_PASSWORD[[:space:]]*\\|\\|[[:space:]]*['\"]"
+escaped_historical_admin_password="$(
+  HISTORICAL_ADMIN_PASSWORD_VALUE="$historical_admin_password" python3 - <<'PY'
+import os
+import re
+print(re.escape(os.environ['HISTORICAL_ADMIN_PASSWORD_VALUE']), end='')
+PY
+)"
+secret_regex="BEGIN ([A-Z ]+ )?PRIVATE KEY|${escaped_historical_admin_password}|process\\.env\\.JWT_SECRET[[:space:]]*\\|\\|[[:space:]]*['\"]|process\\.env\\.ADMIN_PASSWORD[[:space:]]*\\|\\|[[:space:]]*['\"]"
 suspected_secret_paths="$(mktemp)"
 trap 'rm -f "$replacement_file" "$suspected_secret_paths"' EXIT
 : > "$suspected_secret_paths"
@@ -119,8 +134,7 @@ fi
 if [ "${CONFIRM_HISTORY_REWRITE:-NO}" != "YES" ] || [ "${ALLOW_FORCE_PUSH:-NO}" != "YES" ]; then
   echo "Local rewrite and verification succeeded."
   echo "Remote refs were NOT modified."
-  echo "To force-push the verified rewrite, rerun from a fresh mirror with:"
-  echo "  CONFIRM_HISTORY_REWRITE=YES ALLOW_FORCE_PUSH=YES bash scripts/purge-sensitive-history.sh"
+  echo "To force-push the verified rewrite, rerun from a fresh mirror with both confirmation variables enabled."
   exit 0
 fi
 
