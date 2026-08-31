@@ -2,7 +2,7 @@ import axios from 'axios'
 import type { AxiosError, AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
 import router from '@/router'
-import { clearAdminSession } from '@/utils/session'
+import { clearAdminSession, markAdminSession } from '@/utils/session'
 
 interface ApiEnvelope<T = unknown> {
   code: number
@@ -26,6 +26,12 @@ request.interceptors.response.use(
   (response: AxiosResponse<ApiEnvelope>) => {
     const payload = response.data
     if (payload.code === 0) {
+      if (response.config?.url?.includes('/admin/login')) {
+        markAdminSession(true)
+        // Existing LoginPage only uses `res.token` as a presence marker. Keep
+        // that UI contract without exposing the real JWT to JavaScript.
+        return { ...(payload.data as object), token: 'cookie-session' }
+      }
       return payload.data
     }
 
