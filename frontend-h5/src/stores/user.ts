@@ -7,7 +7,7 @@ export interface UserInfo {
   name: string
   studentId: string
   department: string
-  avatar?: string
+  avatar?: string | null
   phone?: string
   email?: string
 }
