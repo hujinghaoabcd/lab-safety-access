@@ -1,7 +1,8 @@
 import axios from 'axios'
-import type { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import type { AxiosError, AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
 import router from '@/router'
+import { clearAdminSession } from '@/utils/session'
 
 interface ApiEnvelope<T = unknown> {
   code: number
@@ -9,24 +10,17 @@ interface ApiEnvelope<T = unknown> {
   data: T
 }
 
+// Remove credentials left by the old localStorage authentication flow.
+localStorage.removeItem('admin_token')
+
 // The response interceptor intentionally returns the API payload rather than
 // AxiosResponse. Existing administrator API functions therefore expose the
 // decoded payload while the interceptor callbacks themselves stay typed.
 const request: any = axios.create({
   baseURL: '/api',
-  timeout: 10000
+  timeout: 10000,
+  withCredentials: true
 })
-
-request.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('admin_token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
-  (error: AxiosError) => Promise.reject(error)
-)
 
 request.interceptors.response.use(
   (response: AxiosResponse<ApiEnvelope>) => {
@@ -49,7 +43,7 @@ request.interceptors.response.use(
         return Promise.reject(new Error(message))
       }
 
-      localStorage.removeItem('admin_token')
+      clearAdminSession()
       router.replace('/login')
       ElMessage.error('登录已过期，请重新登录')
       return Promise.reject(new Error('登录已过期，请重新登录'))
