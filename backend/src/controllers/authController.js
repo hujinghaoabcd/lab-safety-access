@@ -42,7 +42,10 @@ const login = async (req, res) => {
       name: user.name,
       role: 'student'
     }, { expiresIn: '8h' });
-    setSessionCookie(res, 'student', token, { maxAgeSeconds: STUDENT_SESSION_SECONDS });
+    setSessionCookie(res, 'student', token, {
+      maxAgeSeconds: STUDENT_SESSION_SECONDS,
+      secure: req.secure
+    });
 
     const userInfo = {
       id: user.id,
@@ -64,8 +67,8 @@ const login = async (req, res) => {
 /**
  * 用户登出
  */
-const logout = (_req, res) => {
-  clearSessionCookie(res, 'student');
+const logout = (req, res) => {
+  clearSessionCookie(res, 'student', { secure: req.secure });
   return success(res, null, '登出成功');
 };
 
