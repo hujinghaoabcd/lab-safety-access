@@ -1,7 +1,10 @@
 const { dbGet, dbRun } = require('../database/db');
 const { generateToken } = require('../middleware/auth');
+const { setSessionCookie, clearSessionCookie } = require('../utils/sessionCookie');
 const { hashPassword, isHashedPassword, verifyPassword } = require('../utils/password');
 const { success, error } = require('../utils/response');
+
+const STUDENT_SESSION_SECONDS = 8 * 60 * 60;
 
 /**
  * 用户登录
@@ -38,7 +41,8 @@ const login = async (req, res) => {
       username: user.student_id,
       name: user.name,
       role: 'student'
-    });
+    }, { expiresIn: '8h' });
+    setSessionCookie(res, 'student', token, { maxAgeSeconds: STUDENT_SESSION_SECONDS });
 
     const userInfo = {
       id: user.id,
@@ -48,7 +52,9 @@ const login = async (req, res) => {
       avatar: user.avatar || null
     };
 
-    return success(res, { token, userInfo }, '登录成功');
+    // JWT deliberately does not appear in the JSON body. Browser JavaScript
+    // cannot read the HttpOnly session cookie even if a page XSS occurs.
+    return success(res, { userInfo }, '登录成功');
   } catch (err) {
     console.error('登录错误:', err);
     return error(res, '登录失败，请稍后重试', 500);
@@ -58,8 +64,9 @@ const login = async (req, res) => {
 /**
  * 用户登出
  */
-const logout = (req, res) => {
-  success(res, null, '登出成功');
+const logout = (_req, res) => {
+  clearSessionCookie(res, 'student');
+  return success(res, null, '登出成功');
 };
 
 module.exports = {
