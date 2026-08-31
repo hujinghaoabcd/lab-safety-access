@@ -64,10 +64,9 @@ const isAdminRequest = (req) => {
 
 const getCookieSessionToken = (req) => {
   const cookies = parseCookies(req.headers && req.headers.cookie);
-  if (isAdminRequest(req)) {
-    return cookies[ADMIN_COOKIE] || cookies[STUDENT_COOKIE] || null;
-  }
-  return cookies[STUDENT_COOKIE] || cookies[ADMIN_COOKIE] || null;
+  return isAdminRequest(req)
+    ? (cookies[ADMIN_COOKIE] || null)
+    : (cookies[STUDENT_COOKIE] || null);
 };
 
 module.exports = {
