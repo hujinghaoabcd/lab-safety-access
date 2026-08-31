@@ -1,41 +1,37 @@
 const { dbQuery, dbGet, dbRun } = require('../database/db');
 const { success, error } = require('../utils/response');
-const https = require('https');
-const http = require('http');
 const { URL } = require('url');
 const path = require('path');
 const fs = require('fs');
 
 /**
- * 获取学习资料列表
+ * 学生端学习资料读取。
+ *
+ * 学习进度、学习时长和远程 PDF 代理的写入/网络逻辑统一由
+ * secureLearningController 提供；本控制器不再保留旧的重复实现，避免
+ * 后续路由重构时误接回已淘汰的非原子进度更新或开放式 PDF 代理。
  */
 const getList = async (req, res) => {
   try {
     const userId = req.user.id;
-    
     const materials = await dbQuery(
       'SELECT * FROM learning_materials ORDER BY order_num ASC, created_at DESC'
     );
-
-    // 获取用户的学习进度
     const progressRecords = await dbQuery(
       'SELECT material_id, progress FROM learning_progress WHERE user_id = ?',
       [userId]
     );
 
     const progressMap = {};
-    progressRecords.forEach(r => {
-      progressMap[r.material_id] = r.progress;
+    progressRecords.forEach((record) => {
+      progressMap[record.material_id] = record.progress;
     });
 
-    const list = materials.map(item => {
+    const list = materials.map((item) => {
       const progress = progressMap[item.id] || 0;
       let status = 'not_started';
-      if (progress >= 100) {
-        status = 'completed';
-      } else if (progress > 0) {
-        status = 'in_progress';
-      }
+      if (progress >= 100) status = 'completed';
+      else if (progress > 0) status = 'in_progress';
 
       return {
         id: item.id,
@@ -50,232 +46,72 @@ const getList = async (req, res) => {
       };
     });
 
-    success(res, list, '获取成功');
+    return success(res, list, '获取成功');
   } catch (err) {
     console.error('获取学习资料列表错误:', err);
-    error(res, '获取学习资料列表失败', 500);
+    return error(res, '获取学习资料列表失败', 500);
   }
 };
 
-/**
- * 获取学习资料详情
- */
 const getDetail = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
-
     const material = await dbGet('SELECT * FROM learning_materials WHERE id = ?', [id]);
-
-    if (!material) {
-      return error(res, '学习资料不存在', 404);
-    }
+    if (!material) return error(res, '学习资料不存在', 404);
 
     const progressRecord = await dbGet(
       'SELECT progress FROM learning_progress WHERE user_id = ? AND material_id = ?',
-      [userId, id]
+      [req.user.id, id]
     );
 
-    const progress = progressRecord ? progressRecord.progress : 0;
-
-    success(res, {
+    return success(res, {
       id: material.id,
       title: material.title,
       description: material.description,
       content: material.content,
       duration: material.duration,
       category: material.category,
-      progress
+      progress: progressRecord ? progressRecord.progress : 0
     }, '获取成功');
   } catch (err) {
     console.error('获取学习资料详情错误:', err);
-    error(res, '获取学习资料详情失败', 500);
+    return error(res, '获取学习资料详情失败', 500);
   }
 };
 
-/**
- * 记录学习进度
- */
-const recordProgress = async (req, res) => {
-  try {
-    const { id, progress } = req.body;
-    const userId = req.user.id;
+const validateMaterialContent = (content) => {
+  const text = String(content || '').trim();
+  if (!text) throw new Error('标题和 PDF 文件不能为空');
 
-    if (!id || progress === undefined) {
-      return error(res, '参数错误', 400);
-    }
-
-    const material = await dbGet('SELECT * FROM learning_materials WHERE id = ?', [id]);
-    if (!material) {
-      return error(res, '学习资料不存在', 404);
-    }
-
-    // 获取当前进度
-    const currentRecord = await dbGet(
-      'SELECT progress FROM learning_progress WHERE user_id = ? AND material_id = ?',
-      [userId, id]
-    );
-
-    const currentProgress = currentRecord ? currentRecord.progress : 0;
-    const newProgress = Math.min(Math.max(progress, currentProgress), 100);
-
-    // 更新或插入进度
-    if (currentRecord) {
-      await dbRun(
-        'UPDATE learning_progress SET progress = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND material_id = ?',
-        [newProgress, userId, id]
-      );
-    } else {
-      await dbRun(
-        'INSERT INTO learning_progress (user_id, material_id, progress) VALUES (?, ?, ?)',
-        [userId, id, newProgress]
-      );
-    }
-
-    success(res, { progress: newProgress }, '进度已更新');
-  } catch (err) {
-    console.error('记录学习进度错误:', err);
-    error(res, '记录学习进度失败', 500);
-  }
-};
-
-/**
- * PDF 代理接口 - 解决 CORS 跨域问题
- */
-const proxyPdf = async (req, res) => {
-  try {
-    const { url: pdfUrl } = req.query;
-    
-    if (!pdfUrl) {
-      return error(res, '缺少 PDF URL 参数', 400);
-    }
-
-    // 验证 URL 格式
-    let parsedUrl;
+  if (/^https?:\/\//i.test(text)) {
+    let parsed;
     try {
-      parsedUrl = new URL(pdfUrl);
-    } catch (err) {
-      return error(res, '无效的 PDF URL', 400);
+      parsed = new URL(text);
+    } catch (_) {
+      throw new Error('PDF 链接格式无效');
     }
-
-    // 只允许 http 和 https 协议
-    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-      return error(res, '不支持的协议', 400);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      throw new Error('PDF 链接必须是 http 或 https 协议');
     }
-
-    // 使用对应的模块获取 PDF
-    const client = parsedUrl.protocol === 'https:' ? https : http;
-
-    const options = {
-      hostname: parsedUrl.hostname,
-      port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
-      path: parsedUrl.pathname + parsedUrl.search,
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    };
-
-    const proxyReq = client.request(options, (proxyRes) => {
-      // 如果状态码不是 200，返回错误
-      if (proxyRes.statusCode !== 200) {
-        return error(res, `获取 PDF 失败: ${proxyRes.statusCode}`, proxyRes.statusCode);
-      }
-
-      // 设置响应头
-      res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'application/pdf');
-      if (proxyRes.headers['content-length']) {
-        res.setHeader('Content-Length', proxyRes.headers['content-length']);
-      }
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-      res.status(200);
-
-      // 流式传输 PDF 数据
-      proxyRes.pipe(res);
-      
-      proxyRes.on('error', (err) => {
-        console.error('PDF 流传输错误:', err);
-        if (!res.headersSent) {
-          error(res, 'PDF 传输失败', 500);
-        }
-      });
-    });
-
-    proxyReq.on('error', (err) => {
-      console.error('PDF 代理请求错误:', err);
-      error(res, '获取 PDF 失败: ' + err.message, 500);
-    });
-
-    proxyReq.end();
-  } catch (err) {
-    console.error('PDF 代理错误:', err);
-    error(res, 'PDF 代理失败', 500);
+    if (!text.toLowerCase().includes('.pdf')) {
+      throw new Error('链接必须是 PDF 文件');
+    }
+    return text;
   }
+
+  if (!text.toLowerCase().endsWith('.pdf')) {
+    throw new Error('文件必须是 PDF 格式');
+  }
+  return text;
 };
 
-/**
- * 记录学习时长
- */
-const recordDuration = async (req, res) => {
-  try {
-    const { id, duration } = req.body;
-    const userId = req.user.id;
-
-    if (!id || duration === undefined) {
-      return error(res, '参数错误', 400);
-    }
-
-    // 确保 id 是数字类型
-    const materialId = parseInt(id, 10);
-    if (isNaN(materialId)) {
-      return error(res, '学习资料 ID 无效', 400);
-    }
-
-    const material = await dbGet('SELECT * FROM learning_materials WHERE id = ?', [materialId]);
-    if (!material) {
-      return error(res, '学习资料不存在', 404);
-    }
-
-    // 获取当前记录
-    const currentRecord = await dbGet(
-      'SELECT study_duration FROM learning_progress WHERE user_id = ? AND material_id = ?',
-      [userId, materialId]
-    );
-
-    const currentDuration = currentRecord ? (currentRecord.study_duration || 0) : 0;
-    const newDuration = currentDuration + duration; // 累加学习时长
-
-    // 更新或插入进度
-    if (currentRecord) {
-      await dbRun(
-        'UPDATE learning_progress SET study_duration = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND material_id = ?',
-        [newDuration, userId, materialId]
-      );
-    } else {
-      await dbRun(
-        'INSERT INTO learning_progress (user_id, material_id, progress, study_duration) VALUES (?, ?, 0, ?)',
-        [userId, materialId, newDuration]
-      );
-    }
-
-    success(res, { duration: newDuration }, '学习时长已更新');
-  } catch (err) {
-    console.error('记录学习时长错误:', err);
-    error(res, '记录学习时长失败', 500);
-  }
-};
-
-/**
- * 管理员：获取学习资料列表（带分页和搜索）
- */
+/** 管理员：获取学习资料列表（带分页和搜索） */
 const adminGetList = async (req, res) => {
   try {
     const { page = 1, pageSize = 10, keyword = '', category = '' } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(pageSize);
-    const limit = parseInt(pageSize);
+    const parsedPage = Math.max(1, Number.parseInt(page, 10) || 1);
+    const parsedPageSize = Math.min(100, Math.max(1, Number.parseInt(pageSize, 10) || 10));
+    const offset = (parsedPage - 1) * parsedPageSize;
 
     let query = 'SELECT * FROM learning_materials WHERE 1=1';
     const params = [];
@@ -285,128 +121,63 @@ const adminGetList = async (req, res) => {
       const keywordPattern = `%${keyword}%`;
       params.push(keywordPattern, keywordPattern);
     }
-
     if (category) {
       query += ' AND category = ?';
       params.push(category);
     }
 
     query += ' ORDER BY order_num ASC, created_at DESC';
-
-    // 获取总数
     const countQuery = query.replace('SELECT *', 'SELECT COUNT(*) as total');
     const countResult = await dbGet(countQuery, params);
-    const total = countResult ? countResult.total : 0;
 
-    // 获取分页数据
     query += ' LIMIT ? OFFSET ?';
-    params.push(limit, offset);
-    const materials = await dbQuery(query, params);
+    const materials = await dbQuery(query, [...params, parsedPageSize, offset]);
 
-    success(res, {
+    return success(res, {
       list: materials,
-      total,
-      page: parseInt(page),
-      pageSize: parseInt(pageSize)
+      total: countResult ? Number(countResult.total || 0) : 0,
+      page: parsedPage,
+      pageSize: parsedPageSize
     }, '获取成功');
   } catch (err) {
     console.error('获取学习资料列表错误:', err);
-    error(res, '获取学习资料列表失败', 500);
+    return error(res, '获取学习资料列表失败', 500);
   }
 };
 
-/**
- * 管理员：创建学习资料
- */
 const adminCreate = async (req, res) => {
   try {
     const { title, description, content, duration, category, orderNum } = req.body;
-
-    if (!title || !content) {
+    if (!String(title || '').trim() || !content) {
       return error(res, '标题和 PDF 文件不能为空', 400);
     }
 
-    // content 既可以是外部 PDF 链接，也可以是本地上传后的访问路径（如：/api/uploads/learning/xxx.pdf）
-    const isHttpUrl = /^https?:\/\//i.test(content);
-    if (isHttpUrl) {
-      // 外部链接：做严格 URL 校验
-      try {
-        const url = new URL(content);
-        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-          return error(res, 'PDF 链接必须是 http 或 https 协议', 400);
-        }
-        if (!content.toLowerCase().includes('.pdf')) {
-          return error(res, '链接必须是 PDF 文件', 400);
-        }
-      } catch (err) {
-        return error(res, 'PDF 链接格式无效', 400);
-      }
-    } else {
-      // 本地上传文件：只校验后缀
-      if (!content.toLowerCase().endsWith('.pdf')) {
-        return error(res, '文件必须是 PDF 格式', 400);
-      }
-    }
-
+    const validatedContent = validateMaterialContent(content);
     const result = await dbRun(
       'INSERT INTO learning_materials (title, description, content, duration, category, order_num) VALUES (?, ?, ?, ?, ?, ?)',
-      [title, description || '', content, duration || '', category || '', orderNum || 0]
+      [String(title).trim(), description || '', validatedContent, duration || '', category || '', orderNum || 0]
     );
-
-    success(res, { id: result.lastID }, '创建成功');
+    return success(res, { id: result.lastID }, '创建成功');
   } catch (err) {
+    if (/PDF|文件必须|标题和/.test(err.message || '')) return error(res, err.message, 400);
     console.error('创建学习资料错误:', err);
-    error(res, '创建学习资料失败', 500);
+    return error(res, '创建学习资料失败', 500);
   }
 };
 
-/**
- * 管理员：更新学习资料
- */
 const adminUpdate = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, content, duration, category, orderNum } = req.body;
+    const material = await dbGet('SELECT id FROM learning_materials WHERE id = ?', [id]);
+    if (!material) return error(res, '学习资料不存在', 404);
+    if (title !== undefined && !String(title).trim()) return error(res, '标题不能为空', 400);
 
-    const material = await dbGet('SELECT * FROM learning_materials WHERE id = ?', [id]);
-    if (!material) {
-      return error(res, '学习资料不存在', 404);
-    }
-
-    if (title !== undefined && !title) {
-      return error(res, '标题不能为空', 400);
-    }
-
-    if (content !== undefined) {
-      const isHttpUrl = /^https?:\/\//i.test(content);
-      if (isHttpUrl) {
-        // 外部链接：严格校验
-        try {
-          const url = new URL(content);
-          if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-            return error(res, 'PDF 链接必须是 http 或 https 协议', 400);
-          }
-          if (!content.toLowerCase().includes('.pdf')) {
-            return error(res, '链接必须是 PDF 文件', 400);
-          }
-        } catch (err) {
-          return error(res, 'PDF 链接格式无效', 400);
-        }
-      } else {
-        // 本地上传文件：只校验后缀
-        if (!content.toLowerCase().endsWith('.pdf')) {
-          return error(res, '文件必须是 PDF 格式', 400);
-        }
-      }
-    }
-
-    // 构建更新字段
     const updates = [];
     const params = [];
-    
     if (title !== undefined) {
       updates.push('title = ?');
-      params.push(title);
+      params.push(String(title).trim());
     }
     if (description !== undefined) {
       updates.push('description = ?');
@@ -414,7 +185,7 @@ const adminUpdate = async (req, res) => {
     }
     if (content !== undefined) {
       updates.push('content = ?');
-      params.push(content);
+      params.push(validateMaterialContent(content));
     }
     if (duration !== undefined) {
       updates.push('duration = ?');
@@ -428,106 +199,70 @@ const adminUpdate = async (req, res) => {
       updates.push('order_num = ?');
       params.push(orderNum);
     }
-    
-    if (updates.length === 0) {
-      return error(res, '没有要更新的字段', 400);
-    }
-    
-    params.push(id);
-    await dbRun(
-      `UPDATE learning_materials SET ${updates.join(', ')} WHERE id = ?`,
-      params
-    );
 
-    success(res, {}, '更新成功');
+    if (!updates.length) return error(res, '没有要更新的字段', 400);
+    params.push(id);
+    await dbRun(`UPDATE learning_materials SET ${updates.join(', ')} WHERE id = ?`, params);
+    return success(res, {}, '更新成功');
   } catch (err) {
+    if (/PDF|文件必须/.test(err.message || '')) return error(res, err.message, 400);
     console.error('更新学习资料错误:', err);
-    error(res, '更新学习资料失败', 500);
+    return error(res, '更新学习资料失败', 500);
   }
 };
 
-/**
- * 管理员：删除学习资料
- */
 const adminDelete = async (req, res) => {
   try {
     const { id } = req.params;
+    const material = await dbGet('SELECT id FROM learning_materials WHERE id = ?', [id]);
+    if (!material) return error(res, '学习资料不存在', 404);
 
-    const material = await dbGet('SELECT * FROM learning_materials WHERE id = ?', [id]);
-    if (!material) {
-      return error(res, '学习资料不存在', 404);
-    }
-
-    // 删除学习资料及相关进度记录
     await dbRun('DELETE FROM learning_progress WHERE material_id = ?', [id]);
     await dbRun('DELETE FROM learning_materials WHERE id = ?', [id]);
-
-    success(res, {}, '删除成功');
+    return success(res, {}, '删除成功');
   } catch (err) {
     console.error('删除学习资料错误:', err);
-    error(res, '删除学习资料失败', 500);
+    return error(res, '删除学习资料失败', 500);
   }
 };
 
-/**
- * 管理员：批量删除学习资料
- */
 const adminBatchDelete = async (req, res) => {
   try {
     const { ids } = req.body;
-
-    if (!Array.isArray(ids) || ids.length === 0) {
+    if (!Array.isArray(ids) || !ids.length) {
       return error(res, '请选择要删除的学习资料', 400);
     }
 
     const placeholders = ids.map(() => '?').join(',');
-    
-    // 删除学习进度记录
     await dbRun(`DELETE FROM learning_progress WHERE material_id IN (${placeholders})`, ids);
-    // 删除学习资料
     await dbRun(`DELETE FROM learning_materials WHERE id IN (${placeholders})`, ids);
-
-    success(res, {}, '批量删除成功');
+    return success(res, {}, '批量删除成功');
   } catch (err) {
     console.error('批量删除学习资料错误:', err);
-    error(res, '批量删除学习资料失败', 500);
+    return error(res, '批量删除学习资料失败', 500);
   }
 };
 
 /**
- * 管理员：上传学习资料 PDF 文件
- * 使用 /api/uploads 静态目录对外提供访问
+ * 管理员上传学习资料 PDF。文件继续通过 /api/uploads 公开访问，这是本项目
+ * 当前明确保留的产品行为；上传签名校验仍由 admin 路由中间件负责。
  */
 const adminUploadPdf = async (req, res) => {
   try {
     const file = req.file;
-    if (!file) {
-      return error(res, '未接收到文件', 400);
-    }
+    if (!file) return error(res, '未接收到文件', 400);
 
-    // 基本类型校验
     const mime = file.mimetype || '';
     const originalName = file.originalname || '';
-    if (
-      !mime.includes('pdf') &&
-      !originalName.toLowerCase().endsWith('.pdf')
-    ) {
-      // 删除已保存的非 PDF 文件
-      if (file.path && fs.existsSync(file.path)) {
-        fs.unlink(file.path, () => {});
-      }
+    if (!mime.includes('pdf') && !originalName.toLowerCase().endsWith('.pdf')) {
+      if (file.path && fs.existsSync(file.path)) fs.unlink(file.path, () => {});
       return error(res, '只支持上传 PDF 文件', 400);
     }
 
-    // 生成对外访问 URL
-    // multer 的 diskStorage 已经将文件保存到 uploads/learning 目录
-    // 这里需要从绝对路径推算出相对路径
     const uploadsRoot = path.resolve(__dirname, '..', '..', 'uploads');
     const absolutePath = path.resolve(file.path);
     let relativePath = path.relative(uploadsRoot, absolutePath);
-    // 统一使用正斜杠
     relativePath = relativePath.split(path.sep).join('/');
-
     const fileUrl = `/api/uploads/${relativePath}`;
 
     return success(res, { url: fileUrl, name: originalName }, '上传成功');
@@ -540,13 +275,11 @@ const adminUploadPdf = async (req, res) => {
 module.exports = {
   getList,
   getDetail,
-  recordProgress,
-  recordDuration,
-  proxyPdf,
   adminGetList,
   adminCreate,
   adminUpdate,
   adminDelete,
   adminBatchDelete,
-  adminUploadPdf
+  adminUploadPdf,
+  validateMaterialContent
 };
