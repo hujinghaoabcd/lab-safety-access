@@ -1,4 +1,5 @@
 import { request } from './request'
+import { markStudentSession } from '@/utils/session'
 
 export interface LoginParams {
   username: string
@@ -25,6 +26,7 @@ export interface LoginResult {
 // 登录：服务端通过 HttpOnly Cookie 建立会话，不向浏览器脚本返回 JWT。
 export async function login(params: LoginParams) {
   const response = await request.post<LoginResult>('/auth/login', params)
+  markStudentSession(true)
   return {
     ...response,
     data: {
