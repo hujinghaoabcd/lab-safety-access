@@ -1,0 +1,31 @@
+name: Sync History Maintenance Base
+
+on:
+  push:
+    branches:
+      - maintenance/history-purge-prep
+    paths:
+      - .github/workflows/sync-history-maintenance-base.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out maintenance branch
+        uses: actions/checkout@v4
+        with:
+          ref: maintenance/history-purge-prep
+          fetch-depth: 0
+
+      - name: Merge Phase 3 branch into maintenance branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin agent/phase3-session-hardening
+          git merge --no-edit origin/agent/phase3-session-hardening
+          git push origin HEAD:maintenance/history-purge-prep
