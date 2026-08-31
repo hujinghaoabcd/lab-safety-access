@@ -139,6 +139,9 @@ if [ "${CONFIRM_HISTORY_REWRITE:-NO}" != "YES" ] || [ "${ALLOW_FORCE_PUSH:-NO}" 
 fi
 
 echo "Both destructive-operation confirmations are present; force-pushing rewritten refs."
+# A --mirror clone configures origin as a mirror remote. Disable that push mode
+# before sending explicit per-ref refspecs; otherwise Git rejects the refspecs.
+git config remote.origin.mirror false
 for ref in "${rewritten_refs[@]}"; do
   git push --force origin "$ref:$ref"
 done
