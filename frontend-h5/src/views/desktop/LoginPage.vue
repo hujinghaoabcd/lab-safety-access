@@ -114,29 +114,21 @@ const handleLogin = async () => {
         })
         const data = resp?.data ?? resp
         
-        if (data.token || data.access_token) {
-          // 设置 token
-          userStore.setToken(data.token || data.access_token)
-          
-          // 设置用户信息
-          if (data.userInfo || data.user) {
-            const user = data.userInfo || data.user
-            userStore.setUserInfo({
-              id: String(user?.id ?? ''),
-              name: user?.name || '',
-              studentId: user?.studentId || '',
-              department: user?.department || '',
-              avatar: resolveAvatarUrl(user?.avatar) || '',
-              phone: user?.phone || '',
-              email: user?.email || ''
-            } as any)
-          }
-          
-          ElMessage.success('登录成功')
-          router.push('/dashboard')
-        } else {
-          throw new Error('登录失败，请重试')
-        }
+        const user = data.userInfo || data.user
+        if (!user) throw new Error('登录成功但未返回用户信息')
+
+        userStore.setUserInfo({
+          id: String(user?.id ?? ''),
+          name: user?.name || '',
+          studentId: user?.studentId || '',
+          department: user?.department || '',
+          avatar: resolveAvatarUrl(user?.avatar) || '',
+          phone: user?.phone || '',
+          email: user?.email || ''
+        } as any)
+
+        ElMessage.success('登录成功')
+        router.push('/dashboard')
       } catch (err: any) {
         ElMessage.error(err?.message || '登录失败')
       } finally {
