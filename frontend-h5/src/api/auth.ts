@@ -8,18 +8,18 @@ export interface LoginParams {
 export interface LoginResult {
   code: number
   data: {
-    token: string
     userInfo: {
       id: string
       name: string
       studentId: string
       department: string
+      avatar?: string | null
     }
   }
   message: string
 }
 
-// 登录
+// 登录：服务端通过 HttpOnly Cookie 建立会话，不向浏览器脚本返回 JWT。
 export function login(params: LoginParams) {
   return request.post<LoginResult>('/auth/login', params)
 }
@@ -57,4 +57,3 @@ export function uploadAvatar(file: File) {
 export function logout() {
   return request.post('/auth/logout')
 }
-
