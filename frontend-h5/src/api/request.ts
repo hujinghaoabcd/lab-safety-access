@@ -3,6 +3,10 @@ import type { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { showToast, showLoadingToast, closeToast } from 'vant'
 import { clearStudentSession } from '@/utils/session'
 
+// One-time cleanup for browsers that used the pre-cookie authentication flow.
+// This value is no longer read or written anywhere in the API client.
+localStorage.removeItem('token')
+
 interface ApiResponse<T = unknown> {
   code: number
   message?: string
