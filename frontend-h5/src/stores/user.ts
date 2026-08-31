@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { clearStudentSession } from '@/utils/session'
 
 export interface UserInfo {
   id: string
@@ -21,8 +22,8 @@ export const useUserStore = defineStore('user', () => {
     authenticated.value = value
   }
 
-  // Transitional compatibility for the older mobile login component. The
-  // argument is deliberately ignored: no JWT or other secret is persisted.
+  // Transitional compatibility for the older login components. The argument
+  // is deliberately ignored: no JWT or other secret is persisted.
   function setToken(_unusedToken?: string) {
     authenticated.value = true
   }
@@ -35,6 +36,15 @@ export const useUserStore = defineStore('user', () => {
   function logout() {
     authenticated.value = false
     userInfo.value = null
+    clearStudentSession()
+    // Existing mobile/desktop UI calls this synchronous store method. Fire the
+    // idempotent server logout in the background so the HttpOnly cookie is
+    // cleared without forcing a broad UI refactor in this security change.
+    void fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { Accept: 'application/json' }
+    }).catch(() => {})
   }
 
   return {
