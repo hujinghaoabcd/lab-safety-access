@@ -1,0 +1,74 @@
+name: Cleanup Session Compatibility
+
+on:
+  push:
+    branches:
+      - agent/phase3-session-hardening
+    paths:
+      - .github/workflows/cleanup-session-compat.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/phase3-session-hardening
+
+      - name: Remove retired token compatibility paths
+        shell: python
+        run: |
+          from pathlib import Path
+
+          replacements = {
+              'frontend-h5/src/stores/user.ts': [
+                  ("\n  // Transitional compatibility for the older login components. The argument\n  // is deliberately ignored: no JWT or other secret is persisted.\n  function setToken(_unusedToken?: string) {\n    authenticated.value = true\n  }\n", ""),
+                  ("    setAuthenticated,\n    setToken,\n    setUserInfo,", "    setAuthenticated,\n    setUserInfo,"),
+              ],
+              'frontend-h5/src/views/LoginPage.vue': [
+                  ("    userStore.setToken(res.data.token)\n", ""),
+              ],
+              'frontend-h5/src/views/desktop/LoginPage.vue': [
+                  ("        if (data.token || data.access_token) {\n          // 设置 token\n          userStore.setToken(data.token || data.access_token)\n          \n          // 设置用户信息\n          if (data.userInfo || data.user) {\n            const user = data.userInfo || data.user\n            userStore.setUserInfo({\n              id: String(user?.id ?? ''),\n              name: user?.name || '',\n              studentId: user?.studentId || '',\n              department: user?.department || '',\n              avatar: resolveAvatarUrl(user?.avatar) || '',\n              phone: user?.phone || '',\n              email: user?.email || ''\n            } as any)\n          }\n          \n          ElMessage.success('登录成功')\n          router.push('/dashboard')\n        } else {\n          throw new Error('登录失败，请重试')\n        }",
+                   "        const user = data.userInfo || data.user\n        if (!user) throw new Error('登录成功但未返回用户信息')\n\n        userStore.setUserInfo({\n          id: String(user?.id ?? ''),\n          name: user?.name || '',\n          studentId: user?.studentId || '',\n          department: user?.department || '',\n          avatar: resolveAvatarUrl(user?.avatar) || '',\n          phone: user?.phone || '',\n          email: user?.email || ''\n        } as any)\n\n        ElMessage.success('登录成功')\n        router.push('/dashboard')"),
+              ],
+              'admin-web/src/views/LoginPage.vue': [
+                  ("    localStorage.setItem('admin_token', res.token)\n", ""),
+                  ("    const res = await adminApi.login({\n", "    await adminApi.login({\n"),
+              ],
+              'backend/src/routes/admin.js': [
+                  ("const { createRateLimit } = require('../middleware/rateLimit');\n", ""),
+                  ("\nrouter.post(\n  '/login',\n  createRateLimit({ windowMs: 15 * 60 * 1000, max: 8 }),\n  secureAdminController.login\n);\n", "\n"),
+              ],
+              'backend/src/controllers/secureAdminController.js': [
+                  ("const { generateToken } = require('../middleware/auth');\n", ""),
+                  ("  hashPassword,\n  safeEqualText,\n  validatePassword\n", "  hashPassword,\n  validatePassword\n"),
+                  ("\nexports.login = (req, res) => {\n  const { username, password } = req.body || {};\n  const configuredUsername = process.env.ADMIN_USERNAME;\n  const configuredPassword = process.env.ADMIN_PASSWORD;\n\n  if (!configuredUsername || !configuredPassword) {\n    return error(res, '管理员账号尚未在服务器环境变量中配置', 503);\n  }\n\n  const valid = safeEqualText(username || '', configuredUsername)\n    && safeEqualText(password || '', configuredPassword);\n  if (!valid) return error(res, '用户名或密码错误', 401);\n\n  const token = generateToken({\n    id: 'admin',\n    username: configuredUsername,\n    name: process.env.ADMIN_DISPLAY_NAME || '系统管理员',\n    role: 'admin'\n  }, { expiresIn: '4h' });\n\n  return success(res, {\n    token,\n    userInfo: {\n      id: 'admin',\n      username: configuredUsername,\n      name: process.env.ADMIN_DISPLAY_NAME || '系统管理员',\n      role: 'admin'\n    }\n  }, '登录成功');\n};\n", ""),
+              ],
+          }
+
+          for filename, pairs in replacements.items():
+              path = Path(filename)
+              text = path.read_text(encoding='utf-8')
+              original = text
+              for old, new in pairs:
+                  if old not in text:
+                      raise SystemExit(f'Expected compatibility pattern not found in {filename}')
+                  text = text.replace(old, new, 1)
+              if text == original:
+                  raise SystemExit(f'No changes applied to {filename}')
+              path.write_text(text, encoding='utf-8')
+
+      - name: Commit cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add frontend-h5/src/stores/user.ts frontend-h5/src/views/LoginPage.vue frontend-h5/src/views/desktop/LoginPage.vue admin-web/src/views/LoginPage.vue backend/src/routes/admin.js backend/src/controllers/secureAdminController.js
+          git commit -m "Remove retired browser token compatibility paths"
+          git push origin HEAD:agent/phase3-session-hardening
