@@ -1,0 +1,65 @@
+@media (min-width: 768px) {
+  /* 考试中心：保留卡片形式，但将卡片改为更瘦长的桌面比例。 */
+  .desktop-exam-center .exam-list {
+    grid-template-columns: repeat(auto-fill, 326px) !important;
+    justify-content: start !important;
+    align-items: stretch !important;
+    gap: 20px !important;
+  }
+
+  .desktop-exam-center .exam-card {
+    width: 326px !important;
+    min-height: 370px !important;
+    padding: 22px 22px 18px !important;
+    box-shadow: 0 4px 14px rgba(31, 45, 61, 0.08) !important;
+  }
+
+  .desktop-exam-center .exam-card-head {
+    min-height: 56px !important;
+  }
+
+  .desktop-exam-center .exam-desc {
+    min-height: 92px !important;
+    max-height: 92px !important;
+    margin: 18px 0 20px !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 4 !important;
+    overflow: hidden !important;
+    line-height: 1.7 !important;
+    word-break: break-word !important;
+  }
+
+  .desktop-exam-center .exam-meta {
+    padding: 14px 12px !important;
+  }
+
+  .desktop-exam-center .meta-item {
+    grid-template-columns: 18px 1fr !important;
+    column-gap: 6px !important;
+  }
+
+  .desktop-exam-center .meta-item strong {
+    font-size: 13px !important;
+  }
+
+  .desktop-exam-center .exam-card-foot {
+    min-height: 62px !important;
+    padding-top: 16px !important;
+  }
+
+  .desktop-exam-center .exam-action {
+    min-width: 92px !important;
+    height: 34px !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1050px) {
+  .desktop-exam-center .exam-list {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+  }
+
+  .desktop-exam-center .exam-card {
+    width: auto !important;
+  }
+}
