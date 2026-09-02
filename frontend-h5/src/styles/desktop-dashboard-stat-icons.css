@@ -2,16 +2,16 @@
   /* 首页统计图标：保留现有数据结构，仅增强视觉层次并修正垂直位置。 */
   .desktop-dashboard .stat-icon-frame {
     position: relative;
-    width: 48px !important;
-    height: 48px !important;
-    flex: 0 0 48px !important;
+    width: 46px !important;
+    height: 46px !important;
+    flex: 0 0 46px !important;
     border: 0 !important;
     border-radius: 50% !important;
     display: flex;
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    transform: translateY(7px);
+    transform: translateY(5px);
   }
 
   /* 双层圆形徽章，比单纯线性图标更有层次，但不过度装饰。 */
@@ -31,8 +31,8 @@
     position: absolute;
     right: 1px;
     bottom: 1px;
-    width: 9px;
-    height: 9px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: currentColor;
     box-shadow: 0 0 0 3px #fff;
@@ -42,7 +42,7 @@
   .desktop-dashboard .stat-icon-frame .el-icon {
     position: relative;
     z-index: 1;
-    font-size: 24px !important;
+    font-size: 23px !important;
     line-height: 1;
   }
 
@@ -76,8 +76,13 @@
     box-shadow: 0 0 0 1px #d1c8f1 inset, 0 0 0 4px rgba(111, 91, 213, 0.06);
   }
 
-  /* 图标下移后，文字组保持原有位置，视觉中心会更平衡。 */
+  /* 图标和文字保持同一视觉中心。 */
   .desktop-dashboard .stat-content {
-    gap: 15px !important;
+    gap: 14px !important;
+  }
+
+  /* 两个进度型统计项稍微延长进度条，让整组信息更完整。 */
+  .desktop-dashboard .stat-progress {
+    width: 88% !important;
   }
 }
