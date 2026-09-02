@@ -1,0 +1,231 @@
+@media (min-width: 768px) {
+  /* 桌面端正式答题页：保持现有结构，只统一比例、直角和层级。 */
+  .desktop-exam {
+    gap: 0;
+  }
+
+  .desktop-exam .exam-toolbar {
+    min-height: 64px;
+    padding: 12px 22px;
+    margin-bottom: 16px;
+    border: 1px solid #e2e7ee;
+    border-radius: 0 !important;
+    box-shadow: 0 3px 12px rgba(31, 45, 61, 0.055);
+  }
+
+  .desktop-exam .toolbar-left {
+    gap: 18px;
+  }
+
+  .desktop-exam .progress-info {
+    min-width: 58px;
+    gap: 2px;
+  }
+
+  .desktop-exam .progress-label {
+    color: #8a97a8;
+    font-size: 12px;
+  }
+
+  .desktop-exam .progress-value {
+    color: #243446;
+    font-size: 14px;
+  }
+
+  .desktop-exam .toolbar-left .el-progress {
+    width: 180px !important;
+  }
+
+  .desktop-exam .toolbar-left .el-progress-bar__outer,
+  .desktop-exam .toolbar-left .el-progress-bar__inner {
+    border-radius: 0 !important;
+  }
+
+  .desktop-exam .toolbar-right {
+    gap: 12px;
+  }
+
+  .desktop-exam .timer {
+    height: 38px;
+    padding: 0 14px;
+    border: 1px solid #d9eaff;
+    border-radius: 0 !important;
+    background: #f2f7fd;
+    box-shadow: none;
+    font-size: 15px;
+  }
+
+  .desktop-exam .timer.warning {
+    border-color: #f5c2c7;
+    background: #fff4f4;
+  }
+
+  .desktop-exam .toolbar-right .el-button {
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 0 !important;
+  }
+
+  .desktop-exam .exam-content {
+    margin-bottom: 16px;
+  }
+
+  .desktop-exam .question-panel,
+  .desktop-exam .nav-panel,
+  .desktop-exam .exam-footer {
+    border: 1px solid #e2e7ee;
+    border-radius: 0 !important;
+    box-shadow: 0 3px 12px rgba(31, 45, 61, 0.055);
+  }
+
+  .desktop-exam .question-panel {
+    min-height: 500px;
+  }
+
+  .desktop-exam .question-header {
+    min-height: 58px;
+    padding: 0 22px;
+    background: #fff;
+    border-bottom: 1px solid #e7ebf0;
+  }
+
+  .desktop-exam .question-num {
+    color: #243446;
+    font-size: 15px;
+  }
+
+  .desktop-exam .question-header .el-tag {
+    height: 25px;
+    padding: 0 9px;
+    border-radius: 0 !important;
+  }
+
+  .desktop-exam .question-body {
+    padding: 26px 26px 30px;
+  }
+
+  .desktop-exam .question-text {
+    margin-bottom: 24px;
+    color: #243446;
+    font-size: 16px;
+    line-height: 1.85;
+  }
+
+  .desktop-exam .options {
+    gap: 11px;
+  }
+
+  .desktop-exam .option-item {
+    min-height: 58px;
+    padding: 13px 16px;
+    border: 1px solid #e6ebf1;
+    border-radius: 0 !important;
+    background: #f7f9fc;
+    transition: border-color 0.16s ease, background 0.16s ease;
+  }
+
+  .desktop-exam .option-item:hover {
+    border-color: #9fc8fb;
+    background: #f3f8fe;
+  }
+
+  .desktop-exam .option-item.selected {
+    border-color: #0475FA;
+    background: #edf6ff;
+  }
+
+  .desktop-exam .option-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 0 !important;
+  }
+
+  .desktop-exam .option-text {
+    color: #344255;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .desktop-exam .nav-panel {
+    padding: 20px 20px 18px;
+    top: 80px;
+  }
+
+  .desktop-exam .nav-title {
+    margin-bottom: 16px;
+    color: #243446;
+    font-size: 15px;
+  }
+
+  .desktop-exam .nav-grid {
+    gap: 9px;
+  }
+
+  .desktop-exam .nav-item,
+  .desktop-exam .card-item,
+  .desktop-exam .dot {
+    border-radius: 0 !important;
+  }
+
+  .desktop-exam .nav-item {
+    width: 37px;
+    height: 37px;
+    border: 1px solid transparent;
+    background: #f4f6f9;
+  }
+
+  .desktop-exam .nav-item:hover {
+    border-color: #0475FA;
+  }
+
+  .desktop-exam .nav-item.current {
+    border-width: 2px;
+  }
+
+  .desktop-exam .nav-legend {
+    margin-top: 2px;
+    padding-top: 14px;
+  }
+
+  .desktop-exam .exam-footer {
+    min-height: 64px;
+    padding: 12px 20px;
+  }
+
+  .desktop-exam .exam-footer .el-button {
+    min-width: 116px;
+    height: 38px;
+    padding: 0 20px;
+    border-radius: 0 !important;
+  }
+
+  /* 答题卡 Dialog 与其他桌面弹窗保持一致。 */
+  .el-dialog:has(.answer-card-grid) {
+    border-radius: 0 !important;
+    overflow: hidden;
+  }
+
+  .el-dialog:has(.answer-card-grid) .el-dialog__header {
+    margin: 0;
+    padding: 15px 20px;
+    background: #0475FA;
+  }
+
+  .el-dialog:has(.answer-card-grid) .el-dialog__title,
+  .el-dialog:has(.answer-card-grid) .el-dialog__headerbtn .el-dialog__close {
+    color: #fff;
+  }
+
+  .el-dialog:has(.answer-card-grid) .el-dialog__body {
+    padding: 22px 24px 18px;
+  }
+
+  .el-dialog:has(.answer-card-grid) .el-dialog__footer {
+    padding: 12px 24px 16px;
+    border-top: 1px solid #e8ecf2;
+  }
+
+  .el-dialog:has(.answer-card-grid) .el-button {
+    border-radius: 0 !important;
+  }
+}
