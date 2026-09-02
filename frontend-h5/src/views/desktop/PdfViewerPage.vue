@@ -47,13 +47,13 @@
         ref="containerRef"
         class="pdf-container"
         @scroll="handleScroll"
-      />
+      ></div>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, shallowRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
@@ -80,7 +80,11 @@ const totalPages = ref(0)
 const scale = ref(1.2)
 const materialId = ref<string | number | null>(null)
 const startTime = ref<number | null>(null)
-const pdfDocument = ref<any>(null)
+
+// PDF.js 的 PDFDocumentProxy / PDFPageProxy 不应被 Vue 深度响应式代理。
+// 使用 shallowRef 保留原始实例，否则 getPage/render 在部分版本下会因 this 被 Proxy 包装而失败，
+// 表现为页数已经读到但内容区完全空白。
+const pdfDocument = shallowRef<any>(null)
 
 ;(pdfjsLib as any).GlobalWorkerOptions.workerSrc = pdfWorker
 
@@ -131,6 +135,7 @@ const renderPdf = async ({ preservePosition = false } = {}) => {
     : 0
 
   container.innerHTML = ''
+  let renderedPages = 0
 
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
     if (sequence !== renderSequence) return
@@ -151,10 +156,26 @@ const renderPdf = async ({ preservePosition = false } = {}) => {
 
       canvas.style.width = `${Math.round(viewport.width)}px`
       canvas.style.height = `${Math.round(viewport.height)}px`
+      canvas.style.display = 'block'
+      canvas.style.maxWidth = 'none'
+      canvas.style.margin = '0 auto 18px'
+      canvas.style.background = '#fff'
+      canvas.style.border = '1px solid #d7dde5'
+      canvas.style.borderRadius = '0'
+      canvas.style.boxShadow = '0 2px 8px rgba(31, 45, 61, 0.08)'
+
       container.appendChild(canvas)
+      renderedPages += 1
     } catch (pageErr) {
       console.error(`页面 ${pageNumber} 渲染失败:`, pageErr)
     }
+  }
+
+  if (sequence !== renderSequence) return
+
+  if (renderedPages === 0) {
+    errorMsg.value = 'PDF 已打开，但页面渲染失败，请刷新后重试'
+    return
   }
 
   await nextTick()
@@ -226,16 +247,18 @@ onMounted(async () => {
   }
 
   try {
-    pdfDocument.value = await (pdfjsLib as any).getDocument({
+    const rawPdf = await (pdfjsLib as any).getDocument({
       url: pdfUrl,
       httpHeaders: {
         Authorization: `Bearer ${localStorage.getItem('token')}`
       }
     }).promise
 
-    totalPages.value = pdfDocument.value.numPages
+    pdfDocument.value = rawPdf
+    totalPages.value = rawPdf.numPages
     loading.value = false
 
+    await nextTick()
     await nextTick()
     await renderPdf()
 
