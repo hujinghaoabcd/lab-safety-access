@@ -4,20 +4,15 @@
       <div class="result-head">
         <span class="status-icon" :class="isPassed ? 'passed' : 'failed'">
           <el-icon v-if="isPassed"><CircleCheck /></el-icon>
-          <span v-else class="status-face" aria-hidden="true">
-            <i class="face-eye left"></i>
-            <i class="face-eye right"></i>
-            <i class="face-mouth"></i>
-          </span>
+          <span v-else class="failure-emoji" aria-hidden="true">😔</span>
         </span>
 
         <div class="status-copy">
-          <div class="status-label">{{ isPassed ? '考试通过' : '考试未通过' }}</div>
-          <h1>{{ isPassed ? '本次考试已完成' : '本次成绩未达到及格要求' }}</h1>
+          <h1>{{ isPassed ? '考试通过' : '考试未通过' }}</h1>
           <p>
             {{ isPassed
-              ? `答对 ${correct} 题，成绩已记录。`
-              : `答对 ${correct} 题，答错 ${wrong} 题，可返回考试中心重新参加考试。` }}
+              ? `答对 ${correct} 题，本次得分 ${score} 分。`
+              : `答对 ${correct} 题，答错 ${wrong} 题。` }}
           </p>
         </div>
 
@@ -107,7 +102,7 @@ const handleQuit = () => {
 <style scoped>
 .desktop-exam-result {
   min-height: calc(100vh - 112px);
-  padding: 42px 0;
+  padding: 24px 0 36px;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -121,8 +116,8 @@ const handleQuit = () => {
 }
 
 .result-head {
-  min-height: 306px;
-  padding: 38px 42px 32px;
+  min-height: 272px;
+  padding: 28px 42px 26px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -132,12 +127,12 @@ const handleQuit = () => {
 }
 
 .status-icon {
-  width: 62px;
-  height: 62px;
+  width: 64px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
@@ -149,80 +144,39 @@ const handleQuit = () => {
 }
 
 .status-icon.failed {
-  color: #e85b63;
+  color: inherit;
 }
 
-.status-face {
-  position: relative;
-  width: 56px;
-  height: 56px;
+.failure-emoji {
   display: block;
-  box-sizing: border-box;
-  border: 3px solid currentColor;
-  border-radius: 50%;
-}
-
-.face-eye {
-  position: absolute;
-  top: 19px;
-  width: 11px;
-  height: 3px;
-  background: currentColor;
-  border-radius: 2px;
-}
-
-.face-eye.left {
-  left: 11px;
-  transform: rotate(13deg);
-}
-
-.face-eye.right {
-  right: 11px;
-  transform: rotate(-13deg);
-}
-
-.face-mouth {
-  position: absolute;
-  left: 50%;
-  bottom: 10px;
-  width: 22px;
-  height: 11px;
-  box-sizing: border-box;
-  border: 3px solid transparent;
-  border-top-color: currentColor;
-  border-radius: 50%;
-  transform: translateX(-50%);
+  font-size: 58px;
+  line-height: 1;
+  filter: none;
+  text-shadow: none;
 }
 
 .status-copy {
   max-width: 500px;
 }
 
-.status-label {
-  margin-bottom: 8px;
-  color: #7f8c9d;
-  font-size: 13px;
-  font-weight: 600;
-}
-
 .status-copy h1 {
   margin: 0;
   color: #1f2d3d;
-  font-size: 27px;
+  font-size: 28px;
   line-height: 1.35;
   font-weight: 700;
 }
 
 .status-copy p {
-  margin: 11px 0 0;
+  margin: 9px 0 0;
   color: #7f8c9d;
   font-size: 14px;
-  line-height: 1.65;
+  line-height: 1.6;
 }
 
 .score-block {
-  margin-top: 22px;
-  padding-top: 20px;
+  margin-top: 17px;
+  padding-top: 16px;
   min-width: 190px;
   text-align: center;
   border-top: 1px solid #edf0f4;
@@ -356,8 +310,8 @@ const handleQuit = () => {
   }
 
   .result-head {
-    min-height: 286px;
-    padding: 32px 22px 28px;
+    min-height: 250px;
+    padding: 26px 22px 24px;
   }
 
   .result-stats {
