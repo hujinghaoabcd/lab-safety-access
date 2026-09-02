@@ -9,7 +9,7 @@
 
         <el-table
           v-loading="loading"
-          :data="scoreRanking"
+          :data="pagedRanking"
           class="ranking-table"
           :row-class-name="getRowClassName"
         >
@@ -45,6 +45,16 @@
             </template>
           </el-table-column>
         </el-table>
+
+        <div class="pagination-bar">
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50]"
+            :total="scoreRanking.length"
+            layout="total, sizes, prev, pager, next, jumper"
+          />
+        </div>
       </section>
 
       <aside class="ranking-sidebar">
@@ -97,15 +107,22 @@
       </aside>
     </div>
 
-    <div v-else-if="!loading" class="ranking-empty">
-      <el-empty description="暂无排行榜数据" />
-    </div>
+    <section v-else-if="!loading" class="ranking-empty">
+      <div class="empty-icon">
+        <el-icon><Trophy /></el-icon>
+      </div>
+      <h2>暂无排行榜数据</h2>
+      <p>当前还没有学员产生有效的通过成绩，完成并通过考试后将在这里显示排名。</p>
+      <el-button type="primary" @click="router.push('/exam-center')">前往考试中心</el-button>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Trophy } from '@element-plus/icons-vue'
 import { getRanking } from '@/api/exam'
 
 interface RankingItem {
@@ -117,6 +134,7 @@ interface RankingItem {
   score: number
 }
 
+const router = useRouter()
 const defaultAvatar = 'https://unpkg.com/@vant/assets@1.0.8/cat.jpeg'
 
 const isLegacyDefaultAvatar = (raw: string) =>
@@ -132,9 +150,15 @@ const resolveAvatarUrl = (raw?: string | null) => {
 const scoreRanking = ref<RankingItem[]>([])
 const myRanking = ref({ rank: 0, score: 0, total: 0 })
 const loading = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
 
 const topThree = computed(() => scoreRanking.value.slice(0, 3))
 const participantCount = computed(() => myRanking.value.total || scoreRanking.value.length)
+const pagedRanking = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return scoreRanking.value.slice(start, start + pageSize.value)
+})
 
 const getRowClassName = ({ row }: { row: RankingItem }) => {
   return myRanking.value.rank && row.rank === myRanking.value.rank ? 'current-user-row' : ''
@@ -156,6 +180,7 @@ onMounted(async () => {
     }))
 
     myRanking.value = data?.me || { rank: 0, score: 0, total: scoreRanking.value.length }
+    currentPage.value = 1
   } catch (err: any) {
     ElMessage.error(err?.message || '加载排行榜失败')
   } finally {
@@ -323,6 +348,22 @@ onMounted(async () => {
 .score-cell em {
   font-size: 12px;
   font-style: normal;
+}
+
+.pagination-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 58px;
+  padding: 10px 16px;
+  border-top: 1px solid #edf0f4;
+}
+
+.pagination-bar :deep(.el-pagination button),
+.pagination-bar :deep(.el-pager li),
+.pagination-bar :deep(.el-select__wrapper),
+.pagination-bar :deep(.el-input__wrapper) {
+  border-radius: 0 !important;
 }
 
 .ranking-sidebar {
@@ -500,7 +541,48 @@ onMounted(async () => {
 }
 
 .ranking-empty {
-  padding: 70px 0;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 72px 24px;
+  text-align: center;
+}
+
+.empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 22px;
+  border: 1px solid #dce3eb;
+  background: #f7f9fb;
+  color: #8a96a5;
+}
+
+.empty-icon .el-icon {
+  font-size: 30px;
+}
+
+.ranking-empty h2 {
+  margin: 0 0 10px;
+  color: #27313d;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.ranking-empty p {
+  max-width: 520px;
+  margin: 0 0 22px;
+  color: #8a95a2;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.ranking-empty :deep(.el-button) {
+  border-radius: 0 !important;
 }
 
 @media (max-width: 1180px) {
