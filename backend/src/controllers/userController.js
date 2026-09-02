@@ -195,23 +195,38 @@ const changePassword = async (req, res) => {
   }
 };
 
-const matchesImageSignature = (buffer, mimetype) => {
-  if (!Buffer.isBuffer(buffer)) return false;
-  if (mimetype === 'image/jpeg') {
-    return buffer.length >= 3
-      && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+/**
+ * Detect the real image type from file bytes instead of trusting multipart
+ * MIME metadata. Android/WeChat/system galleries sometimes label a valid PNG
+ * as image/jpeg (or vice versa), which used to trigger a false "format does
+ * not match content" rejection.
+ */
+const detectImageMime = (buffer) => {
+  if (!Buffer.isBuffer(buffer)) return null;
+
+  if (buffer.length >= 3
+      && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return 'image/jpeg';
   }
-  if (mimetype === 'image/png') {
-    const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-    return buffer.length >= signature.length
-      && buffer.subarray(0, signature.length).equals(signature);
+
+  const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  if (buffer.length >= pngSignature.length
+      && buffer.subarray(0, pngSignature.length).equals(pngSignature)) {
+    return 'image/png';
   }
-  if (mimetype === 'image/webp') {
-    return buffer.length >= 12
+
+  if (buffer.length >= 12
       && buffer.subarray(0, 4).toString('ascii') === 'RIFF'
-      && buffer.subarray(8, 12).toString('ascii') === 'WEBP';
+      && buffer.subarray(8, 12).toString('ascii') === 'WEBP') {
+    return 'image/webp';
   }
-  return false;
+
+  return null;
+};
+
+const matchesImageSignature = (buffer, mimetype) => {
+  const normalizedMime = mimetype === 'image/jpg' ? 'image/jpeg' : mimetype;
+  return detectImageMime(buffer) === normalizedMime;
 };
 
 const removeManagedAvatar = async (avatarUrl, uploadRoot) => {
@@ -229,9 +244,15 @@ const removeManagedAvatar = async (avatarUrl, uploadRoot) => {
 const changeAvatar = async (req, res) => {
   const file = req.file;
   if (!file) return error(res, '请上传头像文件', 400);
-  if (!matchesImageSignature(file.buffer, file.mimetype)) {
-    return error(res, '头像文件内容与图片格式不匹配', 400);
+
+  // File.type / multipart mimetype is advisory only. The real file signature is
+  // the source of truth, so supported images are accepted even when a mobile
+  // browser labels their MIME type incorrectly.
+  const detectedMime = detectImageMime(file.buffer);
+  if (!detectedMime) {
+    return error(res, '无法识别头像图片内容，请选择 JPG、PNG 或 WebP 图片', 400);
   }
+  file.mimetype = detectedMime;
 
   const uploadRoot = path.join(__dirname, '..', '..', 'uploads', 'avatars');
   const extensionByMime = {
@@ -239,7 +260,7 @@ const changeAvatar = async (req, res) => {
     'image/png': '.png',
     'image/webp': '.webp'
   };
-  const filename = `u${req.user.id}_${Date.now()}_${crypto.randomBytes(6).toString('hex')}${extensionByMime[file.mimetype]}`;
+  const filename = `u${req.user.id}_${Date.now()}_${crypto.randomBytes(6).toString('hex')}${extensionByMime[detectedMime]}`;
   const filepath = path.join(uploadRoot, filename);
 
   try {
@@ -275,6 +296,7 @@ module.exports = {
   getProfileStats,
   changePassword,
   changeAvatar,
+  detectImageMime,
   matchesImageSignature,
   identityFieldChanged
 };
