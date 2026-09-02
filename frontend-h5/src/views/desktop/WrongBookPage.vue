@@ -1,84 +1,96 @@
 <template>
   <div class="desktop-wrongbook">
-    <div class="page-header">
-      <div class="header-left">
-        <div class="header-icon error">
-          <el-icon><Close /></el-icon>
+    <section class="wrongbook-panel">
+      <div class="panel-toolbar">
+        <div class="toolbar-title">
+          <strong>错题列表</strong>
+          <span>共 {{ counts.all }} 题</span>
         </div>
-        <div class="header-info">
-          <h1>错题本</h1>
-          <p>复习巩固错题，提升学习效果</p>
-        </div>
+        <el-button
+          type="danger"
+          plain
+          :disabled="!allQuestions.length"
+          @click="clearAll"
+        >
+          清空错题本
+        </el-button>
       </div>
-    </div>
 
-    <div class="filter-bar">
-      <el-radio-group v-model="filterType" size="default">
-        <el-radio-button label="all">全部 ({{ counts.all }})</el-radio-button>
-        <el-radio-button label="单选题">单选 ({{ counts['单选题'] }})</el-radio-button>
-        <el-radio-button label="多选题">多选 ({{ counts['多选题'] }})</el-radio-button>
-        <el-radio-button label="判断题">判断 ({{ counts['判断题'] }})</el-radio-button>
-      </el-radio-group>
-      <el-button type="danger" plain size="small" :disabled="!allQuestions.length" @click="clearAll">
-        清空错题本
-      </el-button>
-    </div>
+      <div class="filter-row">
+        <el-radio-group v-model="filterType" size="default">
+          <el-radio-button label="all">全部 {{ counts.all }}</el-radio-button>
+          <el-radio-button label="单选题">单选 {{ counts['单选题'] }}</el-radio-button>
+          <el-radio-button label="多选题">多选 {{ counts['多选题'] }}</el-radio-button>
+          <el-radio-button label="判断题">判断 {{ counts['判断题'] }}</el-radio-button>
+        </el-radio-group>
+      </div>
 
-    <div class="questions-section">
-      <div class="section-title">错题列表</div>
+      <div v-if="loading" class="loading-state">加载中...</div>
 
-      <el-empty v-if="!loading && filtered.length === 0" description="暂无错题" />
+      <div v-else-if="filtered.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <el-icon><CircleCheck /></el-icon>
+        </div>
+        <div class="empty-title">暂无错题</div>
+        <div class="empty-desc">当前筛选条件下没有需要复习的题目</div>
+      </div>
 
       <div v-else class="question-list">
-        <div v-for="q in filtered" :key="q.id" class="question-card">
-          <div class="question-header">
+        <article v-for="q in pagedQuestions" :key="q.id" class="question-item">
+          <div class="question-topline">
             <div class="question-meta">
-              <el-tag :type="getTypeTag(q.type)" size="small">
+              <el-tag :type="getTypeTag(q.type)" effect="plain">
                 {{ q.type === '多选题' ? '多选' : q.type === '判断题' ? '判断' : '单选' }}
               </el-tag>
               <span class="wrong-count">错误 {{ q.wrongCount }} 次</span>
+              <span class="last-time">
+                <el-icon><Clock /></el-icon>
+                {{ q.lastWrongTime || '时间未知' }}
+              </span>
             </div>
-            <el-button type="danger" link size="small" @click="removeOne(q.id)">移除</el-button>
+            <el-button type="danger" link @click="removeOne(q.id)">移除</el-button>
           </div>
 
           <div class="question-content">{{ q.content }}</div>
 
-          <div class="options-list">
+          <div class="options-grid">
             <div v-for="(opt, idx) in q.options" :key="idx" class="option-item">
               <span class="option-label">{{ String.fromCharCode(65 + idx) }}.</span>
               <span class="option-text">{{ opt }}</span>
             </div>
           </div>
 
-          <el-alert :title="`正确答案：${q.correctAnswer}`" type="success" :closable="false" show-icon />
-
-          <div v-if="q.analysis" class="analysis-box">
-            <div class="analysis-title">
-              <el-icon><InfoFilled /></el-icon>
-              解析
+          <div class="answer-row">
+            <div class="answer-main">
+              <el-icon><CircleCheckFilled /></el-icon>
+              <span class="answer-label">正确答案</span>
+              <strong>{{ q.correctAnswer }}</strong>
             </div>
-            <div class="analysis-text">{{ q.analysis }}</div>
+            <el-button type="primary" @click="retryQuestion(q)">重新练习</el-button>
           </div>
-
-          <div class="question-footer">
-            <span class="last-time">
-              <el-icon><Clock /></el-icon>
-              最后错误：{{ q.lastWrongTime || '未知' }}
-            </span>
-            <el-button type="primary" size="small" @click="retryQuestion(q)">重新练习</el-button>
-          </div>
-        </div>
+        </article>
       </div>
-    </div>
+
+      <div v-if="filtered.length > 0" class="pagination-row">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50]"
+          :total="filtered.length"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+        />
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { TagProps } from 'element-plus'
-import { Close, InfoFilled, Clock } from '@element-plus/icons-vue'
+import { CircleCheck, CircleCheckFilled, Clock } from '@element-plus/icons-vue'
 import { getWrongBook, removeWrongQuestion } from '@/api/exam'
 
 const router = useRouter()
@@ -97,10 +109,17 @@ interface WrongQuestion {
 const allQuestions = ref<WrongQuestion[]>([])
 const loading = ref(false)
 const filterType = ref<'all' | '单选题' | '多选题' | '判断题'>('all')
+const currentPage = ref(1)
+const pageSize = ref(10)
 
 const filtered = computed(() => {
   if (filterType.value === 'all') return allQuestions.value
   return allQuestions.value.filter(q => q.type === filterType.value)
+})
+
+const pagedQuestions = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filtered.value.slice(start, start + pageSize.value)
 })
 
 const counts = computed(() => ({
@@ -109,6 +128,15 @@ const counts = computed(() => ({
   '多选题': allQuestions.value.filter(q => q.type === '多选题').length,
   '判断题': allQuestions.value.filter(q => q.type === '判断题').length
 }))
+
+watch([filterType, pageSize], () => {
+  currentPage.value = 1
+})
+
+watch(filtered, () => {
+  const maxPage = Math.max(1, Math.ceil(filtered.value.length / pageSize.value))
+  if (currentPage.value > maxPage) currentPage.value = maxPage
+})
 
 const getTypeTag = (type: string): TagProps['type'] => {
   const map: Record<string, TagProps['type']> = {
@@ -133,24 +161,32 @@ const loadWrongBook = async () => {
 
 const removeOne = async (id: number | string) => {
   try {
-    await ElMessageBox.confirm('确认这道题已经掌握，移出错题本吗？', '确认', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' })
+    await ElMessageBox.confirm('确认这道题已经掌握，移出错题本吗？', '确认移除', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
     await removeWrongQuestion(id)
     ElMessage.success('已移出错题本')
-    loadWrongBook()
+    await loadWrongBook()
   } catch (err: any) {
-    if (err !== 'cancel') ElMessage.error(err?.message || '移除失败')
+    if (err !== 'cancel' && err !== 'close') ElMessage.error(err?.message || '移除失败')
   }
 }
 
 const clearAll = async () => {
   if (!allQuestions.value.length) return
   try {
-    await ElMessageBox.confirm('确定要清空所有错题吗？此操作不可恢复。', '清空错题本', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' })
+    await ElMessageBox.confirm('确定要清空所有错题吗？此操作不可恢复。', '清空错题本', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
     await Promise.all(allQuestions.value.map(q => removeWrongQuestion(q.id)))
     ElMessage.success('已清空错题本')
-    loadWrongBook()
+    await loadWrongBook()
   } catch (err: any) {
-    if (err !== 'cancel') ElMessage.error(err?.message || '清空失败')
+    if (err !== 'cancel' && err !== 'close') ElMessage.error(err?.message || '清空失败')
   }
 }
 
@@ -164,104 +200,114 @@ onMounted(() => loadWrongBook())
   padding: 0;
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px;
+.wrongbook-panel {
   background: #fff;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5eaf2;
 }
 
-.header-left {
+.panel-toolbar {
+  min-height: 60px;
+  padding: 0 22px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+  border-bottom: 1px solid #e5eaf2;
 }
 
-.header-icon {
-  width: 48px;
-  height: 48px;
-  background: #0475FA;
-  border-radius: 8px;
+.toolbar-title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.toolbar-title strong {
+  font-size: 17px;
+  color: #1f2d3d;
+}
+
+.toolbar-title span {
+  font-size: 13px;
+  color: #8a97a8;
+}
+
+.panel-toolbar :deep(.el-button) {
+  height: 34px;
+  border-radius: 0;
+}
+
+.filter-row {
+  padding: 14px 22px;
+  border-bottom: 1px solid #e5eaf2;
+  background: #fafbfd;
+}
+
+.filter-row :deep(.el-radio-button__inner) {
+  min-width: 86px;
+  height: 34px;
+  padding: 8px 16px;
+  border-radius: 0 !important;
+}
+
+.loading-state {
+  padding: 60px 0;
+  text-align: center;
+  color: #909399;
+}
+
+.empty-state {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #909399;
+}
+
+.empty-icon {
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #eef8f1;
+  color: #35a854;
+  margin-bottom: 14px;
 }
 
-.header-icon.error {
-  background: #f56c6c;
+.empty-icon .el-icon {
+  font-size: 27px;
 }
 
-.header-icon .el-icon {
-  font-size: 24px;
-  color: #fff;
-}
-
-.header-info h1 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0 0 4px 0;
-}
-
-.header-info p {
-  font-size: 13px;
-  color: #909399;
-  margin: 0;
-}
-
-.filter-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  background: #fff;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-.questions-section {
-  background: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-.section-title {
+.empty-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
-  margin-bottom: 16px;
+  color: #425466;
+  margin-bottom: 6px;
+}
+
+.empty-desc {
+  font-size: 13px;
+  color: #98a3b3;
 }
 
 .question-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  padding: 0 22px;
 }
 
-.question-card {
-  padding: 20px;
-  background: #fff;
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
-  transition: all 0.2s ease;
+.question-item {
+  padding: 20px 0;
+  border-bottom: 1px solid #e8edf3;
 }
 
-.question-card:hover {
-  border-color: #dcdfe6;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+.question-item:last-child {
+  border-bottom: 0;
 }
 
-.question-header {
+.question-topline {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .question-meta {
@@ -270,82 +316,127 @@ onMounted(() => loadWrongBook())
   gap: 12px;
 }
 
-.wrong-count {
-  font-size: 12px;
-  color: #f56c6c;
-}
-
-.question-content {
-  font-size: 15px;
-  color: #303133;
-  line-height: 1.7;
-  margin-bottom: 16px;
-}
-
-.options-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.option-item {
-  display: flex;
-  gap: 8px;
-  padding: 10px 12px;
-  background: #f5f7fa;
-  border-radius: 4px;
-  font-size: 14px;
-  color: #606266;
-}
-
-.option-label {
-  font-weight: 600;
-  color: #303133;
-}
-
-.analysis-box {
-  margin-top: 16px;
-  padding: 12px;
-  background: #f0f9ff;
-  border-radius: 4px;
-  border-left: 3px solid #0475FA;
-}
-
-.analysis-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #0475FA;
-  margin-bottom: 8px;
-}
-
-.analysis-text {
+.question-meta :deep(.el-tag) {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 0;
   font-size: 13px;
-  color: #606266;
-  line-height: 1.6;
 }
 
-.question-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #ebeef5;
+.wrong-count {
+  font-size: 13px;
+  color: #f05b67;
 }
 
 .last-time {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  padding-left: 12px;
+  border-left: 1px solid #dfe5ec;
   font-size: 12px;
-  color: #909399;
+  color: #8d99aa;
 }
 
 .last-time .el-icon {
   font-size: 14px;
+}
+
+.question-content {
+  font-size: 16px;
+  font-weight: 500;
+  color: #273444;
+  line-height: 1.65;
+  margin-bottom: 14px;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin-bottom: 14px;
+}
+
+.option-item {
+  min-height: 42px;
+  padding: 9px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #f6f8fb;
+  border: 1px solid #edf0f4;
+  font-size: 14px;
+  color: #59677a;
+  line-height: 1.55;
+}
+
+.option-label {
+  flex: 0 0 auto;
+  font-weight: 600;
+  color: #334155;
+}
+
+.answer-row {
+  min-height: 44px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f2f9f3;
+  border-left: 3px solid #49b267;
+}
+
+.answer-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #32964f;
+  font-size: 14px;
+}
+
+.answer-main .el-icon {
+  font-size: 17px;
+}
+
+.answer-label {
+  color: #587064;
+}
+
+.answer-main strong {
+  font-size: 15px;
+  color: #278844;
+}
+
+.answer-row :deep(.el-button) {
+  height: 32px;
+  border-radius: 0;
+  padding: 0 15px;
+}
+
+.pagination-row {
+  min-height: 58px;
+  padding: 12px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  border-top: 1px solid #e5eaf2;
+  background: #fafbfd;
+}
+
+.pagination-row :deep(.el-pagination button),
+.pagination-row :deep(.el-pager li),
+.pagination-row :deep(.el-input__wrapper),
+.pagination-row :deep(.el-select__wrapper) {
+  border-radius: 0 !important;
+}
+
+@media (max-width: 1100px) {
+  .options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .last-time {
+    display: none;
+  }
 }
 </style>
