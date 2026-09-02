@@ -1,123 +1,143 @@
 <template>
   <div class="desktop-record-detail">
-    <el-card class="page-header" shadow="never">
-      <h2>考试详情</h2>
-      <p>{{ recordInfo.examTitle }}</p>
-    </el-card>
+    <section class="record-summary">
+      <div class="summary-main">
+        <div class="summary-title-wrap">
+          <strong class="exam-title">{{ recordInfo.examTitle || '考试详情' }}</strong>
+          <el-tag :type="recordInfo.passed ? 'success' : 'danger'" effect="plain">
+            {{ recordInfo.passed ? '通过' : '未通过' }}
+          </el-tag>
+        </div>
+        <div class="summary-score" :class="{ failed: !recordInfo.passed }">
+          <strong>{{ recordInfo.score }}</strong>
+          <span>/ {{ recordInfo.totalScore || 0 }}</span>
+        </div>
+      </div>
 
-    <!-- 统计信息 -->
-    <el-row :gutter="20" class="stats-row">
-      <el-col :span="6">
-        <el-card class="stat-card" shadow="hover">
-          <div class="stat-content">
-            <el-icon class="stat-icon" style="color: #07c160;"><CircleCheck /></el-icon>
-            <div class="stat-value success">{{ recordInfo.correctCount }}题</div>
-            <div class="stat-label">答对</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card class="stat-card" shadow="hover">
-          <div class="stat-content">
-            <el-icon class="stat-icon" style="color: #f56c6c;"><CircleClose /></el-icon>
-            <div class="stat-value error">{{ recordInfo.wrongCount }}题</div>
-            <div class="stat-label">答错</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card class="stat-card" shadow="hover">
-          <div class="stat-content">
-            <el-icon class="stat-icon" style="color: #FF9500;"><Trophy /></el-icon>
-            <div class="stat-value score">{{ recordInfo.score }}分</div>
-            <div class="stat-label">得分</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card class="stat-card" shadow="hover">
-          <div class="stat-content">
-            <el-icon class="stat-icon" style="color: #0475FA;"><Clock /></el-icon>
-            <div class="stat-value">{{ recordInfo.duration }}</div>
-            <div class="stat-label">用时</div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+      <div class="summary-meta">
+        <div class="meta-item">
+          <span>答对</span>
+          <strong class="success-text">{{ recordInfo.correctCount }} 题</strong>
+        </div>
+        <div class="meta-item">
+          <span>答错</span>
+          <strong class="danger-text">{{ recordInfo.wrongCount }} 题</strong>
+        </div>
+        <div class="meta-item">
+          <span>用时</span>
+          <strong>{{ recordInfo.duration || '-' }}</strong>
+        </div>
+        <div class="meta-item submit-time">
+          <span>提交时间</span>
+          <strong>{{ recordInfo.submitTime || '-' }}</strong>
+        </div>
+      </div>
+    </section>
 
-    <!-- 筛选栏 -->
-    <el-card class="filter-card" shadow="hover">
-      <el-radio-group v-model="showOnlyWrong" size="large">
-        <el-radio-button :label="false">全部题目 ({{ questions.length }})</el-radio-button>
-        <el-radio-button :label="true">只看错题 ({{ questions.filter(q => !q.isCorrect).length }})</el-radio-button>
-      </el-radio-group>
-    </el-card>
-
-    <!-- 题目列表 -->
-    <div class="questions-list">
-      <el-card
-        v-for="(q, index) in filteredQuestions"
-        :key="q.id"
-        class="question-card"
-        shadow="hover"
-        :class="{ 'wrong-question': !q.isCorrect }"
-      >
-        <div class="question-header">
-          <div class="question-meta">
-            <span class="question-number">第 {{ index + 1 }} 题</span>
-            <el-tag :type="getTypeTag(q.type)">
-              {{ q.type === 'single' ? '单选题' : q.type === 'multiple' ? '多选题' : '判断题' }}
-            </el-tag>
-            <el-tag v-if="q.isCorrect" type="success" effect="dark">✓ 正确</el-tag>
-            <el-tag v-else type="danger" effect="dark">✗ 错误</el-tag>
-          </div>
+    <section class="questions-panel">
+      <div class="panel-toolbar">
+        <div class="toolbar-title">
+          <strong>答题详情</strong>
+          <span>共 {{ questions.length }} 题</span>
         </div>
 
-        <div class="question-body">
-          <div class="question-content">{{ q.content }}</div>
+        <el-radio-group v-model="showOnlyWrong" size="default">
+          <el-radio-button :label="false">全部 {{ questions.length }}</el-radio-button>
+          <el-radio-button :label="true">错题 {{ wrongQuestionsCount }}</el-radio-button>
+        </el-radio-group>
+      </div>
 
-          <div class="options-list">
-            <div
-              v-for="opt in q.options"
-              :key="opt"
-              class="option-item"
-              :class="getOptionClass(q, opt)"
-            >
-              <div class="option-status">
-                <el-icon v-if="getOptionStatus(q, opt) === 'correct'"><Check /></el-icon>
-                <el-icon v-else-if="getOptionStatus(q, opt) === 'wrong'"><Close /></el-icon>
+      <div v-if="loading" class="loading-state">加载中...</div>
+
+      <div v-else-if="filteredQuestions.length === 0" class="empty-state">
+        <div class="empty-icon"><el-icon><CircleCheck /></el-icon></div>
+        <div class="empty-title">暂无错题</div>
+        <div class="empty-desc">本次考试当前筛选条件下没有题目</div>
+      </div>
+
+      <template v-else>
+        <div class="questions-list">
+          <article
+            v-for="item in pagedQuestions"
+            :key="item.question.id"
+            class="question-item"
+            :class="{ 'wrong-question': !item.question.isCorrect }"
+          >
+            <div class="question-head">
+              <div class="question-meta">
+                <strong>第 {{ item.number }} 题</strong>
+                <el-tag :type="getTypeTag(item.question.type)" effect="plain">
+                  {{ getTypeLabel(item.question.type) }}
+                </el-tag>
+                <el-tag :type="item.question.isCorrect ? 'success' : 'danger'" effect="dark">
+                  {{ item.question.isCorrect ? '正确' : '错误' }}
+                </el-tag>
               </div>
-              <span class="option-letter">{{ opt.charAt(0) }}</span>
-              <span class="option-text">{{ opt.substring(3) }}</span>
+              <span class="question-result" :class="item.question.isCorrect ? 'success-text' : 'danger-text'">
+                {{ item.question.isCorrect ? '作答正确' : '作答错误' }}
+              </span>
             </div>
-          </div>
 
-          <div v-if="!q.isCorrect" class="correct-answer-hint">
-            <el-alert
-              :title="`正确答案：${q.correctAnswer}`"
-              type="success"
-              :closable="false"
-              show-icon
-            />
-          </div>
+            <div class="question-body">
+              <div class="question-content">{{ item.question.content }}</div>
+
+              <div class="options-list">
+                <div
+                  v-for="opt in item.question.options"
+                  :key="opt"
+                  class="option-item"
+                  :class="getOptionClass(item.question, opt)"
+                >
+                  <span class="option-mark">
+                    <el-icon v-if="getOptionStatus(item.question, opt) === 'correct'"><Check /></el-icon>
+                    <el-icon v-else-if="getOptionStatus(item.question, opt) === 'wrong'"><Close /></el-icon>
+                  </span>
+                  <strong class="option-letter">{{ opt.charAt(0) }}.</strong>
+                  <span class="option-text">{{ opt.substring(3) }}</span>
+                </div>
+              </div>
+
+              <div class="answer-summary">
+                <div class="answer-item">
+                  <span>你的答案</span>
+                  <strong :class="item.question.isCorrect ? 'success-text' : 'danger-text'">
+                    {{ formatAnswer(item.question.userAnswer) }}
+                  </strong>
+                </div>
+                <div class="answer-item">
+                  <span>正确答案</span>
+                  <strong class="success-text">{{ item.question.correctAnswer || '-' }}</strong>
+                </div>
+              </div>
+            </div>
+          </article>
         </div>
-      </el-card>
-    </div>
 
-    <el-empty v-if="filteredQuestions.length === 0" description="暂无题目" />
+        <div class="pagination-row">
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50]"
+            :total="filteredQuestions.length"
+            layout="total, sizes, prev, pager, next, jumper"
+            background
+          />
+        </div>
+      </template>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { CircleCheck, CircleClose, Trophy, Clock, Check, Close } from '@element-plus/icons-vue'
+import type { TagProps } from 'element-plus'
+import { Check, CircleCheck, Close } from '@element-plus/icons-vue'
 import { getRecordDetail } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
-
 const recordId = route.params.id as string
 
 interface QuestionResult {
@@ -143,40 +163,80 @@ const recordInfo = ref({
 })
 
 const questions = ref<QuestionResult[]>([])
+const loading = ref(false)
 const showOnlyWrong = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
+
+const wrongQuestionsCount = computed(() => questions.value.filter(q => !q.isCorrect).length)
 
 const filteredQuestions = computed(() => {
-  if (showOnlyWrong.value) {
-    return questions.value.filter(q => !q.isCorrect)
-  }
   return questions.value
+    .map((question, index) => ({ question, number: index + 1 }))
+    .filter(item => !showOnlyWrong.value || !item.question.isCorrect)
 })
 
-const getTypeTag = (type: string) => {
+const pagedQuestions = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredQuestions.value.slice(start, start + pageSize.value)
+})
+
+watch([showOnlyWrong, pageSize], () => {
+  currentPage.value = 1
+})
+
+watch(filteredQuestions, () => {
+  const maxPage = Math.max(1, Math.ceil(filteredQuestions.value.length / pageSize.value))
+  if (currentPage.value > maxPage) currentPage.value = maxPage
+})
+
+const getTypeLabel = (type: string) => {
   const map: Record<string, string> = {
+    single: '单选题',
+    multiple: '多选题',
+    judge: '判断题',
+    '单选题': '单选题',
+    '多选题': '多选题',
+    '判断题': '判断题'
+  }
+  return map[type] || type || '题目'
+}
+
+const getTypeTag = (type: string): TagProps['type'] => {
+  const map: Record<string, TagProps['type']> = {
     single: 'primary',
     multiple: 'success',
-    judge: 'warning'
+    judge: 'warning',
+    '单选题': 'primary',
+    '多选题': 'success',
+    '判断题': 'warning'
   }
   return map[type] || 'info'
 }
 
+const normalizeAnswer = (answer: string | string[]) => {
+  if (Array.isArray(answer)) return answer.map(String)
+  const text = String(answer || '').trim()
+  if (!text) return []
+  return text.includes(',') ? text.split(',').map(item => item.trim()).filter(Boolean) : [text]
+}
+
+const formatAnswer = (answer: string | string[]) => {
+  const normalized = normalizeAnswer(answer)
+  return normalized.length ? normalized.join('、') : '未作答'
+}
+
 const getOptionStatus = (q: QuestionResult, opt: string) => {
-  const optLetter = opt.charAt(0)
-  const userAns = q.userAnswer
-  const correctAns = q.correctAnswer
+  const letter = opt.charAt(0)
+  const text = opt.substring(3)
+  const userAnswers = normalizeAnswer(q.userAnswer)
+  const correctAnswer = String(q.correctAnswer || '')
 
-  const isUserAnswer = Array.isArray(userAns)
-    ? userAns.includes(optLetter)
-    : userAns === optLetter || userAns === opt.substring(3)
+  const isUserAnswer = userAnswers.some(answer => answer === letter || answer === text)
+  const isCorrectAnswer = correctAnswer.includes(letter) || correctAnswer === text
 
-  const isCorrectAnswer = correctAns.includes(optLetter) || correctAns === opt.substring(3)
-
-  if (isCorrectAnswer) {
-    return 'correct'
-  } else if (isUserAnswer && !q.isCorrect) {
-    return 'wrong'
-  }
+  if (isCorrectAnswer) return 'correct'
+  if (isUserAnswer) return 'wrong'
   return 'default'
 }
 
@@ -184,10 +244,7 @@ const getOptionClass = (q: QuestionResult, opt: string) => {
   const status = getOptionStatus(q, opt)
   return {
     'is-correct': status === 'correct',
-    'is-wrong': status === 'wrong',
-    'is-user-answer': Array.isArray(q.userAnswer)
-      ? q.userAnswer.includes(opt.charAt(0))
-      : q.userAnswer === opt.charAt(0) || q.userAnswer === opt.substring(3)
+    'is-wrong': status === 'wrong'
   }
 }
 
@@ -199,9 +256,9 @@ onMounted(async () => {
   }
 
   try {
+    loading.value = true
     const resp: any = await getRecordDetail(recordId)
     const data = resp?.data ?? resp
-    console.log('[RecordDetail] getRecordDetail response:', data)
 
     recordInfo.value.id = data.id
     recordInfo.value.examTitle = data.examTitle
@@ -221,16 +278,17 @@ onMounted(async () => {
       }),
       userAnswer: q.userAnswer ?? '',
       correctAnswer: q.correctAnswer ?? '',
-      isCorrect: q.isCorrect
+      isCorrect: Boolean(q.isCorrect)
     }))
 
     questions.value = qs
     recordInfo.value.correctCount = qs.filter(q => q.isCorrect).length
     recordInfo.value.wrongCount = qs.length - recordInfo.value.correctCount
   } catch (err: any) {
-    console.error('[RecordDetail] getRecordDetail error:', err)
     ElMessage.error(err?.message || '加载考试详情失败')
     router.back()
+  } finally {
+    loading.value = false
   }
 })
 </script>
@@ -240,225 +298,353 @@ onMounted(async () => {
   padding: 0;
 }
 
-.page-header {
-  margin-bottom: 24px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 24px 32px;
+.record-summary,
+.questions-panel {
+  background: #fff;
+  border: 1px solid #e5eaf2;
 }
 
-.page-header h2 {
-  font-size: 28px;
-  font-weight: 700;
-  color: #303133;
-  margin: 0 0 8px 0;
-  letter-spacing: 0.5px;
-  background: linear-gradient(135deg, #0475FA 0%, #1a8cff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.record-summary {
+  margin-bottom: 16px;
 }
 
-.page-header p {
+.summary-main {
+  min-height: 62px;
+  padding: 0 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e5eaf2;
+}
+
+.summary-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.exam-title {
+  font-size: 18px;
+  color: #1f2d3d;
+}
+
+.summary-title-wrap :deep(.el-tag),
+.question-meta :deep(.el-tag) {
+  border-radius: 0;
+}
+
+.summary-score {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  color: #2fa34e;
+}
+
+.summary-score.failed {
+  color: #e95b67;
+}
+
+.summary-score strong {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.summary-score span {
+  font-size: 13px;
+  color: #98a3b3;
+}
+
+.summary-meta {
+  display: grid;
+  grid-template-columns: 150px 150px 180px minmax(280px, 1fr);
+  min-height: 58px;
+}
+
+.meta-item {
+  padding: 0 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-right: 1px solid #e5eaf2;
+}
+
+.meta-item:last-child {
+  border-right: 0;
+}
+
+.meta-item span {
+  font-size: 13px;
+  color: #8a97a8;
+}
+
+.meta-item strong {
   font-size: 15px;
-  color: #606266;
-  margin: 0;
-  font-weight: 500;
+  color: #334155;
+  font-weight: 600;
 }
 
-.stats-row {
-  margin-bottom: 24px;
+.success-text {
+  color: #2f9e4d !important;
 }
 
-.stat-card {
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
+.danger-text {
+  color: #e95b67 !important;
 }
 
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+.panel-toolbar {
+  min-height: 54px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid #e5eaf2;
 }
 
-.stat-content {
-  text-align: center;
-  padding: 24px;
+.toolbar-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
 }
 
-.stat-icon {
-  font-size: 32px;
-  margin-bottom: 12px;
+.toolbar-title strong {
+  font-size: 17px;
+  color: #1f2d3d;
 }
 
-.stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 8px;
-  color: #303133;
+.toolbar-title span {
+  font-size: 13px;
+  color: #8a97a8;
 }
 
-.stat-value.success {
-  color: #07c160;
-}
-
-.stat-value.error {
-  color: #f56c6c;
-}
-
-.stat-value.score {
-  background: linear-gradient(135deg, #FF9500 0%, #FFB800 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-size: 32px;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #909399;
-  font-weight: 500;
-}
-
-.filter-card {
-  margin-bottom: 24px;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  padding: 20px;
+.panel-toolbar :deep(.el-radio-button__inner) {
+  min-width: 78px;
+  height: 30px;
+  padding: 6px 12px;
+  line-height: 16px;
+  border-radius: 0 !important;
+  font-size: 13px;
 }
 
 .questions-list {
+  padding: 14px 20px 0;
+  background: #f4f6f9;
+}
+
+.question-item {
+  margin-bottom: 14px;
+  background: #fff;
+  border: 1px solid #dfe5ec;
+}
+
+.question-item.wrong-question {
+  border-color: #efc9cd;
+}
+
+.question-head {
+  min-height: 48px;
+  padding: 0 16px;
   display: flex;
-  flex-direction: column;
-  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+  background: #f7f9fb;
+  border-bottom: 1px solid #e7ebf0;
 }
 
-.question-card {
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  border: 2px solid #ebeef5;
-  transition: all 0.3s ease;
-}
-
-.question-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
-}
-
-.question-card.wrong-question {
-  border-color: #fde2e2;
-  background: linear-gradient(135deg, #fff 0%, #fff5f5 100%);
-}
-
-.question-header {
-  padding: 20px 24px;
-  border-bottom: 2px solid #f0f2f5;
-  background: linear-gradient(135deg, #f8f9fa 0%, #f0f2f5 100%);
+.wrong-question .question-head {
+  background: #fff7f7;
 }
 
 .question-meta {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 9px;
 }
 
-.question-number {
-  font-size: 18px;
-  font-weight: 700;
-  color: #303133;
+.question-meta > strong {
+  min-width: 64px;
+  font-size: 15px;
+  color: #273444;
+}
+
+.question-meta :deep(.el-tag) {
+  height: 25px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+.question-result {
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .question-body {
-  padding: 32px;
+  padding: 18px 20px 20px;
 }
 
 .question-content {
-  font-size: 18px;
-  color: #303133;
-  line-height: 1.8;
-  margin-bottom: 24px;
+  margin-bottom: 14px;
+  font-size: 15px;
   font-weight: 500;
+  line-height: 1.7;
+  color: #273444;
 }
 
 .options-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 8px;
 }
 
 .option-item {
+  min-height: 42px;
+  padding: 9px 12px;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #eef2f5 100%);
-  border: 2px solid transparent;
-  border-radius: 12px;
-  transition: all 0.3s ease;
+  align-items: flex-start;
+  gap: 8px;
+  background: #f6f8fb;
+  border: 1px solid #edf0f4;
+  color: #59677a;
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 .option-item.is-correct {
-  background: linear-gradient(135deg, #e6f4ff 0%, #d0e9ff 100%);
-  border-color: #0475FA;
+  background: #f1f8f2;
+  border-color: #b8dfc2;
 }
 
 .option-item.is-wrong {
-  background: linear-gradient(135deg, #fff0f0 0%, #ffe8e8 100%);
-  border-color: #f56c6c;
+  background: #fff4f4;
+  border-color: #efc3c7;
 }
 
-.option-status {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
+.option-mark {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  margin-top: 1px;
+  color: #9aa5b4;
 }
 
-.option-item.is-correct .option-status {
-  background: #0475FA;
-  color: #fff;
+.option-item.is-correct .option-mark {
+  color: #2f9e4d;
 }
 
-.option-item.is-wrong .option-status {
-  background: #f56c6c;
-  color: #fff;
+.option-item.is-wrong .option-mark {
+  color: #e95b67;
 }
 
 .option-letter {
-  font-size: 16px;
-  font-weight: 700;
-  color: #606266;
-  min-width: 24px;
+  flex: 0 0 auto;
+  color: #334155;
 }
 
 .option-text {
   flex: 1;
-  font-size: 16px;
-  color: #303133;
-  line-height: 1.6;
 }
 
-.correct-answer-hint {
-  margin-top: 20px;
-}
-
-:deep(.el-radio-group) {
-  width: 100%;
+.answer-summary {
+  margin-top: 14px;
+  padding-top: 12px;
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 30px;
+  border-top: 1px solid #e8edf3;
 }
 
-:deep(.el-radio-button__inner) {
-  border-radius: 10px;
+.answer-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.answer-item span {
+  font-size: 13px;
+  color: #8a97a8;
+}
+
+.answer-item strong {
+  font-size: 14px;
+}
+
+.pagination-row {
+  min-height: 58px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  border-top: 1px solid #e5eaf2;
+  background: #fafbfd;
+}
+
+.pagination-row :deep(.el-pagination button),
+.pagination-row :deep(.el-pager li),
+.pagination-row :deep(.el-input__wrapper),
+.pagination-row :deep(.el-select__wrapper) {
+  border-radius: 0 !important;
+}
+
+.loading-state {
+  padding: 70px 0;
+  text-align: center;
+  color: #909399;
+}
+
+.empty-state {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  background: #eef8f1;
+  color: #35a854;
+}
+
+.empty-icon .el-icon {
+  font-size: 25px;
+}
+
+.empty-title {
+  margin-bottom: 5px;
+  font-size: 16px;
   font-weight: 600;
+  color: #425466;
+}
+
+.empty-desc {
+  font-size: 13px;
+  color: #98a3b3;
+}
+
+@media (max-width: 1100px) {
+  .summary-meta {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .meta-item:nth-child(2) {
+    border-right: 0;
+  }
+
+  .meta-item {
+    min-height: 52px;
+    border-bottom: 1px solid #e5eaf2;
+  }
+
+  .panel-toolbar {
+    padding: 12px 16px;
+  }
 }
 </style>
-
