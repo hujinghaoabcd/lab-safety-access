@@ -66,7 +66,7 @@
               <span class="answer-label">正确答案</span>
               <strong>{{ q.correctAnswer }}</strong>
             </div>
-            <el-button type="primary" @click="retryQuestion(q)">重新练习</el-button>
+            <el-button type="primary" @click="retryQuestion(q)">重新考试</el-button>
           </div>
         </article>
       </div>
@@ -101,7 +101,6 @@ interface WrongQuestion {
   content: string
   options: string[]
   correctAnswer: string
-  analysis?: string
   wrongCount: number
   lastWrongTime: string | null
 }
@@ -309,7 +308,6 @@ onMounted(() => loadWrongBook())
   margin-bottom: 14px;
   background: #fff;
   border: 1px solid #dfe5ec;
-  border-left: 4px solid #cfd8e5;
 }
 
 .question-item:last-child {
