@@ -15,6 +15,15 @@ const upload = multer({
   }
 });
 
+const normalizeAvatarMime = (req, _res, next) => {
+  // 少数 Android 文件选择器把普通 JPEG 标成 image/jpg。
+  // 后续签名校验统一按标准 image/jpeg 处理。
+  if (req.file && req.file.mimetype === 'image/jpg') {
+    req.file.mimetype = 'image/jpeg';
+  }
+  next();
+};
+
 router.get('/profile', authMiddleware, userController.getProfile);
 router.get('/contact', authMiddleware, userController.getContactInfo);
 router.put('/profile', authMiddleware, userController.updateProfile);
@@ -24,6 +33,7 @@ router.post(
   '/profile/avatar',
   authMiddleware,
   upload.single('avatar'),
+  normalizeAvatarMime,
   userController.changeAvatar
 );
 
