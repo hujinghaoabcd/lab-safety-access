@@ -22,33 +22,6 @@
       </section>
 
       <aside class="side-column">
-        <section class="quick-panel">
-          <div class="panel-heading compact">
-            <div>
-              <h2>快捷入口</h2>
-              <p>快速前往常用功能</p>
-            </div>
-          </div>
-
-          <div class="quick-list">
-            <button
-              v-for="link in quickLinks"
-              :key="link.path"
-              class="quick-link"
-              @click="navigateTo(link.path)"
-            >
-              <span class="quick-icon">
-                <el-icon><component :is="link.icon" /></el-icon>
-              </span>
-              <span class="quick-copy">
-                <strong>{{ link.title }}</strong>
-                <small>{{ link.desc }}</small>
-              </span>
-              <span class="quick-arrow">›</span>
-            </button>
-          </div>
-        </section>
-
         <section class="contact-panel">
           <div class="panel-heading compact">
             <div>
@@ -88,19 +61,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import {
-  Reading,
-  EditPen,
-  Medal,
-  User,
-  Phone,
-  Message,
-  OfficeBuilding
-} from '@element-plus/icons-vue'
+import { Phone, Message, OfficeBuilding } from '@element-plus/icons-vue'
 import { request } from '@/api/request'
 
-const router = useRouter()
 const activeNames = ref<string[]>([])
 
 // 与移动端帮助页保持完全一致，避免两端说明口径不同。
@@ -132,13 +95,6 @@ const helpItems = ref([
   }
 ])
 
-const quickLinks = [
-  { icon: Reading, title: '学习中心', desc: '查看学习资料', path: '/learning' },
-  { icon: EditPen, title: '考试中心', desc: '查看可参加考试', path: '/exam-center' },
-  { icon: Medal, title: '合格证书', desc: '预览和下载证书', path: '/certificate' },
-  { icon: User, title: '个人中心', desc: '管理个人资料', path: '/profile' }
-]
-
 const defaultContact = {
   phone: '010-12345678',
   email: 'lab-safety@ucas.edu.cn',
@@ -146,10 +102,6 @@ const defaultContact = {
 }
 
 const contactInfo = ref({ ...defaultContact })
-
-const navigateTo = (path: string) => {
-  router.push(path)
-}
 
 onMounted(async () => {
   try {
@@ -183,7 +135,6 @@ onMounted(async () => {
 }
 
 .faq-panel,
-.quick-panel,
 .contact-panel {
   background: #fff;
   border: 1px solid #e2e7ed;
@@ -244,70 +195,6 @@ onMounted(async () => {
 .side-column {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.quick-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.quick-link {
-  appearance: none;
-  width: 100%;
-  min-height: 68px;
-  display: flex;
-  align-items: center;
-  padding: 12px 18px;
-  background: #fff;
-  border: none;
-  border-bottom: 1px solid #edf0f4;
-  text-align: left;
-  cursor: pointer;
-}
-
-.quick-link:last-child {
-  border-bottom: none;
-}
-
-.quick-link:hover {
-  background: #f7fbff;
-}
-
-.quick-icon {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #0475FA;
-  background: #f3f8ff;
-  font-size: 18px;
-  margin-right: 13px;
-}
-
-.quick-copy {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.quick-copy strong {
-  color: #253044;
-  font-size: 14px;
-}
-
-.quick-copy small {
-  color: #929cac;
-  font-size: 12px;
-}
-
-.quick-arrow {
-  color: #a9b2bf;
-  font-size: 21px;
 }
 
 .contact-list {
