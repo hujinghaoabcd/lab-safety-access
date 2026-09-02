@@ -57,9 +57,9 @@ const viewCertificate = (cert: Certificate) => {
 
 onMounted(async () => {
   try {
-    // 加载发证单位设置
+    // 加载学生可读的发证单位设置
     try {
-      const settingsResp: any = await request.get('/admin/settings')
+      const settingsResp: any = await request.get('/user/contact')
       const settingsData = settingsResp?.data || settingsResp
       if (settingsData?.cert?.issuer) {
         issuerName.value = settingsData.cert.issuer
