@@ -1,15 +1,16 @@
 /**
  * 日志模块
- * 
+ *
  * 使用 winston 提供统一的日志记录功能
  * - 支持不同日志级别（error, warn, info, debug）
  * - 同时输出到控制台和文件
- * - 自动按日期分割日志文件
+ * - 时间统一按应用时区（默认 Asia/Shanghai）显示
  */
 
 const winston = require('winston');
 const path = require('path');
 const fs = require('fs');
+const { formatAppDateTime } = require('./time');
 
 // 日志目录
 const LOG_DIR = path.join(__dirname, '../../logs');
@@ -19,9 +20,11 @@ if (!fs.existsSync(LOG_DIR)) {
   fs.mkdirSync(LOG_DIR, { recursive: true });
 }
 
+const localTimestamp = () => formatAppDateTime(new Date());
+
 // 自定义日志格式
 const logFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.timestamp({ format: localTimestamp }),
   winston.format.errors({ stack: true }),
   winston.format.splat(),
   winston.format.json()
@@ -30,7 +33,7 @@ const logFormat = winston.format.combine(
 // 控制台输出格式（开发环境更友好）
 const consoleFormat = winston.format.combine(
   winston.format.colorize(),
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.timestamp({ format: localTimestamp }),
   winston.format.printf(({ timestamp, level, message, ...meta }) => {
     let msg = `${timestamp} [${level}]: ${message}`;
     if (Object.keys(meta).length > 0) {
@@ -88,22 +91,22 @@ if (process.env.NODE_ENV !== 'production') {
 module.exports = {
   // 错误日志
   error: (message, ...args) => logger.error(message, ...args),
-  
+
   // 警告日志
   warn: (message, ...args) => logger.warn(message, ...args),
-  
+
   // 信息日志
   info: (message, ...args) => logger.log('info', message, ...args),
-  
+
   // 调试日志
   debug: (message, ...args) => logger.debug(message, ...args),
-  
+
   // HTTP 请求日志
   http: (message, ...args) => logger.info(`[HTTP] ${message}`, ...args),
-  
+
   // 数据库操作日志
   db: (message, ...args) => logger.debug(`[DB] ${message}`, ...args),
-  
+
   // 原始 logger 实例（用于高级用法）
   logger
 };
