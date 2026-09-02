@@ -1,91 +1,110 @@
 <template>
   <div class="desktop-help-page">
-    <el-card class="page-header" shadow="never">
-      <h2>帮助说明</h2>
-      <p>常见问题与使用指南</p>
-    </el-card>
-
-    <!-- 快捷入口 -->
-    <el-card class="quick-links-card" shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <el-icon><Link /></el-icon>
-          <span>快捷入口</span>
-        </div>
-      </template>
-      <div class="links-grid">
-        <div
-          v-for="link in quickLinks"
-          :key="link.path"
-          class="link-item"
-          :class="{ disabled: link.disabled }"
-          @click="!link.disabled && navigateTo(link.path)"
-        >
-          <div class="link-icon">{{ link.icon }}</div>
-          <div class="link-title">{{ link.title }}</div>
-        </div>
+    <div class="page-heading">
+      <div>
+        <h1>帮助中心</h1>
+        <p>查看系统使用说明、常见问题与联系方式</p>
       </div>
-    </el-card>
+    </div>
 
-    <!-- 常见问题 -->
-    <el-card class="faq-card" shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <el-icon><QuestionFilled /></el-icon>
-          <span>常见问题</span>
+    <div class="help-layout">
+      <section class="faq-panel">
+        <div class="panel-heading">
+          <div>
+            <h2>常见问题</h2>
+            <p>点击问题可展开查看具体说明</p>
+          </div>
         </div>
-      </template>
-      <el-collapse v-model="activeNames">
-        <el-collapse-item
-          v-for="item in helpItems"
-          :key="item.id"
-          :title="item.title"
-          :name="item.id"
-        >
-          <div class="faq-content">{{ item.content }}</div>
-        </el-collapse-item>
-      </el-collapse>
-    </el-card>
 
-    <!-- 联系方式 -->
-    <el-card class="contact-card" shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <el-icon><Phone /></el-icon>
-          <span>联系我们</span>
-        </div>
-      </template>
-      <div class="contact-list">
-        <div class="contact-item">
-          <el-icon class="contact-icon"><Phone /></el-icon>
-          <div class="contact-info">
-            <div class="contact-label">咨询电话</div>
-            <div class="contact-value">{{ contactInfo.phone }}</div>
+        <el-collapse v-model="activeNames" class="faq-collapse">
+          <el-collapse-item
+            v-for="item in helpItems"
+            :key="item.id"
+            :title="item.title"
+            :name="item.id"
+          >
+            <div class="faq-content">{{ item.content }}</div>
+          </el-collapse-item>
+        </el-collapse>
+      </section>
+
+      <aside class="side-column">
+        <section class="quick-panel">
+          <div class="panel-heading compact">
+            <div>
+              <h2>快捷入口</h2>
+              <p>快速前往常用功能</p>
+            </div>
           </div>
-        </div>
-        <div class="contact-item">
-          <el-icon class="contact-icon"><Message /></el-icon>
-          <div class="contact-info">
-            <div class="contact-label">电子邮箱</div>
-            <div class="contact-value">{{ contactInfo.email }}</div>
+
+          <div class="quick-list">
+            <button
+              v-for="link in quickLinks"
+              :key="link.path"
+              class="quick-link"
+              @click="navigateTo(link.path)"
+            >
+              <span class="quick-icon">
+                <el-icon><component :is="link.icon" /></el-icon>
+              </span>
+              <span class="quick-copy">
+                <strong>{{ link.title }}</strong>
+                <small>{{ link.desc }}</small>
+              </span>
+              <span class="quick-arrow">›</span>
+            </button>
           </div>
-        </div>
-        <div class="contact-item">
-          <el-icon class="contact-icon"><Location /></el-icon>
-          <div class="contact-info">
-            <div class="contact-label">工作地点</div>
-            <div class="contact-value">{{ contactInfo.address }}</div>
+        </section>
+
+        <section class="contact-panel">
+          <div class="panel-heading compact">
+            <div>
+              <h2>联系我们</h2>
+              <p>如遇系统问题，可通过以下方式咨询</p>
+            </div>
           </div>
-        </div>
-      </div>
-    </el-card>
+
+          <div class="contact-list">
+            <div class="contact-item">
+              <div class="contact-icon"><el-icon><Phone /></el-icon></div>
+              <div>
+                <div class="contact-label">咨询电话</div>
+                <div class="contact-value">{{ contactInfo.phone }}</div>
+              </div>
+            </div>
+            <div class="contact-item">
+              <div class="contact-icon"><el-icon><Message /></el-icon></div>
+              <div>
+                <div class="contact-label">电子邮箱</div>
+                <div class="contact-value">{{ contactInfo.email }}</div>
+              </div>
+            </div>
+            <div class="contact-item">
+              <div class="contact-icon"><el-icon><Location /></el-icon></div>
+              <div>
+                <div class="contact-label">工作地点</div>
+                <div class="contact-value">{{ contactInfo.address }}</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Link, QuestionFilled, Phone, Message, Location } from '@element-plus/icons-vue'
+import {
+  Reading,
+  EditPen,
+  Medal,
+  User,
+  Phone,
+  Message,
+  Location
+} from '@element-plus/icons-vue'
 import { request } from '@/api/request'
 
 const router = useRouter()
@@ -96,36 +115,41 @@ const helpItems = ref([
   {
     id: '1',
     title: '如何开始学习？',
-    content: '点击首页"学习中心"，选择需要学习的内容。学习过程中请认真阅读内容，确保理解安全知识要点。'
+    content: '进入“学习中心”后，可查看系统已发布的学习资料。根据资料类型阅读文档、查看图文或其他内容，完成考试前的知识准备。'
   },
   {
     id: '2',
     title: '如何参加考试？',
-    content: '完成相关课程学习后，进入"考试中心"选择对应的考试。考试前请仔细阅读考试须知，考试过程中请勿退出页面。'
+    content: '进入“考试中心”后，系统会显示当前账号可参加的考试。选择考试后请先阅读考试说明，再进入答题页面完成考试并提交。'
   },
   {
     id: '3',
-    title: '考试不及格怎么办？',
-    content: '每门考试有3次考试机会。如未通过，可在"考试中心"重新参加考试。建议先复习"错题本"中的错题，巩固薄弱知识点后再次尝试。'
+    title: '考试未通过怎么办？',
+    content: '如考试未通过，可在允许的考试次数范围内重新参加考试。建议先进入“错题本”复习答错题目，再重新作答。具体可考试次数以当前考试设置为准。'
   },
   {
     id: '4',
     title: '如何获取合格证书？',
-    content: '通过所有必修课程的考试后，系统将自动生成电子合格证书。您可在"合格证书"页面查看和下载证书。'
+    content: '考试成绩达到该场考试设置的合格分数后，系统会自动生成合格证书。可在“合格证书”页面预览并下载高清证书。'
   },
   {
     id: '5',
-    title: '证书有效期是多久？',
-    content: '合格证书有效期为一年。证书到期前，系统会提醒您重新学习和考核，以确保您始终掌握最新的安全知识。'
+    title: '在哪里查看历史考试成绩？',
+    content: '进入“考试记录”页面即可查看历史考试时间、成绩和通过状态，并可继续查看相应考试详情。'
+  },
+  {
+    id: '6',
+    title: '个人信息或头像如何修改？',
+    content: '进入“个人中心”后，可修改允许编辑的个人资料、更换头像或修改登录密码。学号等由管理员维护的信息不可自行修改。'
   }
 ])
 
-const quickLinks = ref([
-  { icon: '📚', title: '开始学习', path: '/learning', disabled: true },
-  { icon: '📝', title: '参加考试', path: '/exam-center' },
-  { icon: '📜', title: '查看证书', path: '/certificate' },
-  { icon: '👤', title: '个人中心', path: '/profile' }
-])
+const quickLinks = [
+  { icon: Reading, title: '学习中心', desc: '查看学习资料', path: '/learning' },
+  { icon: EditPen, title: '考试中心', desc: '查看可参加考试', path: '/exam-center' },
+  { icon: Medal, title: '合格证书', desc: '预览和下载证书', path: '/certificate' },
+  { icon: User, title: '个人中心', desc: '管理个人资料', path: '/profile' }
+]
 
 const defaultContact = {
   phone: '010-12345678',
@@ -160,150 +184,207 @@ onMounted(async () => {
 <style scoped>
 .desktop-help-page {
   padding: 0;
+  color: #1f2937;
 }
 
-.page-header {
-  margin-bottom: 24px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 24px 32px;
+.page-heading {
+  padding: 8px 0 20px;
+  border-bottom: 1px solid #dfe4ea;
+  margin-bottom: 20px;
 }
 
-.page-header h2 {
-  font-size: 28px;
+.page-heading h1 {
+  margin: 0 0 6px;
+  font-size: 26px;
   font-weight: 700;
-  color: #303133;
-  margin: 0 0 8px 0;
-  letter-spacing: 0.5px;
-  background: linear-gradient(135deg, #0475FA 0%, #1a8cff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #172033;
 }
 
-.page-header p {
-  font-size: 15px;
-  color: #606266;
+.page-heading p {
   margin: 0;
-  font-weight: 500;
+  font-size: 14px;
+  color: #8a96a8;
 }
 
-.quick-links-card,
-.faq-card,
-.contact-card {
-  margin-bottom: 24px;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #303133;
-  letter-spacing: 0.5px;
-}
-
-.card-header .el-icon {
-  color: #0475FA;
-  font-size: 22px;
-}
-
-.links-grid {
+.help-layout {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 16px;
+  align-items: start;
 }
 
-.link-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 24px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #f0f2f5 100%);
-  border-radius: 12px;
-  border: 2px solid #ebeef5;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.faq-panel,
+.quick-panel,
+.contact-panel {
+  background: #fff;
+  border: 1px solid #e2e7ed;
 }
 
-.link-item:hover:not(.disabled) {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border-color: #0475FA;
+.panel-heading {
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid #e8ecf1;
 }
 
-.link-item.disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.panel-heading.compact {
+  padding: 18px 20px 14px;
 }
 
-.link-icon {
-  font-size: 48px;
-}
-
-.link-title {
+.panel-heading h2 {
+  margin: 0 0 5px;
   font-size: 16px;
+  font-weight: 700;
+  color: #172033;
+}
+
+.panel-heading p {
+  margin: 0;
+  font-size: 12px;
+  color: #98a2b2;
+}
+
+.faq-collapse {
+  border-top: none;
+  border-bottom: none;
+}
+
+:deep(.faq-collapse .el-collapse-item__header) {
+  min-height: 58px;
+  padding: 0 22px;
+  border-bottom: 1px solid #edf0f4;
+  color: #273244;
+  font-size: 14px;
   font-weight: 600;
-  color: #303133;
+}
+
+:deep(.faq-collapse .el-collapse-item__wrap) {
+  border-bottom: 1px solid #edf0f4;
+}
+
+:deep(.faq-collapse .el-collapse-item__content) {
+  padding: 0;
 }
 
 .faq-content {
-  font-size: 15px;
-  color: #606266;
-  line-height: 1.8;
-  white-space: pre-line;
-  padding: 8px 0;
+  padding: 18px 22px 22px;
+  background: #fafbfc;
+  color: #5f6b7a;
+  font-size: 14px;
+  line-height: 1.9;
+}
+
+.side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.quick-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.quick-link {
+  appearance: none;
+  width: 100%;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  padding: 13px 18px;
+  background: #fff;
+  border: none;
+  border-bottom: 1px solid #edf0f4;
+  text-align: left;
+  cursor: pointer;
+}
+
+.quick-link:last-child {
+  border-bottom: none;
+}
+
+.quick-link:hover {
+  background: #f7fbff;
+}
+
+.quick-icon {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cfe3fa;
+  color: #0475FA;
+  background: #f3f8ff;
+  font-size: 18px;
+  margin-right: 13px;
+}
+
+.quick-copy {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.quick-copy strong {
+  color: #253044;
+  font-size: 14px;
+}
+
+.quick-copy small {
+  color: #929cac;
+  font-size: 12px;
+}
+
+.quick-arrow {
+  color: #a9b2bf;
+  font-size: 22px;
 }
 
 .contact-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  padding: 4px 18px 12px;
 }
 
 .contact-item {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #f0f2f5 100%);
-  border-radius: 12px;
-  border: 2px solid #ebeef5;
-  transition: all 0.3s ease;
+  gap: 12px;
+  padding: 15px 0;
+  border-bottom: 1px solid #edf0f4;
 }
 
-.contact-item:hover {
-  transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border-color: #0475FA;
+.contact-item:last-child {
+  border-bottom: none;
 }
 
 .contact-icon {
-  font-size: 32px;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #0475FA;
-  flex-shrink: 0;
-}
-
-.contact-info {
-  flex: 1;
+  background: #f3f8ff;
+  border: 1px solid #d8e8fa;
 }
 
 .contact-label {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 6px;
-  font-weight: 500;
+  color: #97a1b0;
+  font-size: 12px;
+  margin-bottom: 5px;
 }
 
 .contact-value {
-  font-size: 16px;
-  color: #303133;
-  font-weight: 600;
+  color: #303b4d;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+@media (max-width: 1150px) {
+  .help-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
 }
 </style>
