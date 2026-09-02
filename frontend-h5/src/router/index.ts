@@ -144,15 +144,16 @@ const routes: RouteRecordRaw[] = [
     ),
     meta: { title: '合格证书', requiresAuth: true }
   },
-  {
-    path: '/about',
-    name: 'About',
-    component: loadComponent(
-      () => import('@/views/desktop/AboutPage.vue'),
-      () => import('@/views/AboutPage.vue')
-    ),
-    meta: { title: '关于系统', requiresAuth: true }
-  },
+  ...(!isDesktop()
+    ? [
+        {
+          path: '/about',
+          name: 'About',
+          component: () => import('@/views/AboutPage.vue'),
+          meta: { title: '关于系统', requiresAuth: true }
+        } as RouteRecordRaw
+      ]
+    : []),
   {
     path: '/help',
     name: 'Help',
