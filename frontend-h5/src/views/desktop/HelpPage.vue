@@ -141,7 +141,7 @@ const navigateTo = (path: string) => {
 
 onMounted(async () => {
   try {
-    const res: any = await request.get('/admin/settings')
+    const res: any = await request.get('/user/contact')
     const data = res?.data || res
     const contact = data?.contact || {}
 
@@ -307,4 +307,3 @@ onMounted(async () => {
   font-weight: 600;
 }
 </style>
-
