@@ -1,74 +1,90 @@
 <template>
   <div class="desktop-exam-result">
-    <el-card class="result-card" :class="{ 'fail-card': !isPassed }" shadow="hover">
-      <div v-if="isPassed" class="success-content">
-        <div class="success-icon-wrapper">
-          <div class="success-icon">
-            <el-icon><CircleCheck /></el-icon>
+    <section class="result-panel" :class="{ failed: !isPassed }">
+      <div class="result-head">
+        <div class="status-main">
+          <span class="status-icon" :class="isPassed ? 'passed' : 'failed'">
+            <el-icon v-if="isPassed"><CircleCheck /></el-icon>
+            <el-icon v-else><CircleClose /></el-icon>
+          </span>
+          <div class="status-copy">
+            <div class="status-label">{{ isPassed ? '考试通过' : '考试未通过' }}</div>
+            <h1>{{ isPassed ? '本次考试已完成' : '本次成绩未达到及格要求' }}</h1>
+            <p>
+              {{ isPassed
+                ? `答对 ${correct} 题，成绩已记录。`
+                : `答对 ${correct} 题，答错 ${wrong} 题，可返回考试中心重新参加考试。` }}
+            </p>
           </div>
-          <div class="sparkle left">✨</div>
-          <div class="sparkle right">✨</div>
         </div>
-        <h2 class="result-title success">恭喜你，完成答题！</h2>
-        <div class="result-stats">
-          <div class="stat-item">
+
+        <div class="score-block" :class="isPassed ? 'passed' : 'failed'">
+          <strong>{{ score }}</strong>
+          <span>/ {{ total }}</span>
+          <small>本次得分</small>
+        </div>
+      </div>
+
+      <div class="result-stats">
+        <div class="stat-item">
+          <span class="stat-icon success"><el-icon><CircleCheck /></el-icon></span>
+          <div>
             <span class="stat-label">答对题目</span>
-            <span class="stat-value success-value">{{ correct }}题</span>
+            <strong class="stat-value success-value">{{ correct }}<small>题</small></strong>
           </div>
-          <div class="stat-item">
+        </div>
+
+        <div class="stat-item">
+          <span class="stat-icon error"><el-icon><CircleClose /></el-icon></span>
+          <div>
             <span class="stat-label">答错题目</span>
-            <span class="stat-value error-value">{{ wrong }}题</span>
+            <strong class="stat-value error-value">{{ wrong }}<small>题</small></strong>
           </div>
-          <div class="stat-item">
-            <span class="stat-label">得分</span>
-            <span class="stat-value score-value">{{ score }}分</span>
+        </div>
+
+        <div class="stat-item">
+          <span class="stat-icon score"><el-icon><Medal /></el-icon></span>
+          <div>
+            <span class="stat-label">及格分数</span>
+            <strong class="stat-value score-value">{{ passScore }}<small>分</small></strong>
           </div>
         </div>
       </div>
 
-      <div v-else class="fail-content">
-        <div class="fail-icon-wrapper">
-          <div class="fail-icon">😔</div>
+      <div class="action-bar">
+        <div class="action-note">
+          {{ isPassed ? '考试结果已保存，可前往考试记录查看详情。' : '本次考试结果已保存，可查看记录或重新参加考试。' }}
         </div>
-        <h2 class="result-title fail">抱歉，只有{{ correct }}道题是对的！</h2>
-        <div class="result-stats">
-          <div class="stat-item">
-            <span class="stat-label">答对题目</span>
-            <span class="stat-value success-value">{{ correct }}题</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">答错题目</span>
-            <span class="stat-value error-value">{{ wrong }}题</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">得分</span>
-            <span class="stat-value score-value">{{ score }}分</span>
-          </div>
+        <div class="action-buttons">
+          <el-button @click="handleContinue">
+            <el-icon><RefreshRight /></el-icon>
+            {{ isPassed ? '返回考试中心' : '重新考试' }}
+          </el-button>
+          <el-button type="primary" @click="handleRecords">
+            <el-icon><List /></el-icon>
+            查看记录
+          </el-button>
+          <el-button @click="handleQuit">
+            <el-icon><HomeFilled /></el-icon>
+            返回首页
+          </el-button>
         </div>
       </div>
-
-      <div class="action-buttons">
-        <el-button size="large" @click="handleContinue">
-          <el-icon><RefreshRight /></el-icon>
-          继续答题
-        </el-button>
-        <el-button type="primary" size="large" @click="handleRecords">
-          <el-icon><List /></el-icon>
-          查看记录
-        </el-button>
-        <el-button size="large" @click="handleQuit">
-          <el-icon><HomeFilled /></el-icon>
-          返回首页
-        </el-button>
-      </div>
-    </el-card>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { CircleCheck, RefreshRight, List, HomeFilled } from '@element-plus/icons-vue'
+import {
+  CircleCheck,
+  CircleClose,
+  HomeFilled,
+  List,
+  Medal,
+  RefreshRight
+} from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -96,175 +112,258 @@ const handleQuit = () => {
 
 <style scoped>
 .desktop-exam-result {
-  padding: 0;
+  min-height: calc(100vh - 112px);
+  padding: 36px 0;
   display: flex;
   justify-content: center;
+  align-items: flex-start;
+}
+
+.result-panel {
+  width: min(1040px, 100%);
+  background: #fff;
+  border: 1px solid #e2e7ee;
+  box-shadow: 0 5px 18px rgba(31, 45, 61, 0.075);
+}
+
+.result-head {
+  min-height: 176px;
+  padding: 34px 38px;
+  display: flex;
   align-items: center;
-  min-height: calc(100vh - 70px);
+  justify-content: space-between;
+  gap: 36px;
+  border-bottom: 1px solid #e8ecf2;
 }
 
-.result-card {
-  max-width: 800px;
-  width: 100%;
-  border-radius: 24px;
-  overflow: hidden;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
-  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+.status-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 22px;
 }
 
-.result-card.fail-card {
-  background: linear-gradient(135deg, #fff 0%, #fafafa 100%);
-}
-
-.success-content,
-.fail-content {
-  text-align: center;
-  padding: 60px 40px 40px;
-}
-
-.success-icon-wrapper {
-  position: relative;
-  display: inline-block;
-  margin-bottom: 32px;
-}
-
-.success-icon {
-  width: 120px;
-  height: 120px;
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  border-radius: 50%;
+.status-icon {
+  width: 66px;
+  height: 66px;
+  flex: 0 0 66px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 32px rgba(255, 193, 7, 0.4);
-  position: relative;
-  z-index: 1;
+  font-size: 34px;
 }
 
-.success-icon .el-icon {
-  font-size: 64px;
-  color: #fff;
+.status-icon.passed {
+  background: #ecf8f1;
+  color: #25a85a;
 }
 
-.sparkle {
-  position: absolute;
-  font-size: 32px;
-  color: #FFD700;
-  animation: sparkle 2s ease-in-out infinite;
+.status-icon.failed {
+  background: #fff1f1;
+  color: #e85b63;
 }
 
-.sparkle.left {
-  top: -10px;
-  left: -20px;
-  animation-delay: 0s;
+.status-copy {
+  min-width: 0;
 }
 
-.sparkle.right {
-  top: -10px;
-  right: -20px;
-  animation-delay: 1s;
+.status-label {
+  margin-bottom: 6px;
+  color: #7f8c9d;
+  font-size: 13px;
+  font-weight: 600;
 }
 
-@keyframes sparkle {
-  0%, 100% { opacity: 0.3; transform: scale(0.8); }
-  50% { opacity: 1; transform: scale(1.2); }
-}
-
-.fail-icon-wrapper {
-  margin-bottom: 32px;
-}
-
-.fail-icon {
-  font-size: 120px;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
-}
-
-.result-title {
-  font-size: 32px;
+.status-copy h1 {
+  margin: 0;
+  color: #1f2d3d;
+  font-size: 25px;
+  line-height: 1.35;
   font-weight: 700;
-  margin-bottom: 32px;
-  letter-spacing: 0.5px;
 }
 
-.result-title.success {
-  background: linear-gradient(135deg, #0475FA 0%, #1a8cff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.status-copy p {
+  margin: 9px 0 0;
+  color: #7f8c9d;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
-.result-title.fail {
-  color: #606266;
+.score-block {
+  min-width: 176px;
+  padding-left: 30px;
+  text-align: right;
+  border-left: 1px solid #e8ecf2;
+}
+
+.score-block strong {
+  font-size: 46px;
+  line-height: 1;
+  font-weight: 750;
+}
+
+.score-block.passed strong {
+  color: #25a85a;
+}
+
+.score-block.failed strong {
+  color: #e85b63;
+}
+
+.score-block > span {
+  margin-left: 5px;
+  color: #9aa5b4;
+  font-size: 15px;
+}
+
+.score-block small {
+  display: block;
+  margin-top: 9px;
+  color: #9aa5b4;
+  font-size: 12px;
+  font-weight: 400;
 }
 
 .result-stats {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  margin-bottom: 40px;
-  padding: 32px;
-  background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%);
-  border-radius: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 26px 38px;
+  gap: 0;
+  background: #fafbfd;
+  border-bottom: 1px solid #e8ecf2;
 }
 
 .stat-item {
+  min-height: 78px;
+  padding: 8px 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-right: 1px solid #e5eaf0;
+}
+
+.stat-item:first-child {
+  padding-left: 0;
+}
+
+.stat-item:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.stat-icon.success {
+  background: #edf8f1;
+  color: #25a85a;
+}
+
+.stat-icon.error {
+  background: #fff1f1;
+  color: #e85b63;
+}
+
+.stat-icon.score {
+  background: #fff7e6;
+  color: #d89418;
+}
+
+.stat-item > div {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
+  gap: 3px;
 }
 
 .stat-label {
-  font-size: 14px;
-  color: #909399;
-  font-weight: 500;
+  color: #8d99a9;
+  font-size: 12px;
 }
 
 .stat-value {
-  font-size: 28px;
+  font-size: 24px;
+  line-height: 1.2;
   font-weight: 700;
 }
 
+.stat-value small {
+  margin-left: 3px;
+  color: #718095;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 .success-value {
-  color: #07c160;
+  color: #25a85a;
 }
 
 .error-value {
-  color: #f56c6c;
+  color: #e85b63;
 }
 
 .score-value {
-  background: linear-gradient(135deg, #FF9500 0%, #FFB800 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-size: 36px;
+  color: #d89418;
+}
+
+.action-bar {
+  min-height: 92px;
+  padding: 20px 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.action-note {
+  color: #8a97a8;
+  font-size: 13px;
 }
 
 .action-buttons {
+  flex: 0 0 auto;
   display: flex;
-  gap: 16px;
-  justify-content: center;
-  padding: 32px 40px;
-  border-top: 1px solid #ebeef5;
+  align-items: center;
+  gap: 10px;
 }
 
-.action-buttons .el-button {
-  flex: 1;
-  border-radius: 12px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  font-size: 16px;
-  padding: 14px 24px;
+.action-buttons :deep(.el-button) {
+  min-width: 118px;
+  height: 38px;
+  margin: 0;
+  padding: 0 18px;
+  border-radius: 0 !important;
+  font-size: 14px;
+  font-weight: 500;
 }
 
-.action-buttons .el-button--primary {
-  box-shadow: 0 4px 12px rgba(4, 117, 250, 0.25);
+.action-buttons :deep(.el-button--primary) {
+  box-shadow: none;
 }
 
-.action-buttons .el-button--primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(4, 117, 250, 0.35);
+@media (max-width: 1000px) {
+  .result-head {
+    align-items: flex-start;
+  }
+
+  .score-block {
+    min-width: 140px;
+  }
+
+  .result-stats {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .action-bar {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
 }
 </style>
-
