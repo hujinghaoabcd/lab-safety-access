@@ -85,7 +85,6 @@ import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Trophy } from '@element-plus/icons-vue'
 import { getRanking } from '@/api/exam'
-import defaultAvatar from '@/assets/default-cat-avatar.svg'
 
 interface RankingItem {
   userId: number
@@ -95,6 +94,10 @@ interface RankingItem {
   department: string
   score: number
 }
+
+// 使用原来 Vant 官方 @vant/assets/cat.jpeg 的同一张小猫图片。
+// 改走 unpkg 镜像，避免部分 iPhone 环境无法访问 fastly.jsdelivr.net。
+const defaultAvatar = 'https://unpkg.com/@vant/assets@1.0.8/cat.jpeg'
 
 const isLegacyDefaultAvatar = (raw: string) =>
   raw.includes('@vant/assets/cat.jpeg') || raw.includes('img.yzcdn.cn/vant/cat.jpeg')
