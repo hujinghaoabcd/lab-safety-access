@@ -255,8 +255,8 @@ const handleResetPassword = async (row: User) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    await adminApi.resetUserPassword(row.id)
-    ElMessage.success('密码已重置为: 123456')
+    const result = await adminApi.resetUserPassword(row.id)
+    ElMessage.success(`密码已重置为: ${result.temporaryPassword}`)
   } catch (err: any) {
     if (err !== 'cancel') {
       ElMessage.error(err.message || '重置密码失败')
