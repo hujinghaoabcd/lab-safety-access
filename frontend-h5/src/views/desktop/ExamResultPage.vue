@@ -4,8 +4,8 @@
       <div class="result-head">
         <div class="status-main">
           <span class="status-icon" :class="isPassed ? 'passed' : 'failed'">
-            <el-icon v-if="isPassed"><CircleCheckFilled /></el-icon>
-            <el-icon v-else><WarningFilled /></el-icon>
+            <el-icon v-if="isPassed"><CircleCheck /></el-icon>
+            <el-icon v-else><CircleClose /></el-icon>
           </span>
           <div class="status-copy">
             <div class="status-label">{{ isPassed ? '考试通过' : '考试未通过' }}</div>
@@ -37,8 +37,8 @@
         </div>
 
         <div class="stat-item">
-          <span class="stat-label">及格分数</span>
-          <strong class="stat-value score-value">{{ passScore }}<small>分</small></strong>
+          <span class="stat-label">得分</span>
+          <strong class="stat-value score-value">{{ score }}<small>分</small></strong>
         </div>
       </div>
 
@@ -69,11 +69,11 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
-  CircleCheckFilled,
+  CircleCheck,
+  CircleClose,
   HomeFilled,
   List,
-  RefreshRight,
-  WarningFilled
+  RefreshRight
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -134,25 +134,23 @@ const handleQuit = () => {
 }
 
 .status-icon {
-  width: 62px;
-  height: 62px;
-  flex: 0 0 62px;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 31px;
-  border: 1px solid transparent;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  font-size: 46px;
 }
 
 .status-icon.passed {
-  background: #eef8f2;
-  border-color: #d9eee1;
   color: #25a85a;
 }
 
 .status-icon.failed {
-  background: #fff5f2;
-  border-color: #f4ded8;
   color: #e85b63;
 }
 
@@ -218,63 +216,58 @@ const handleQuit = () => {
 }
 
 .result-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  padding: 22px 38px;
-  gap: 0;
-  background: #fafbfd;
-  border-bottom: 1px solid #e8ecf2;
+  min-height: 132px;
+  padding: 26px 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 58px;
+  background: #eef6ff;
+  border-bottom: 1px solid #e1eaf4;
 }
 
 .stat-item {
-  min-height: 82px;
-  padding: 10px 28px;
+  min-width: 112px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  border-right: 1px solid #e5eaf0;
+  gap: 7px;
+  border: 0;
   text-align: center;
-}
-
-.stat-item:first-child {
-  padding-left: 0;
-}
-
-.stat-item:last-child {
-  padding-right: 0;
-  border-right: 0;
 }
 
 .stat-label {
   color: #8d99a9;
   font-size: 13px;
+  font-weight: 400;
 }
 
 .stat-value {
-  font-size: 27px;
-  line-height: 1.2;
+  font-size: 31px;
+  line-height: 1.15;
   font-weight: 700;
 }
 
 .stat-value small {
-  margin-left: 3px;
-  color: #718095;
-  font-size: 12px;
-  font-weight: 500;
+  margin-left: 2px;
+  color: inherit;
+  font-size: 17px;
+  font-weight: 600;
 }
 
 .success-value {
-  color: #25a85a;
+  color: #07c160;
 }
 
 .error-value {
-  color: #e85b63;
+  color: #ff6269;
 }
 
 .score-value {
-  color: #d89418;
+  color: #f59a00;
+  font-size: 35px;
 }
 
 .action-bar {
@@ -324,6 +317,7 @@ const handleQuit = () => {
   .result-stats {
     padding-left: 24px;
     padding-right: 24px;
+    gap: 42px;
   }
 
   .action-bar {
