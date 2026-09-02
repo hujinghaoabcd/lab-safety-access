@@ -60,8 +60,12 @@ export function changePassword(data: { oldPassword: string; newPassword: string 
 export function uploadAvatar(file: File) {
   const formData = new FormData()
   formData.append('avatar', file)
+
+  // 不手工指定 multipart/form-data。浏览器必须自行生成带 boundary 的
+  // Content-Type；部分 Android WebView 在手工覆盖该请求头时会偶发上传失败。
+  // 头像上传单独放宽到 60 秒，避免移动网络/VPN 下大图在全局 30 秒超时。
   return request.post('/user/profile/avatar', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+    timeout: 60000
   })
 }
 
