@@ -110,9 +110,9 @@
     border-color: #b9d8ff;
   }
 
-  /* 公告区域在内容较少时也维持稳定的桌面侧栏比例。 */
+  /* 公告区域内容较少时不过度留白，同时仍保持稳定侧栏比例。 */
   .desktop-dashboard .sidebar-card .card-body {
-    min-height: 104px;
+    min-height: 82px;
   }
 
   .desktop-dashboard .notice-text {
