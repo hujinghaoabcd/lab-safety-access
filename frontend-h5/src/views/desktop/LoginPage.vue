@@ -62,7 +62,7 @@
             </el-form-item>
           </el-form>
 
-          <p class="login-tip">提示：初始密码为学号/工号后6位</p>
+          <p class="login-tip">提示：初始密码由管理员统一设置</p>
         </div>
 
         <p class="copyright">© 2025 实验室安全教育考试系统</p>
