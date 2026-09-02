@@ -2,25 +2,26 @@
   <div class="desktop-exam-result">
     <section class="result-panel" :class="{ failed: !isPassed }">
       <div class="result-head">
-        <div class="status-main">
-          <span class="status-icon" :class="isPassed ? 'passed' : 'failed'">
-            <el-icon v-if="isPassed"><CircleCheck /></el-icon>
-            <el-icon v-else><CircleClose /></el-icon>
-          </span>
-          <div class="status-copy">
-            <div class="status-label">{{ isPassed ? '考试通过' : '考试未通过' }}</div>
-            <h1>{{ isPassed ? '本次考试已完成' : '本次成绩未达到及格要求' }}</h1>
-            <p>
-              {{ isPassed
-                ? `答对 ${correct} 题，成绩已记录。`
-                : `答对 ${correct} 题，答错 ${wrong} 题，可返回考试中心重新参加考试。` }}
-            </p>
-          </div>
+        <span class="status-icon" :class="isPassed ? 'passed' : 'failed'">
+          <el-icon v-if="isPassed"><CircleCheck /></el-icon>
+          <el-icon v-else><CircleClose /></el-icon>
+        </span>
+
+        <div class="status-copy">
+          <div class="status-label">{{ isPassed ? '考试通过' : '考试未通过' }}</div>
+          <h1>{{ isPassed ? '本次考试已完成' : '本次成绩未达到及格要求' }}</h1>
+          <p>
+            {{ isPassed
+              ? `答对 ${correct} 题，成绩已记录。`
+              : `答对 ${correct} 题，答错 ${wrong} 题，可返回考试中心重新参加考试。` }}
+          </p>
         </div>
 
         <div class="score-block" :class="isPassed ? 'passed' : 'failed'">
-          <strong>{{ score }}</strong>
-          <span>/ {{ total }}</span>
+          <div class="score-line">
+            <strong>{{ score }}</strong>
+            <span>/ {{ total }}</span>
+          </div>
           <small>本次得分</small>
         </div>
       </div>
@@ -103,47 +104,41 @@ const handleQuit = () => {
 <style scoped>
 .desktop-exam-result {
   min-height: calc(100vh - 112px);
-  padding: 36px 0;
+  padding: 42px 0;
   display: flex;
   justify-content: center;
   align-items: flex-start;
 }
 
 .result-panel {
-  width: min(1040px, 100%);
+  width: min(760px, calc(100% - 48px));
   background: #fff;
   border: 1px solid #e2e7ee;
-  box-shadow: 0 5px 18px rgba(31, 45, 61, 0.075);
+  box-shadow: 0 6px 20px rgba(31, 45, 61, 0.08);
 }
 
 .result-head {
-  min-height: 176px;
-  padding: 34px 38px;
+  min-height: 330px;
+  padding: 42px 48px 36px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 36px;
+  justify-content: center;
+  text-align: center;
   border-bottom: 1px solid #e8ecf2;
 }
 
-.status-main {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 22px;
-}
-
 .status-icon {
-  width: 48px;
-  height: 48px;
-  flex: 0 0 48px;
+  width: 56px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 20px;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-  font-size: 46px;
+  font-size: 54px;
 }
 
 .status-icon.passed {
@@ -155,11 +150,11 @@ const handleQuit = () => {
 }
 
 .status-copy {
-  min-width: 0;
+  max-width: 560px;
 }
 
 .status-label {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   color: #7f8c9d;
   font-size: 13px;
   font-weight: 600;
@@ -168,27 +163,35 @@ const handleQuit = () => {
 .status-copy h1 {
   margin: 0;
   color: #1f2d3d;
-  font-size: 25px;
+  font-size: 28px;
   line-height: 1.35;
   font-weight: 700;
 }
 
 .status-copy p {
-  margin: 9px 0 0;
+  margin: 12px 0 0;
   color: #7f8c9d;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .score-block {
-  min-width: 176px;
-  padding-left: 30px;
-  text-align: right;
-  border-left: 1px solid #e8ecf2;
+  margin-top: 24px;
+  padding-top: 22px;
+  min-width: 210px;
+  text-align: center;
+  border-top: 1px solid #edf0f4;
+}
+
+.score-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
 }
 
 .score-block strong {
-  font-size: 46px;
+  font-size: 48px;
   line-height: 1;
   font-weight: 750;
 }
@@ -201,8 +204,7 @@ const handleQuit = () => {
   color: #e85b63;
 }
 
-.score-block > span {
-  margin-left: 5px;
+.score-block span {
   color: #9aa5b4;
   font-size: 15px;
 }
@@ -216,25 +218,23 @@ const handleQuit = () => {
 }
 
 .result-stats {
-  min-height: 132px;
-  padding: 26px 38px;
+  min-height: 148px;
+  padding: 28px 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 58px;
+  gap: 54px;
   background: #eef6ff;
   border-bottom: 1px solid #e1eaf4;
 }
 
 .stat-item {
-  min-width: 112px;
-  padding: 0;
+  min-width: 120px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border: 0;
   text-align: center;
 }
 
@@ -245,7 +245,7 @@ const handleQuit = () => {
 }
 
 .stat-value {
-  font-size: 31px;
+  font-size: 32px;
   line-height: 1.15;
   font-weight: 700;
 }
@@ -267,32 +267,32 @@ const handleQuit = () => {
 
 .score-value {
   color: #f59a00;
-  font-size: 35px;
+  font-size: 36px;
 }
 
 .action-bar {
-  min-height: 92px;
-  padding: 20px 38px;
+  padding: 24px 34px 28px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 28px;
+  gap: 20px;
 }
 
 .action-note {
   color: #8a97a8;
   font-size: 13px;
+  text-align: center;
 }
 
 .action-buttons {
-  flex: 0 0 auto;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
 }
 
 .action-buttons :deep(.el-button) {
-  min-width: 118px;
+  min-width: 126px;
   height: 38px;
   margin: 0;
   padding: 0 18px;
@@ -305,24 +305,29 @@ const handleQuit = () => {
   box-shadow: none;
 }
 
-@media (max-width: 1000px) {
-  .result-head {
-    align-items: flex-start;
+@media (max-width: 820px) {
+  .result-panel {
+    width: calc(100% - 28px);
   }
 
-  .score-block {
-    min-width: 140px;
+  .result-head {
+    min-height: 300px;
+    padding: 34px 24px 30px;
   }
 
   .result-stats {
-    padding-left: 24px;
-    padding-right: 24px;
-    gap: 42px;
+    gap: 24px;
+    padding-left: 18px;
+    padding-right: 18px;
   }
 
-  .action-bar {
-    padding-left: 24px;
-    padding-right: 24px;
+  .stat-item {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .action-buttons {
+    flex-wrap: wrap;
   }
 }
 </style>
