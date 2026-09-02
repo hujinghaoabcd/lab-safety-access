@@ -2,11 +2,13 @@
  * 统一响应格式
  */
 
+const { localizeTimestampFields } = require('./time');
+
 const success = (res, data = null, message = '操作成功') => {
   res.json({
     code: 0,
     message,
-    data
+    data: localizeTimestampFields(data)
   });
 };
 
@@ -23,7 +25,7 @@ const paginate = (res, list, total, page, pageSize, message = '获取成功') =>
     code: 0,
     message,
     data: {
-      list,
+      list: localizeTimestampFields(list),
       pagination: {
         total,
         page,
