@@ -1,6 +1,5 @@
 <template>
   <div class="desktop-certificate">
-    <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
         <div class="header-icon">
@@ -13,7 +12,6 @@
       </div>
     </div>
 
-    <!-- 证书列表 -->
     <div v-if="certificates.length > 0" class="cert-section">
       <div class="section-title">我的证书</div>
       <div class="cert-list">
@@ -26,10 +24,10 @@
               {{ getGradeLevel(cert.score).level }}
             </el-tag>
           </div>
-          
+
           <div class="cert-title">实验室安全教育考试合格证书</div>
           <div class="cert-exam">{{ cert.examName }}</div>
-          
+
           <div class="cert-info">
             <div class="info-row">
               <span class="info-label">考试成绩</span>
@@ -61,18 +59,25 @@
       <el-button type="primary" @click="router.push('/exam-center')">去参加考试</el-button>
     </el-empty>
 
-    <!-- 证书预览对话框 -->
     <el-dialog v-model="showPreview" title="证书预览" width="900px" :close-on-click-modal="false">
       <div class="cert-preview-content">
-        <div v-if="selectedCert" ref="certRef" class="honor-cert" :style="{ backgroundImage: `url(${certBgImage})` }">
+        <div
+          v-if="selectedCert"
+          ref="certRef"
+          class="honor-cert"
+          :style="{ backgroundImage: `url(${certBgImage})` }"
+        >
           <div class="honor-content">
             <h1 class="honor-title">荣 誉 证 书</h1>
             <p class="honor-serial">编号：{{ selectedCert.certificateNo }}</p>
+
             <div class="honor-body">
               <p class="honor-text">
-                <span class="honor-name">{{ selectedCert.studentName }}</span> 同学于{{ selectedCert.examDate }}参加"{{ selectedCert.examName }}"考试，考试成绩为:<span class="honor-score">{{ selectedCert.score }}分</span>,考试结果为:<span class="honor-grade">{{ selectedGrade?.level }}</span>！
+                <span class="honor-name">{{ selectedCert.studentName }}</span>
+                同学于{{ selectedCert.examDate }}参加“{{ selectedCert.examName }}”考试，考试成绩为：<span class="honor-score">{{ selectedCert.score }}分</span>，考试结果为：<span class="honor-grade">{{ selectedGrade?.level }}</span>！
               </p>
             </div>
+
             <div class="honor-sign">
               <p class="honor-org">{{ issuerName }}</p>
               <p class="honor-date">{{ selectedCert.issueDate }}</p>
@@ -80,9 +85,10 @@
           </div>
         </div>
       </div>
+
       <template #footer>
         <el-button @click="showPreview = false">取消</el-button>
-        <el-button type="primary" @click="saveCertificate" :loading="isDownloading">保存证书</el-button>
+        <el-button type="primary" @click="saveCertificate" :loading="isDownloading">保存高清证书</el-button>
       </template>
     </el-dialog>
   </div>
@@ -134,26 +140,53 @@ const viewCertificate = (cert: Certificate) => {
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
+const waitForCertificateAssets = async () => {
+  try {
+    const fonts = (document as any).fonts
+    if (fonts?.ready) await fonts.ready
+  } catch {}
+
+  await new Promise<void>((resolve) => {
+    const image = new Image()
+    image.onload = () => resolve()
+    image.onerror = () => resolve()
+    image.src = certBgImage
+    if (image.complete) resolve()
+  })
+}
+
 const saveCertificate = async () => {
   if (isDownloading.value) return
 
   isDownloading.value = true
-  const loadingInstance = ElLoading.service({ text: '生成PDF中...', fullscreen: true })
+  const loadingInstance = ElLoading.service({ text: '生成高清PDF中...', fullscreen: true })
 
   try {
     await nextTick()
-    await delay(300)
+    await waitForCertificateAssets()
+    await delay(120)
 
     if (!certRef.value) throw new Error('证书元素未找到')
 
-    const [html2canvasModule, jspdfModule] = await Promise.all([import('html2canvas'), import('jspdf')])
+    const [html2canvasModule, jspdfModule] = await Promise.all([
+      import('html2canvas'),
+      import('jspdf')
+    ])
     const html2canvas = html2canvasModule.default
     const jsPDF = jspdfModule.jsPDF
 
-    const canvas = await html2canvas(certRef.value, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false })
-    const imgData = canvas.toDataURL('image/png')
-    const pdf = new jsPDF('l', 'mm', 'a4')
+    const canvas = await html2canvas(certRef.value, {
+      scale: 3,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      imageTimeout: 15000,
+      removeContainer: true
+    })
 
+    const imgData = canvas.toDataURL('image/png', 1.0)
+    const pdf = new jsPDF('l', 'mm', 'a4')
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = pdf.internal.pageSize.getHeight()
     const ratio = Math.min((pdfWidth - 20) / canvas.width, (pdfHeight - 20) / canvas.height)
@@ -163,12 +196,12 @@ const saveCertificate = async () => {
     pdf.addImage(imgData, 'PNG', imgX, imgY, canvas.width * ratio, canvas.height * ratio)
     pdf.save(`实验室安全教育考试合格证书_${selectedCert.value?.studentName || '证书'}.pdf`)
 
-    ElMessage.success('证书PDF已下载')
-    loadingInstance.close()
+    ElMessage.success('高清证书PDF已下载')
   } catch (error) {
+    console.error('桌面端证书生成失败:', error)
     ElMessage.error('生成失败，请重试')
-    loadingInstance.close()
   } finally {
+    loadingInstance.close()
     isDownloading.value = false
   }
 }
@@ -195,7 +228,6 @@ onMounted(async () => {
   padding: 0;
 }
 
-/* 页面头部 */
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -241,7 +273,6 @@ onMounted(async () => {
   margin: 0;
 }
 
-/* 证书列表 */
 .cert-section {
   background: #fff;
   border-radius: 8px;
@@ -355,89 +386,129 @@ onMounted(async () => {
   flex: 1;
 }
 
-/* 证书预览 */
 .cert-preview-content {
-  padding: 20px;
+  padding: 18px;
   background: #e8e0c8;
   display: flex;
   justify-content: center;
 }
 
+/* 与移动端保持同一套证书比例和视觉层级。 */
 .honor-cert {
   width: 800px;
-  height: 600px;
-  background-size: cover;
+  height: 562px;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
   background-position: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
 }
 
 .honor-content {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: 21%;
+  left: 17%;
+  right: 17%;
+  bottom: 22%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 80px;
-  text-align: center;
+  color: #28241f;
+  font-family: "Songti SC", "STSong", "SimSun", "宋体", "Noto Serif CJK SC", "Noto Serif SC", serif;
 }
 
 .honor-title {
-  font-size: 48px;
+  text-align: center;
+  font-size: 34px;
+  line-height: 1.12;
+  color: #b92722;
   font-weight: 700;
-  color: #8B4513;
-  margin: 0 0 20px 0;
-  letter-spacing: 8px;
+  letter-spacing: 10px;
+  margin: 7px 0 0 0;
+  font-family: "STZhongsong", "华文中宋", "Songti SC", "STSong", "SimSun", "宋体", serif;
 }
 
 .honor-serial {
-  font-size: 16px;
-  color: #666;
-  margin: 0 0 40px 0;
+  width: 100%;
+  align-self: stretch;
+  text-align: center;
+  padding: 0;
+  font-size: 10px;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  color: #514b43;
+  margin: 34px 0 7px 0;
+  white-space: nowrap;
+  font-family: "Times New Roman", "Songti SC", "STSong", "SimSun", serif;
 }
 
 .honor-body {
   flex: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin: 40px 0;
+  min-height: 0;
+  padding: 0 0 28px 0;
+  transform: translateY(-12px);
 }
 
 .honor-text {
-  font-size: 20px;
-  color: #333;
-  line-height: 2;
+  width: 100%;
+  font-size: 18px;
+  color: #27231f;
+  line-height: 1.9;
+  letter-spacing: 0.012em;
+  text-indent: 2em;
   margin: 0;
+  font-weight: 400;
+  font-family: "Songti SC", "STSong", "SimSun", "宋体", "Noto Serif CJK SC", serif;
 }
 
-.honor-name, .honor-score, .honor-grade {
-  font-size: 24px;
+.honor-name {
+  font-size: inherit;
   font-weight: 700;
+  color: #171411;
+  border-bottom: 1px solid #5e574d;
+  padding: 0 2px 1px;
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", "楷体", serif;
 }
 
-.honor-name { color: #8B4513; }
-.honor-score { color: #FF6B6B; }
-.honor-grade { color: #FFD700; }
+.honor-score {
+  font-weight: 700;
+  color: #171411;
+}
+
+.honor-grade {
+  font-weight: 700;
+  color: #b92722;
+}
 
 .honor-sign {
-  margin-top: 40px;
-  text-align: right;
-  width: 100%;
+  position: absolute;
+  right: 7px;
+  bottom: 10px;
+  min-width: 31%;
+  text-align: center;
+  color: #3c372f;
 }
 
 .honor-org {
-  font-size: 18px;
-  color: #333;
-  margin: 0 0 20px 0;
-  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.3;
+  font-weight: 500;
+  margin: 0 0 3px 0;
+  white-space: nowrap;
+  font-family: "Songti SC", "STSong", "SimSun", "宋体", serif;
 }
 
 .honor-date {
-  font-size: 16px;
-  color: #666;
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 500;
   margin: 0;
+  white-space: nowrap;
+  font-family: "Times New Roman", "Songti SC", "STSong", "SimSun", serif;
 }
 </style>
