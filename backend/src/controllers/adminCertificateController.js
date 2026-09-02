@@ -1,6 +1,7 @@
 const crypto = require('node:crypto');
 const { dbQuery, dbGet, withTransaction } = require('../database/db');
 const { success, error } = require('../utils/response');
+const { formatAppDate } = require('../utils/time');
 
 class CertificateError extends Error {
   constructor(message, status = 400) {
@@ -10,7 +11,7 @@ class CertificateError extends Error {
 }
 
 const certificateNumber = () => (
-  `UCAS-LS-${new Date().getFullYear()}-${crypto.randomBytes(8).toString('hex').toUpperCase()}`
+  `UCAS-LS-${formatAppDate().slice(0, 4)}-${crypto.randomBytes(8).toString('hex').toUpperCase()}`
 );
 
 const gradeFromScore = (score, totalScore) => {
@@ -156,7 +157,7 @@ const issueCertificate = async (req, res) => {
       }
 
       const number = certificateNumber();
-      const issueDate = new Date().toISOString().slice(0, 10);
+      const issueDate = formatAppDate();
       const inserted = await tx.run(
         `INSERT INTO certificates
           (certificate_no, user_id, exam_id, exam_name, score, grade, issue_date, status)
@@ -233,7 +234,7 @@ const reissueCertificate = async (req, res) => {
       );
       if (otherActive) throw new CertificateError('该用户已有同考试的其他有效证书', 409);
 
-      const issueDate = new Date().toISOString().slice(0, 10);
+      const issueDate = formatAppDate();
       await tx.run(
         'UPDATE certificates SET status = 1, issue_date = ? WHERE id = ?',
         [issueDate, certificateId]
