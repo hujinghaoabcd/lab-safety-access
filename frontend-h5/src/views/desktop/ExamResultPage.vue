@@ -4,7 +4,11 @@
       <div class="result-head">
         <span class="status-icon" :class="isPassed ? 'passed' : 'failed'">
           <el-icon v-if="isPassed"><CircleCheck /></el-icon>
-          <el-icon v-else><CircleClose /></el-icon>
+          <span v-else class="status-face" aria-hidden="true">
+            <i class="face-eye left"></i>
+            <i class="face-eye right"></i>
+            <i class="face-mouth"></i>
+          </span>
         </span>
 
         <div class="status-copy">
@@ -71,7 +75,6 @@ import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   CircleCheck,
-  CircleClose,
   HomeFilled,
   List,
   RefreshRight
@@ -111,15 +114,15 @@ const handleQuit = () => {
 }
 
 .result-panel {
-  width: min(760px, calc(100% - 48px));
+  width: min(640px, calc(100% - 48px));
   background: #fff;
   border: 1px solid #e2e7ee;
   box-shadow: 0 6px 20px rgba(31, 45, 61, 0.08);
 }
 
 .result-head {
-  min-height: 330px;
-  padding: 42px 48px 36px;
+  min-height: 306px;
+  padding: 38px 42px 32px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -129,16 +132,16 @@ const handleQuit = () => {
 }
 
 .status-icon {
-  width: 56px;
-  height: 56px;
+  width: 62px;
+  height: 62px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-  font-size: 54px;
+  font-size: 56px;
 }
 
 .status-icon.passed {
@@ -149,8 +152,50 @@ const handleQuit = () => {
   color: #e85b63;
 }
 
+.status-face {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  display: block;
+  box-sizing: border-box;
+  border: 3px solid currentColor;
+  border-radius: 50%;
+}
+
+.face-eye {
+  position: absolute;
+  top: 19px;
+  width: 11px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 2px;
+}
+
+.face-eye.left {
+  left: 11px;
+  transform: rotate(13deg);
+}
+
+.face-eye.right {
+  right: 11px;
+  transform: rotate(-13deg);
+}
+
+.face-mouth {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  width: 22px;
+  height: 11px;
+  box-sizing: border-box;
+  border: 3px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+
 .status-copy {
-  max-width: 560px;
+  max-width: 500px;
 }
 
 .status-label {
@@ -163,22 +208,22 @@ const handleQuit = () => {
 .status-copy h1 {
   margin: 0;
   color: #1f2d3d;
-  font-size: 28px;
+  font-size: 27px;
   line-height: 1.35;
   font-weight: 700;
 }
 
 .status-copy p {
-  margin: 12px 0 0;
+  margin: 11px 0 0;
   color: #7f8c9d;
   font-size: 14px;
   line-height: 1.65;
 }
 
 .score-block {
-  margin-top: 24px;
-  padding-top: 22px;
-  min-width: 210px;
+  margin-top: 22px;
+  padding-top: 20px;
+  min-width: 190px;
   text-align: center;
   border-top: 1px solid #edf0f4;
 }
@@ -191,7 +236,7 @@ const handleQuit = () => {
 }
 
 .score-block strong {
-  font-size: 48px;
+  font-size: 46px;
   line-height: 1;
   font-weight: 750;
 }
@@ -211,25 +256,25 @@ const handleQuit = () => {
 
 .score-block small {
   display: block;
-  margin-top: 9px;
+  margin-top: 8px;
   color: #9aa5b4;
   font-size: 12px;
   font-weight: 400;
 }
 
 .result-stats {
-  min-height: 148px;
-  padding: 28px 34px;
+  min-height: 140px;
+  margin: 22px 30px 0;
+  padding: 24px 26px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 54px;
+  gap: 38px;
   background: #eef6ff;
-  border-bottom: 1px solid #e1eaf4;
 }
 
 .stat-item {
-  min-width: 120px;
+  min-width: 100px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -245,7 +290,7 @@ const handleQuit = () => {
 }
 
 .stat-value {
-  font-size: 32px;
+  font-size: 31px;
   line-height: 1.15;
   font-weight: 700;
 }
@@ -267,11 +312,11 @@ const handleQuit = () => {
 
 .score-value {
   color: #f59a00;
-  font-size: 36px;
+  font-size: 35px;
 }
 
 .action-bar {
-  padding: 24px 34px 28px;
+  padding: 24px 30px 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -292,10 +337,10 @@ const handleQuit = () => {
 }
 
 .action-buttons :deep(.el-button) {
-  min-width: 126px;
+  min-width: 116px;
   height: 38px;
   margin: 0;
-  padding: 0 18px;
+  padding: 0 16px;
   border-radius: 0 !important;
   font-size: 14px;
   font-weight: 500;
@@ -305,20 +350,22 @@ const handleQuit = () => {
   box-shadow: none;
 }
 
-@media (max-width: 820px) {
+@media (max-width: 720px) {
   .result-panel {
     width: calc(100% - 28px);
   }
 
   .result-head {
-    min-height: 300px;
-    padding: 34px 24px 30px;
+    min-height: 286px;
+    padding: 32px 22px 28px;
   }
 
   .result-stats {
-    gap: 24px;
-    padding-left: 18px;
-    padding-right: 18px;
+    margin-left: 18px;
+    margin-right: 18px;
+    gap: 18px;
+    padding-left: 14px;
+    padding-right: 14px;
   }
 
   .stat-item {
