@@ -60,6 +60,7 @@ import './styles/global.css'
 import './styles/desktop-certificate-polish.css'
 import './styles/desktop-record-detail-polish.css'
 import './styles/desktop-exam-center-polish.css'
+import './styles/desktop-exam-polish.css'
 
 const app = createApp(App)
 
