@@ -1,7 +1,7 @@
 import axios from 'axios'
 import type { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { showToast, showLoadingToast } from 'vant'
-import { clearStudentSession } from '@/utils/session'
+import { clearStudentSession, isStudentLogoutInProgress } from '@/utils/session'
 
 // One-time cleanup for browsers that used the pre-cookie authentication flow.
 // This value is no longer read or written anywhere in the API client.
@@ -18,6 +18,8 @@ const service = axios.create({
   timeout: 30000,
   withCredentials: true
 })
+
+let loginRedirectTimer: number | null = null
 
 const endpointUnavailableMessage = (url: string) => {
   if (url.includes('/user/profile/password')) {
@@ -67,19 +69,38 @@ const showRequestError = (message: string) => {
   })
 }
 
+const shouldSuppressAuthRedirect = () => {
+  return isStudentLogoutInProgress() || window.location.pathname === '/login'
+}
+
+const scheduleLoginRedirect = () => {
+  if (shouldSuppressAuthRedirect() || loginRedirectTimer !== null) return
+
+  loginRedirectTimer = window.setTimeout(() => {
+    loginRedirectTimer = null
+    if (window.location.pathname !== '/login' && !isStudentLogoutInProgress()) {
+      window.location.replace('/login')
+    }
+  }, 700)
+}
+
 service.interceptors.response.use(
   (response: AxiosResponse) => {
     const payload = response.data as ApiResponse<unknown>
     if (payload.code !== 0 && payload.code !== 200) {
       const url = response.config?.url || ''
       const message = normalizeRequestError(payload.code, payload.message, url)
-      showRequestError(message)
 
       if (payload.code === 401 && !url.includes('/auth/login')) {
         clearStudentSession()
-        window.location.href = '/login'
+        if (!shouldSuppressAuthRedirect()) {
+          showRequestError('登录已过期，请重新登录')
+          scheduleLoginRedirect()
+        }
+        return Promise.reject(new Error(message))
       }
 
+      showRequestError(message)
       return Promise.reject(new Error(message))
     }
     return response
@@ -105,11 +126,18 @@ service.interceptors.response.use(
       }
 
       clearStudentSession()
+
+      // An explicit logout can invalidate several profile/stats requests that
+      // were already in flight. Those expected 401s must stay silent and must
+      // not hard-reload /login. Repeated location.href redirects were the cause
+      // of the login screen flashing and inputs repeatedly losing focus.
+      if (shouldSuppressAuthRedirect()) {
+        return Promise.reject(new Error('会话已结束'))
+      }
+
       const expiredMessage = '登录已过期，请重新登录'
       showRequestError(expiredMessage)
-      setTimeout(() => {
-        window.location.href = '/login'
-      }, 1000)
+      scheduleLoginRedirect()
       return Promise.reject(new Error(expiredMessage))
     }
 
