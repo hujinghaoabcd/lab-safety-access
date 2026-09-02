@@ -220,4 +220,9 @@ input, textarea {
     margin-top: 4.2vw !important;
     margin-bottom: 0.85vw !important;
   }
+
+  /* 只将正文区域轻微上提，保留已经调好的标题和编号位置。 */
+  .honor-body {
+    transform: translateY(-1.45vw);
+  }
 }
