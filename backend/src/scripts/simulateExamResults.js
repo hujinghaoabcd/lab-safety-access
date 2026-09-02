@@ -7,16 +7,16 @@ const {
 
 const API_BASE = String(process.env.TEST_API_BASE || 'http://127.0.0.1:4000/api').replace(/\/$/, '');
 const EXAM_NAME = process.env.TEST_EXAM_NAME || '考试测试';
-const TEST_PASSWORD = process.env.TEST_USER_PASSWORD || 'Test123456';
+const TEST_PASSWORD = process.env.TEST_USER_PASSWORD || 'ucas1234';
 const SHOULD_RESET = process.argv.includes('--reset');
 
 const TEST_USERS = [
-  { studentId: 'TEST006', label: '测试满分', mode: 'full' },
-  { studentId: 'TEST001', label: '测试优秀', mode: 'excellent' },
-  { studentId: 'TEST002', label: '测试良好', mode: 'good' },
-  { studentId: 'TEST003', label: '测试及格', mode: 'pass' },
-  { studentId: 'TEST004', label: '测试未通过', mode: 'fail' },
-  { studentId: 'TEST005', label: '测试重考', mode: 'retry' }
+  { studentId: 'test06', label: '测试满分', mode: 'full' },
+  { studentId: 'test01', label: '测试优秀', mode: 'excellent' },
+  { studentId: 'test02', label: '测试良好', mode: 'good' },
+  { studentId: 'test03', label: '测试及格', mode: 'pass' },
+  { studentId: 'test04', label: '测试未通过', mode: 'fail' },
+  { studentId: 'test05', label: '测试重考', mode: 'retry' }
 ];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -111,8 +111,8 @@ const login = async (studentId) => {
 const resetTestData = async (examId, testUsers) => {
   console.log('\n[reset] 清理测试账号的全部错题，以及当前考试的历史记录和证书...');
   for (const user of testUsers) {
-    // 这些 TEST00x 是专用测试账号。错题本是跨考试聚合的，所以若只删除
-    // 当前考试的错题，旧测试考试留下的错题仍会显示在“测试满分”账号中。
+    // test01-test06 是专用测试账号。错题本是跨考试聚合的，所以若只删除
+    // 当前考试的错题，旧测试考试留下的错题仍可能显示在满分账号中。
     await dbRun('DELETE FROM wrong_questions WHERE user_id = ?', [user.id]);
     await dbRun('DELETE FROM certificates WHERE user_id = ? AND exam_id = ?', [user.id, examId]);
     await dbRun('DELETE FROM exam_records WHERE user_id = ? AND exam_id = ?', [user.id, examId]);
@@ -182,6 +182,7 @@ const main = async () => {
   console.log('=== 实验室安全考试自动成绩模拟 ===');
   console.log(`考试: ${EXAM_NAME}`);
   console.log(`API: ${API_BASE}`);
+  console.log(`测试账号: test01-test06`);
   console.log(`清理旧测试数据: ${SHOULD_RESET ? '是' : '否'}`);
 
   const exam = await dbGet(
@@ -211,7 +212,7 @@ const main = async () => {
       [spec.studentId]
     );
     if (!user) {
-      throw new Error(`测试账号 ${spec.studentId} 不存在。请先导入测试用户文件。`);
+      throw new Error(`测试账号 ${spec.studentId} 不存在。请先确认测试用户已创建。`);
     }
     testUsers.push({ ...spec, ...user });
   }
@@ -296,10 +297,10 @@ const main = async () => {
   console.table(verificationRows);
 
   const perfectRow = verificationRows.find(
-    (row) => row.studentId === 'TEST006' && Number(row.score) === Number(exam.totalScore)
+    (row) => row.studentId === 'test06' && Number(row.score) === Number(exam.totalScore)
   );
   if (perfectRow && Number(perfectRow.wrongbookCount || 0) !== 0) {
-    throw new Error(`TEST006 满分后错题本仍有 ${perfectRow.wrongbookCount} 题，请检查错题写入逻辑`);
+    throw new Error(`test06 满分后错题本仍有 ${perfectRow.wrongbookCount} 题，请检查错题写入逻辑`);
   }
 
   console.log('\n验收通过：满分账号错题本为 0；现在可以去后台“考试记录 / 证书管理”查看结果。');
