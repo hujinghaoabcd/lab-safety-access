@@ -1,63 +1,74 @@
 <template>
   <div class="desktop-certificate">
-    <div class="page-header">
-      <div class="header-left">
-        <div class="header-icon">
-          <el-icon><Medal /></el-icon>
-        </div>
-        <div class="header-info">
-          <h1>合格证书</h1>
-          <p>查看和下载您的实验室安全合格证书</p>
-        </div>
+    <div class="page-heading">
+      <div>
+        <h1>合格证书</h1>
+        <p>查看和下载已获得的实验室安全教育考试合格证书</p>
       </div>
+      <div class="certificate-count">共 {{ certificates.length }} 张证书</div>
     </div>
 
-    <div v-if="certificates.length > 0" class="cert-section">
-      <div class="section-title">我的证书</div>
-      <div class="cert-list">
-        <div v-for="cert in certificates" :key="cert.id" class="cert-card" @click="viewCertificate(cert)">
-          <div class="cert-header">
-            <div class="cert-icon">
-              <el-icon><Trophy /></el-icon>
-            </div>
-            <el-tag :type="getGradeLevel(cert.score).tag" size="small">
-              {{ getGradeLevel(cert.score).level }}
-            </el-tag>
-          </div>
+    <section class="certificate-panel">
+      <template v-if="certificates.length > 0">
+        <div class="table-head">
+          <div>证书信息</div>
+          <div>考试成绩</div>
+          <div>等级</div>
+          <div>发证日期</div>
+          <div>操作</div>
+        </div>
 
-          <div class="cert-title">实验室安全教育考试合格证书</div>
-          <div class="cert-exam">{{ cert.examName }}</div>
+        <div class="certificate-list">
+          <div
+            v-for="cert in pagedCertificates"
+            :key="cert.id"
+            class="certificate-row"
+          >
+            <div class="certificate-main">
+              <div class="cert-mark"><el-icon><Medal /></el-icon></div>
+              <div class="certificate-copy">
+                <div class="certificate-title">实验室安全教育考试合格证书</div>
+                <div class="certificate-exam">{{ cert.examName }}</div>
+                <div class="certificate-no">证书编号：{{ cert.certificateNo }}</div>
+              </div>
+            </div>
 
-          <div class="cert-info">
-            <div class="info-row">
-              <span class="info-label">考试成绩</span>
-              <span class="info-value score">{{ cert.score }}分</span>
+            <div class="score-cell">
+              <strong>{{ cert.score }}</strong><span>分</span>
             </div>
-            <div class="info-row">
-              <span class="info-label">证书编号</span>
-              <span class="info-value">{{ cert.certificateNo }}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">发证日期</span>
-              <span class="info-value">{{ cert.issueDate }}</span>
-            </div>
-          </div>
 
-          <div class="cert-actions">
-            <el-button type="primary" size="small" @click.stop="viewCertificate(cert)">
-              查看证书
-            </el-button>
-            <el-button size="small" @click.stop="viewCertificate(cert)">
-              下载证书
-            </el-button>
+            <div>
+              <el-tag :type="getGradeLevel(cert.score).tag" effect="plain">
+                {{ getGradeLevel(cert.score).level }}
+              </el-tag>
+            </div>
+
+            <div class="date-cell">{{ cert.issueDate }}</div>
+
+            <div class="action-cell">
+              <el-button type="primary" link @click="viewCertificate(cert)">预览</el-button>
+              <el-button link @click="viewCertificate(cert)">下载</el-button>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <el-empty v-else description="暂无合格证书">
-      <el-button type="primary" @click="router.push('/exam-center')">去参加考试</el-button>
-    </el-empty>
+        <div v-if="certificates.length > pageSize" class="pagination-wrap">
+          <el-pagination
+            v-model:current-page="currentPage"
+            :page-size="pageSize"
+            :total="certificates.length"
+            layout="total, prev, pager, next"
+            background
+          />
+        </div>
+      </template>
+
+      <div v-else class="empty-wrap">
+        <el-empty description="暂无合格证书">
+          <el-button type="primary" @click="router.push('/exam-center')">去参加考试</el-button>
+        </el-empty>
+      </div>
+    </section>
 
     <el-dialog v-model="showPreview" title="证书预览" width="900px" :close-on-click-modal="false">
       <div class="cert-preview-content">
@@ -87,7 +98,7 @@
       </div>
 
       <template #footer>
-        <el-button @click="showPreview = false">取消</el-button>
+        <el-button @click="showPreview = false">关闭</el-button>
         <el-button type="primary" @click="saveCertificate" :loading="isDownloading">保存高清证书</el-button>
       </template>
     </el-dialog>
@@ -98,7 +109,7 @@
 import { ref, computed, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElLoading } from 'element-plus'
-import { Trophy, Medal } from '@element-plus/icons-vue'
+import { Medal } from '@element-plus/icons-vue'
 // @ts-ignore
 import certBgImage from '@/assets/zhengshu.jpg'
 import { getMyCertificates } from '@/api/exam'
@@ -130,8 +141,14 @@ const showPreview = ref(false)
 const certRef = ref<HTMLElement | null>(null)
 const isDownloading = ref(false)
 const issuerName = ref('中国科学院大学生命科学学院')
+const currentPage = ref(1)
+const pageSize = 8
 
 const selectedGrade = computed(() => selectedCert.value ? getGradeLevel(selectedCert.value.score) : null)
+const pagedCertificates = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return certificates.value.slice(start, start + pageSize)
+})
 
 const viewCertificate = (cert: Certificate) => {
   selectedCert.value = cert
@@ -226,164 +243,158 @@ onMounted(async () => {
 <style scoped>
 .desktop-certificate {
   padding: 0;
+  color: #1f2937;
 }
 
-.page-header {
+.page-heading {
   display: flex;
+  align-items: flex-end;
   justify-content: space-between;
-  align-items: center;
-  padding: 24px;
-  background: #fff;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  padding: 8px 0 20px;
+  border-bottom: 1px solid #dfe4ea;
+  margin-bottom: 20px;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.page-heading h1 {
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 700;
+  color: #172033;
 }
 
-.header-icon {
-  width: 48px;
-  height: 48px;
-  background: #e6a23c;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.header-icon .el-icon {
-  font-size: 24px;
-  color: #fff;
-}
-
-.header-info h1 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0 0 4px 0;
-}
-
-.header-info p {
-  font-size: 13px;
-  color: #909399;
+.page-heading p {
   margin: 0;
+  font-size: 14px;
+  color: #8a96a8;
 }
 
-.cert-section {
+.certificate-count {
+  font-size: 13px;
+  color: #8a96a8;
+}
+
+.certificate-panel {
   background: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e7ed;
 }
 
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 16px;
-}
-
-.cert-list {
+.table-head,
+.certificate-row {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
-}
-
-.cert-card {
-  padding: 20px;
-  background: #fff;
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cert-card:hover {
-  border-color: #e6a23c;
-  box-shadow: 0 4px 12px rgba(230, 162, 60, 0.15);
-}
-
-.cert-header {
-  display: flex;
-  justify-content: space-between;
+  grid-template-columns: minmax(430px, 1.8fr) 130px 120px 150px 130px;
   align-items: center;
-  margin-bottom: 16px;
 }
 
-.cert-icon {
-  width: 40px;
-  height: 40px;
-  background: #fdf6ec;
-  border-radius: 8px;
+.table-head {
+  min-height: 48px;
+  padding: 0 20px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #e2e7ed;
+  color: #6f7b8d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.certificate-row {
+  min-height: 112px;
+  padding: 0 20px;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.certificate-row:last-child {
+  border-bottom: none;
+}
+
+.certificate-row:hover {
+  background: #fafcff;
+}
+
+.certificate-main {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding-right: 24px;
+}
+
+.cert-mark {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid #e5c679;
+  background: #fff9e9;
+  color: #c98b17;
+  font-size: 22px;
+  margin-right: 16px;
 }
 
-.cert-icon .el-icon {
-  font-size: 20px;
-  color: #e6a23c;
+.certificate-copy {
+  min-width: 0;
 }
 
-.cert-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 8px;
+.certificate-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #243044;
+  margin-bottom: 7px;
 }
 
-.cert-exam {
+.certificate-exam {
   font-size: 13px;
-  color: #606266;
-  margin-bottom: 16px;
+  color: #5f6b7a;
+  margin-bottom: 7px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.cert-info {
-  padding: 12px;
-  background: #f5f7fa;
-  border-radius: 4px;
-  margin-bottom: 16px;
+.certificate-no {
+  font-size: 12px;
+  color: #9aa4b3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.info-row {
+.score-cell {
+  color: #0475FA;
+}
+
+.score-cell strong {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.score-cell span {
+  margin-left: 3px;
+  font-size: 12px;
+  color: #8e99aa;
+}
+
+.date-cell {
+  font-size: 13px;
+  color: #5f6b7a;
+}
+
+.action-cell {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
 }
 
-.info-row:last-child {
-  margin-bottom: 0;
-}
-
-.info-label {
-  font-size: 13px;
-  color: #909399;
-}
-
-.info-value {
-  font-size: 14px;
-  font-weight: 500;
-  color: #303133;
-}
-
-.info-value.score {
-  color: #e6a23c;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.cert-actions {
+.pagination-wrap {
   display: flex;
-  gap: 8px;
+  justify-content: flex-end;
+  padding: 16px 20px;
+  border-top: 1px solid #e2e7ed;
 }
 
-.cert-actions .el-button {
-  flex: 1;
+.empty-wrap {
+  min-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .cert-preview-content {
@@ -393,7 +404,6 @@ onMounted(async () => {
   justify-content: center;
 }
 
-/* 证书几何比例、标题、编号和正文均按移动端最终版本等比例映射。 */
 .honor-cert {
   width: 800px;
   height: 562px;
@@ -454,8 +464,6 @@ onMounted(async () => {
   transform: translateY(-12px);
 }
 
-/* 移动端在典型 375px 视口下正文为 10px / 353px 证书宽度，
-   桌面端 800px 证书按同一比例映射约为 23px。 */
 .honor-text {
   width: 100%;
   font-size: 23px;
@@ -496,7 +504,6 @@ onMounted(async () => {
   color: #3c372f;
 }
 
-/* 落款字号同样按移动端证书宽度比例映射。 */
 .honor-org {
   font-size: 18px;
   line-height: 1.3;
@@ -513,5 +520,27 @@ onMounted(async () => {
   margin: 0;
   white-space: nowrap;
   font-family: "Times New Roman", "Songti SC", "STSong", "SimSun", serif;
+}
+
+:deep(.el-dialog) {
+  border-radius: 0 !important;
+}
+
+:deep(.el-dialog__header) {
+  margin-right: 0;
+  padding: 18px 20px;
+  border-bottom: 1px solid #e5eaf0;
+}
+
+:deep(.el-dialog__footer) {
+  padding: 14px 20px;
+  border-top: 1px solid #e5eaf0;
+}
+
+@media (max-width: 1200px) {
+  .table-head,
+  .certificate-row {
+    grid-template-columns: minmax(360px, 1.6fr) 110px 100px 130px 110px;
+  }
 }
 </style>
