@@ -10,6 +10,18 @@ const safeParse = (value, fallback) => {
   }
 };
 
+const sanitizeStoredAnswer = (value) => {
+  const isInternalTestMarker = (item) => String(item || '').trim().startsWith('__AUTO_TEST_');
+
+  if (Array.isArray(value)) {
+    if (value.some(isInternalTestMarker)) return '错误作答';
+    return value;
+  }
+
+  if (isInternalTestMarker(value)) return '错误作答';
+  return value;
+};
+
 const getList = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -71,7 +83,7 @@ const buildSnapshotQuestions = (answers) => Object.entries(answers)
     content: detail.snapshot.content,
     category: detail.snapshot.category,
     options: Array.isArray(detail.snapshot.options) ? detail.snapshot.options : [],
-    userAnswer: detail.userAnswer,
+    userAnswer: sanitizeStoredAnswer(detail.userAnswer),
     correctAnswer: detail.correctAnswer,
     isCorrect: Boolean(detail.isCorrect),
     analysis: detail.snapshot.analysis || null
@@ -110,7 +122,7 @@ const getDetail = async (req, res) => {
           content: question.content,
           category: question.category,
           options: safeParse(question.options, []),
-          userAnswer: answerDetail.userAnswer,
+          userAnswer: sanitizeStoredAnswer(answerDetail.userAnswer),
           correctAnswer: question.answer,
           isCorrect: answerDetail.isCorrect !== undefined
             ? Boolean(answerDetail.isCorrect)
