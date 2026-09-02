@@ -6,21 +6,18 @@ import { getWrongBook, removeWrongQuestion } from '../api/exam'
 
 const router = useRouter()
 
-// 后端错题结构
 interface WrongQuestion {
   id: number | string
-  type: string        // '单选题' | '多选题' | '判断题'
+  type: string
   content: string
-  options: string[]   // 纯文本选项
+  options: string[]
   correctAnswer: string
-  analysis?: string
   wrongCount: number
   lastWrongTime: string | null
 }
 
 const allQuestions = ref<WrongQuestion[]>([])
 const loading = ref(false)
-// 过滤类型：与后端题型保持一致
 const filterType = ref<'all' | '单选题' | '多选题' | '判断题'>('all')
 
 const loadWrongBook = async () => {
@@ -81,7 +78,6 @@ const clearAll = async () => {
       title: '清空错题本',
       message: '确定要清空当前所有错题吗？此操作不可恢复。'
     })
-    // 逐题调用删除接口
     const ids = allQuestions.value.map(q => q.id)
     await Promise.all(ids.map(id => removeWrongQuestion(id)))
     showToast('已清空错题本')
@@ -93,8 +89,7 @@ const clearAll = async () => {
   }
 }
 
-const retryQuestion = (q: WrongQuestion) => {
-  // 跳转到在线答题页，后续可以扩展为专门的单题练习模式
+const retryQuestion = (_q: WrongQuestion) => {
   router.push({ path: '/exam-center' })
 }
 </script>
@@ -104,7 +99,6 @@ const retryQuestion = (q: WrongQuestion) => {
     <van-nav-bar class="blue-nav" title="错题本" left-arrow @click-left="router.back()" />
 
     <div class="content">
-      <!-- 过滤栏 -->
       <div class="filter-bar">
         <div class="tabs">
           <span :class="['tab', { active: filterType === 'all' }]" @click="setFilter('all')">
@@ -125,16 +119,15 @@ const retryQuestion = (q: WrongQuestion) => {
         </div>
       </div>
 
-      <!-- 列表 -->
-        <div class="question-list" v-if="!loading">
-          <div v-for="q in filtered" :key="q.id" class="question-card">
+      <div class="question-list" v-if="!loading">
+        <div v-for="q in filtered" :key="q.id" class="question-card">
           <div class="card-header">
-              <div class="left">
-                <span class="badge">
-                  {{ q.type === '多选题' ? '多选' : q.type === '判断题' ? '判断' : '单选' }}
-                </span>
-                <span class="exam">错题次数：{{ q.wrongCount }} 次</span>
-              </div>
+            <div class="left">
+              <span class="badge">
+                {{ q.type === '多选题' ? '多选' : q.type === '判断题' ? '判断' : '单选' }}
+              </span>
+              <span class="exam">错题次数：{{ q.wrongCount }} 次</span>
+            </div>
             <div class="right">
               <span class="time">{{ q.lastWrongTime || '' }}</span>
             </div>
@@ -161,12 +154,8 @@ const retryQuestion = (q: WrongQuestion) => {
               <span>正确答案：<b class="correct">{{ q.correctAnswer }}</b></span>
             </div>
 
-            <div v-if="q.analysis" class="analysis">
-              解析：{{ q.analysis }}
-            </div>
-
             <div class="card-actions">
-              <van-button size="small" type="primary" @click="retryQuestion(q)">再做一遍</van-button>
+              <van-button size="small" type="primary" @click="retryQuestion(q)">重新考试</van-button>
               <van-button size="small" plain type="default" @click="removeOne(q.id)">我会了</van-button>
             </div>
           </div>
