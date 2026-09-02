@@ -63,6 +63,7 @@ import './styles/desktop-exam-center-polish.css'
 import './styles/desktop-exam-polish.css'
 import './styles/desktop-answer-card-dialog-fix.css'
 import './styles/desktop-dashboard-stat-icons.css'
+import './styles/desktop-dashboard-polish.css'
 
 const app = createApp(App)
 
