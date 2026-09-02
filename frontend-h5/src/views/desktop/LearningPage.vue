@@ -1,76 +1,104 @@
 <template>
   <div class="desktop-learning">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-left">
-        <div class="header-icon">
-          <el-icon><Reading /></el-icon>
+    <section class="course-section">
+      <div class="section-toolbar">
+        <div class="section-heading">
+          <strong>学习资源</strong>
+          <span>共 {{ totalCount }} 项</span>
         </div>
-        <div class="header-info">
-          <h1>学习中心</h1>
-          <p>在线学习实验室安全知识</p>
-        </div>
-      </div>
-      <div class="header-stats">
-        <div class="stat-item">
-          <span class="stat-num">{{ totalCount }}</span>
-          <span class="stat-text">全部</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-num success">{{ completedCount }}</span>
-          <span class="stat-text">已完成</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-num primary">{{ inProgressCount }}</span>
-          <span class="stat-text">学习中</span>
-        </div>
-      </div>
-    </div>
 
-    <!-- 课程列表 -->
-    <div class="course-section">
-      <div class="section-title">学习资源</div>
-
-      <el-empty v-if="!loading && !learningList.length" description="暂无学习资源" />
-
-      <div v-else class="course-list">
-        <div v-for="item in learningList" :key="item.id" class="course-card">
-          <div class="course-header">
-            <div class="course-title">{{ item.title }}</div>
-            <el-tag :type="getStatusType(item.status)" size="small">
-              {{ getStatusText(item.status) }}
-            </el-tag>
+        <div class="learning-summary" aria-label="学习进度概况">
+          <div class="summary-item">
+            <strong>{{ totalCount }}</strong>
+            <span>全部</span>
           </div>
-          
-          <div class="course-desc">{{ item.description }}</div>
-          
-          <div class="course-meta">
-            <span><el-icon><Clock /></el-icon> {{ item.duration }}</span>
-            <span><el-icon><Document /></el-icon> PDF 文档</span>
+          <div class="summary-item completed">
+            <strong>{{ completedCount }}</strong>
+            <span>已完成</span>
           </div>
-
-          <el-progress :percentage="item.progress" :color="getStatusColor(item.status)" :stroke-width="8" />
-
-          <el-button
-            :type="item.status === 'completed' ? 'default' : 'primary'"
-            class="course-btn"
-            @click="handleLearn(item)"
-          >
-            {{ item.status === 'completed' ? '复习课程' : item.status === 'in_progress' ? '继续学习' : '开始学习' }}
-          </el-button>
+          <div class="summary-item learning">
+            <strong>{{ inProgressCount }}</strong>
+            <span>学习中</span>
+          </div>
         </div>
       </div>
-    </div>
+
+      <div v-if="loading" class="loading-state">加载中...</div>
+
+      <div v-else-if="!learningList.length" class="empty-state">
+        <div class="empty-icon"><el-icon><Reading /></el-icon></div>
+        <div class="empty-title">暂无学习资源</div>
+        <div class="empty-desc">管理员发布学习资料后会显示在这里</div>
+      </div>
+
+      <template v-else>
+        <div class="course-list">
+          <article v-for="item in pagedLearningList" :key="item.id" class="course-card">
+            <div class="course-header">
+              <div class="course-title-wrap">
+                <div class="resource-icon">
+                  <el-icon><Document /></el-icon>
+                </div>
+                <div class="course-title">{{ item.title }}</div>
+              </div>
+
+              <el-tag :type="getStatusType(item.status)" effect="plain" size="small">
+                {{ getStatusText(item.status) }}
+              </el-tag>
+            </div>
+
+            <div v-if="item.description" class="course-desc">{{ item.description }}</div>
+
+            <div class="course-meta">
+              <span><el-icon><Clock /></el-icon>{{ item.duration || '未设置时长' }}</span>
+              <span><el-icon><Document /></el-icon>PDF 文档</span>
+            </div>
+
+            <div class="progress-row">
+              <span class="progress-label">学习进度</span>
+              <div class="progress-main">
+                <el-progress
+                  :percentage="item.progress"
+                  :color="getStatusColor(item.status)"
+                  :stroke-width="6"
+                  :show-text="false"
+                />
+              </div>
+              <strong :class="['progress-value', item.status]">{{ item.progress }}%</strong>
+            </div>
+
+            <div class="course-footer">
+              <span class="course-state-hint">{{ getStateHint(item.status) }}</span>
+              <el-button
+                :type="item.status === 'completed' ? 'default' : 'primary'"
+                class="course-btn"
+                @click="handleLearn(item)"
+              >
+                {{ item.status === 'completed' ? '复习课程' : item.status === 'in_progress' ? '继续学习' : '开始学习' }}
+              </el-button>
+            </div>
+          </article>
+        </div>
+
+        <div v-if="learningList.length > pageSize" class="pagination-row">
+          <el-pagination
+            v-model:current-page="currentPage"
+            :page-size="pageSize"
+            :total="learningList.length"
+            layout="total, prev, pager, next, jumper"
+            background
+          />
+        </div>
+      </template>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Reading, Document, Clock } from '@element-plus/icons-vue'
+import { Clock, Document, Reading } from '@element-plus/icons-vue'
 import { getLearningList } from '@/api/learning'
 
 const router = useRouter()
@@ -88,6 +116,8 @@ interface LearningItem {
 
 const loading = ref(false)
 const learningList = ref<LearningItem[]>([])
+const currentPage = ref(1)
+const pageSize = 9
 
 const fallbackItems: LearningItem[] = [
   {
@@ -113,13 +143,31 @@ const getStatusType = (status: string) => {
 }
 
 const getStatusColor = (status: string) => {
-  const map: Record<string, string> = { not_started: '#909399', in_progress: '#0475FA', completed: '#67c23a' }
-  return map[status] || '#909399'
+  const map: Record<string, string> = { not_started: '#9aa5b4', in_progress: '#0475FA', completed: '#39ad59' }
+  return map[status] || '#9aa5b4'
+}
+
+const getStateHint = (status: string) => {
+  const map: Record<string, string> = {
+    not_started: '尚未开始学习',
+    in_progress: '继续完成当前资料',
+    completed: '已完成，可再次查看'
+  }
+  return map[status] || ''
 }
 
 const totalCount = computed(() => learningList.value.length)
 const completedCount = computed(() => learningList.value.filter(item => item.status === 'completed').length)
 const inProgressCount = computed(() => learningList.value.filter(item => item.status === 'in_progress').length)
+const pagedLearningList = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return learningList.value.slice(start, start + pageSize)
+})
+
+watch(learningList, () => {
+  const maxPage = Math.max(1, Math.ceil(learningList.value.length / pageSize))
+  if (currentPage.value > maxPage) currentPage.value = maxPage
+})
 
 const handleLearn = async (item: LearningItem) => {
   if (!item.url) {
@@ -142,9 +190,18 @@ onMounted(async () => {
     }
 
     learningList.value = rawList.map((item: any) => {
-      const progress = item.progress ?? 0
+      const progress = Math.max(0, Math.min(100, Number(item.progress ?? 0)))
       const status: LearningItem['status'] = progress >= 100 ? 'completed' : progress > 0 ? 'in_progress' : 'not_started'
-      return { id: item.id, title: item.title, description: item.description || '', duration: item.duration || '', progress, status, type: 'pdf' as const, url: item.content || '' }
+      return {
+        id: item.id,
+        title: item.title,
+        description: item.description || '',
+        duration: item.duration || '',
+        progress,
+        status,
+        type: 'pdf' as const,
+        url: item.content || ''
+      }
     })
   } catch (err: any) {
     ElMessage.error(err?.message || '获取学习列表失败')
@@ -160,165 +217,300 @@ onMounted(async () => {
   padding: 0;
 }
 
-/* 页面头部 */
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px;
-  background: #fff;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.header-icon {
-  width: 48px;
-  height: 48px;
-  background: #0475FA;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.header-icon .el-icon {
-  font-size: 24px;
-  color: #fff;
-}
-
-.header-info h1 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0 0 4px 0;
-}
-
-.header-info p {
-  font-size: 13px;
-  color: #909399;
-  margin: 0;
-}
-
-.header-stats {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 12px 20px;
-  background: #f5f7fa;
-  border-radius: 8px;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.stat-num {
-  font-size: 24px;
-  font-weight: 700;
-  color: #303133;
-}
-
-.stat-num.success { color: #67c23a; }
-.stat-num.primary { color: #0475FA; }
-
-.stat-text {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 2px;
-}
-
-.stat-divider {
-  width: 1px;
-  height: 32px;
-  background: #dcdfe6;
-}
-
-/* 课程列表 */
 .course-section {
   background: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5eaf2;
 }
 
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 16px;
+.section-toolbar {
+  min-height: 62px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid #e5eaf2;
+}
+
+.section-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.section-heading strong {
+  font-size: 18px;
+  color: #1f2d3d;
+}
+
+.section-heading span {
+  font-size: 13px;
+  color: #8a97a8;
+}
+
+.learning-summary {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.summary-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.summary-item strong {
+  font-size: 18px;
+  line-height: 1;
+  color: #334155;
+}
+
+.summary-item span {
+  font-size: 12px;
+  color: #8a97a8;
+}
+
+.summary-item.completed strong {
+  color: #2f9e4d;
+}
+
+.summary-item.learning strong {
+  color: #0475fa;
 }
 
 .course-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding: 16px 20px 20px;
+  align-items: start;
+  background: #f4f6f9;
 }
 
 .course-card {
-  padding: 20px;
+  min-width: 0;
+  padding: 16px;
   background: #fff;
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
-  transition: all 0.2s ease;
+  border: 1px solid #dfe5ec;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .course-card:hover {
-  border-color: #0475FA;
-  box-shadow: 0 4px 12px rgba(4, 117, 250, 0.1);
+  border-color: #a9cfff;
+  box-shadow: 0 3px 10px rgba(31, 45, 61, 0.06);
 }
 
 .course-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.course-title-wrap {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.resource-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef5ff;
+  color: #0475fa;
+}
+
+.resource-icon .el-icon {
+  font-size: 18px;
 }
 
 .course-title {
-  font-size: 16px;
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.45;
   font-weight: 600;
-  color: #303133;
-  flex: 1;
-  margin-right: 12px;
+  color: #273444;
+}
+
+.course-header :deep(.el-tag) {
+  flex: 0 0 auto;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 0;
+  font-size: 12px;
 }
 
 .course-desc {
-  font-size: 13px;
-  color: #606266;
+  margin: 12px 0 0 44px;
+  color: #7d8999;
+  font-size: 12px;
   line-height: 1.6;
-  margin-bottom: 16px;
-  min-height: 40px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .course-meta {
   display: flex;
+  align-items: center;
   gap: 16px;
-  margin-bottom: 16px;
-  font-size: 13px;
-  color: #909399;
+  margin-top: 15px;
+  color: #8793a5;
+  font-size: 12px;
 }
 
 .course-meta span {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
 
 .course-meta .el-icon {
   font-size: 14px;
 }
 
+.progress-row {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress-label {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: #8793a5;
+}
+
+.progress-main {
+  flex: 1;
+  min-width: 80px;
+}
+
+.progress-main :deep(.el-progress-bar__outer),
+.progress-main :deep(.el-progress-bar__inner) {
+  border-radius: 0 !important;
+}
+
+.progress-value {
+  flex: 0 0 38px;
+  text-align: right;
+  font-size: 12px;
+  color: #6b7788;
+}
+
+.progress-value.completed {
+  color: #2f9e4d;
+}
+
+.progress-value.in_progress {
+  color: #0475fa;
+}
+
+.course-footer {
+  min-height: 44px;
+  margin-top: 14px;
+  padding-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #edf0f4;
+}
+
+.course-state-hint {
+  min-width: 0;
+  color: #98a3b3;
+  font-size: 12px;
+}
+
 .course-btn {
-  width: 100%;
-  margin-top: 16px;
+  min-width: 88px;
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 0 !important;
+}
+
+.pagination-row {
+  min-height: 58px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  border-top: 1px solid #e5eaf2;
+  background: #fff;
+}
+
+.pagination-row :deep(.el-pagination button),
+.pagination-row :deep(.el-pager li),
+.pagination-row :deep(.el-input__wrapper) {
+  border-radius: 0 !important;
+}
+
+.loading-state {
+  padding: 70px 0;
+  text-align: center;
+  color: #909399;
+}
+
+.empty-state {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-icon {
+  width: 50px;
+  height: 50px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef5ff;
+  color: #0475fa;
+}
+
+.empty-icon .el-icon {
+  font-size: 25px;
+}
+
+.empty-title {
+  margin-bottom: 5px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #425466;
+}
+
+.empty-desc {
+  font-size: 13px;
+  color: #98a3b3;
+}
+
+@media (max-width: 1250px) {
+  .course-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 920px) {
+  .section-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 14px 16px;
+  }
+
+  .course-list {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
