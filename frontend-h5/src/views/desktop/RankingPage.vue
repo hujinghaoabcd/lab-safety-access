@@ -1,13 +1,5 @@
 <template>
   <div class="desktop-ranking">
-    <div class="page-heading">
-      <div>
-        <h1>排行榜</h1>
-        <p>按考试最高成绩统计当前排名</p>
-      </div>
-      <div class="heading-meta">{{ participantCount }} 人参与排名</div>
-    </div>
-
     <div v-if="scoreRanking.length" class="ranking-layout">
       <section class="ranking-main">
         <div class="panel-heading compact-heading">
@@ -175,34 +167,6 @@ onMounted(async () => {
 <style scoped>
 .desktop-ranking {
   width: 100%;
-}
-
-.page-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin-bottom: 18px;
-  padding-bottom: 13px;
-  border-bottom: 1px solid #dfe5ec;
-}
-
-.page-heading h1 {
-  margin: 0 0 4px;
-  color: #17202a;
-  font-size: 24px;
-  font-weight: 650;
-  letter-spacing: 0.2px;
-}
-
-.page-heading p {
-  margin: 0;
-  color: #8b96a5;
-  font-size: 13px;
-}
-
-.heading-meta {
-  color: #7b8794;
-  font-size: 13px;
 }
 
 .ranking-layout {
