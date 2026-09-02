@@ -56,14 +56,40 @@ export function changePassword(data: { oldPassword: string; newPassword: string 
   return request.put('/user/profile/password', data)
 }
 
+const AVATAR_MAX_SIZE = 5 * 1024 * 1024
+const AVATAR_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp'])
+const AVATAR_MIME_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
+
+const getFileExtension = (name: string) => {
+  const dotIndex = name.lastIndexOf('.')
+  return dotIndex >= 0 ? name.slice(dotIndex).toLowerCase() : ''
+}
+
 // 上传头像
 export function uploadAvatar(file: File) {
+  if (!file || file.size <= 0) {
+    return Promise.reject(new Error('请选择有效的头像图片'))
+  }
+  if (file.size > AVATAR_MAX_SIZE) {
+    return Promise.reject(new Error('头像图片不能超过 5 MB'))
+  }
+
+  const extension = getFileExtension(file.name || '')
+  const mimeType = String(file.type || '').toLowerCase()
+  const genericMime = !mimeType || mimeType === 'application/octet-stream'
+  const supportedByMime = AVATAR_MIME_TYPES.has(mimeType)
+  const supportedByExtension = AVATAR_EXTENSIONS.has(extension)
+
+  // Android/微信/部分系统文件选择器可能把合法图片标记成空 MIME 或
+  // application/octet-stream；这种情况允许根据扩展名继续上传，后端仍会校验文件签名。
+  if (!supportedByMime && !(genericMime && supportedByExtension)) {
+    return Promise.reject(new Error('仅支持 JPG、PNG 或 WebP 图片'))
+  }
+
   const formData = new FormData()
   formData.append('avatar', file)
 
-  // 不手工指定 multipart/form-data。浏览器必须自行生成带 boundary 的
-  // Content-Type；部分 Android WebView 在手工覆盖该请求头时会偶发上传失败。
-  // 头像上传单独放宽到 60 秒，避免移动网络/VPN 下大图在全局 30 秒超时。
+  // 不指定 Content-Type，让浏览器为 FormData 自动生成 multipart boundary。
   return request.post('/user/profile/avatar', formData, {
     timeout: 60000
   })
