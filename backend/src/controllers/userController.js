@@ -53,11 +53,17 @@ const getProfile = async (req, res) => {
 
 const getContactInfo = async (_req, res) => {
   try {
-    const contact = await loadSettingSection('contact');
-    return success(res, { contact }, '获取成功');
+    const [contact, cert] = await Promise.all([
+      loadSettingSection('contact'),
+      loadSettingSection('cert')
+    ]);
+    return success(res, {
+      contact,
+      cert: { issuer: cert.issuer }
+    }, '获取成功');
   } catch (err) {
-    console.error('获取联系方式错误:', err);
-    return error(res, '获取联系方式失败', 500);
+    console.error('获取学生端公共设置错误:', err);
+    return error(res, '获取学生端公共设置失败', 500);
   }
 };
 
