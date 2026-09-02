@@ -1,11 +1,24 @@
 <template>
   <div class="desktop-profile">
-    <!-- 用户信息卡片 -->
-    <div class="profile-card">
-      <div class="avatar-section">
-        <el-avatar :size="80" :src="userInfo.avatar" @click="handleAvatarClick">
-          {{ userInfo.name?.[0] || 'U' }}
-        </el-avatar>
+    <div class="page-heading">
+      <div>
+        <h1>个人中心</h1>
+        <p>查看个人信息、账户状态与学习考试数据</p>
+      </div>
+      <div class="heading-actions">
+        <el-button @click="openPasswordPopup">修改密码</el-button>
+        <el-button type="primary" @click="openEdit">编辑资料</el-button>
+      </div>
+    </div>
+
+    <div class="profile-layout">
+      <section class="identity-panel">
+        <div class="avatar-wrap" @click="handleAvatarClick">
+          <el-avatar :size="104" :src="userInfo.avatar">
+            {{ userInfo.name?.[0] || 'U' }}
+          </el-avatar>
+          <div class="avatar-edit">更换头像</div>
+        </div>
         <input
           ref="avatarInputRef"
           type="file"
@@ -13,83 +26,78 @@
           style="display: none"
           @change="handleAvatarChange"
         />
-        <span class="avatar-tip">点击更换</span>
-      </div>
-      
-      <div class="info-section">
-        <h2 class="user-name">{{ userInfo.name || '用户' }}</h2>
-        <div class="info-grid">
-          <div class="info-item">
-            <el-icon><User /></el-icon>
-            <span>{{ userInfo.studentId || '未设置' }}</span>
+
+        <h2>{{ userInfo.name || '用户' }}</h2>
+        <div class="student-id">{{ userInfo.studentId || '学号未设置' }}</div>
+        <div class="department">{{ userInfo.department || '院系未设置' }}</div>
+      </section>
+
+      <section class="detail-panel">
+        <div class="panel-title">基本信息</div>
+        <div class="detail-table">
+          <div class="detail-row">
+            <div class="detail-label"><el-icon><User /></el-icon>姓名</div>
+            <div class="detail-value">{{ userInfo.name || '未设置' }}</div>
           </div>
-          <div class="info-item">
-            <el-icon><OfficeBuilding /></el-icon>
-            <span>{{ userInfo.department || '未设置' }}</span>
+          <div class="detail-row">
+            <div class="detail-label"><el-icon><OfficeBuilding /></el-icon>院系</div>
+            <div class="detail-value">{{ userInfo.department || '未设置' }}</div>
           </div>
-          <div class="info-item">
-            <el-icon><Phone /></el-icon>
-            <span>{{ userInfo.phone || '未设置' }}</span>
+          <div class="detail-row">
+            <div class="detail-label"><el-icon><Phone /></el-icon>手机号</div>
+            <div class="detail-value">{{ userInfo.phone || '未设置' }}</div>
           </div>
-          <div class="info-item">
-            <el-icon><Message /></el-icon>
-            <span>{{ userInfo.email || '未设置' }}</span>
+          <div class="detail-row">
+            <div class="detail-label"><el-icon><Message /></el-icon>邮箱</div>
+            <div class="detail-value">{{ userInfo.email || '未设置' }}</div>
           </div>
         </div>
-        <div class="action-btns">
-          <el-button type="primary" size="small" @click="openEdit">编辑资料</el-button>
-          <el-button size="small" @click="openPasswordPopup">修改密码</el-button>
-        </div>
-      </div>
+      </section>
     </div>
 
-    <!-- 统计数据 -->
-    <el-row :gutter="16" class="stats-row">
-      <el-col :span="8">
-        <div class="stat-card">
-          <div class="stat-icon primary">
-            <el-icon><Document /></el-icon>
+    <section class="stats-panel">
+      <div class="panel-title">学习与考试概况</div>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-icon primary"><el-icon><Document /></el-icon></div>
+          <div>
+            <div class="stat-value">{{ stats.examCount }}</div>
+            <div class="stat-name">考试次数</div>
           </div>
-          <div class="stat-num">{{ stats.examCount }}</div>
-          <div class="stat-label">考试次数</div>
         </div>
-      </el-col>
-      <el-col :span="8">
-        <div class="stat-card">
-          <div class="stat-icon success">
-            <el-icon><CircleCheck /></el-icon>
+        <div class="stat-item">
+          <div class="stat-icon success"><el-icon><CircleCheck /></el-icon></div>
+          <div>
+            <div class="stat-value">{{ stats.passCount }}</div>
+            <div class="stat-name">通过次数</div>
           </div>
-          <div class="stat-num success">{{ stats.passCount }}</div>
-          <div class="stat-label">通过次数</div>
         </div>
-      </el-col>
-      <el-col :span="8">
-        <div class="stat-card">
-          <div class="stat-icon warning">
-            <el-icon><Trophy /></el-icon>
+        <div class="stat-item">
+          <div class="stat-icon warning"><el-icon><Trophy /></el-icon></div>
+          <div>
+            <div class="stat-value">{{ stats.certCount }}</div>
+            <div class="stat-name">合格证书</div>
           </div>
-          <div class="stat-num warning">{{ stats.certCount }}</div>
-          <div class="stat-label">合格证书</div>
         </div>
-      </el-col>
-    </el-row>
+      </div>
+    </section>
 
-    <!-- 快捷功能 -->
-    <div class="quick-section">
-      <div class="section-title">快捷功能</div>
-      <el-row :gutter="16">
-        <el-col v-for="item in menuItems" :key="item.path" :span="6">
-          <div class="quick-item" @click="navigateTo(item.path)">
-            <div class="quick-icon" :style="{ background: item.color }">
-              <el-icon><component :is="getMenuIcon(item.icon)" /></el-icon>
-            </div>
-            <span class="quick-title">{{ item.title }}</span>
-          </div>
-        </el-col>
-      </el-row>
-    </div>
+    <section class="quick-panel">
+      <div class="panel-title">快捷功能</div>
+      <div class="quick-grid">
+        <button v-for="item in menuItems" :key="item.path" class="quick-item" @click="navigateTo(item.path)">
+          <span class="quick-icon" :style="{ color: item.color }">
+            <el-icon><component :is="getMenuIcon(item.icon)" /></el-icon>
+          </span>
+          <span class="quick-copy">
+            <strong>{{ item.title }}</strong>
+            <small>{{ item.desc }}</small>
+          </span>
+          <span class="quick-arrow">›</span>
+        </button>
+      </div>
+    </section>
 
-    <!-- 编辑资料对话框 -->
     <el-dialog v-model="showEditPopup" title="编辑资料" width="480px">
       <el-form :model="editForm" label-width="80px">
         <el-form-item label="姓名">
@@ -111,7 +119,6 @@
       </template>
     </el-dialog>
 
-    <!-- 修改密码对话框 -->
     <el-dialog v-model="showPasswordPopup" title="修改密码" width="480px">
       <el-form :model="passwordForm" label-width="80px">
         <el-form-item label="旧密码">
@@ -146,15 +153,16 @@ import { getUserProfile, updateUserProfile, getUserProfileStats, changePassword,
 const router = useRouter()
 const userStore = useUserStore()
 
+const defaultAvatar = 'https://unpkg.com/@vant/assets@1.0.8/cat.jpeg'
+
 const userInfo = reactive({
   name: '',
   studentId: '',
   department: '',
   phone: '',
   email: '',
-  avatar: 'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg'
+  avatar: defaultAvatar
 })
-const defaultAvatar = userInfo.avatar
 
 const editForm = reactive({ name: '', phone: '', email: '', department: '' })
 const showEditPopup = ref(false)
@@ -166,10 +174,10 @@ const showPasswordPopup = ref(false)
 const stats = ref({ examCount: 0, passCount: 0, certCount: 0 })
 
 const menuItems = [
-  { icon: 'medal', title: '我的证书', path: '/certificate', color: '#e6a23c' },
-  { icon: 'list', title: '考试记录', path: '/records', color: '#67c23a' },
-  { icon: 'edit', title: '错题本', path: '/wrongbook', color: '#f56c6c' },
-  { icon: 'trend', title: '排行榜', path: '/ranking', color: '#0475FA' }
+  { icon: 'medal', title: '合格证书', desc: '查看和下载已获得证书', path: '/certificate', color: '#d99721' },
+  { icon: 'list', title: '考试记录', desc: '查看历史考试成绩与详情', path: '/records', color: '#3a9b54' },
+  { icon: 'edit', title: '错题本', desc: '复习历史错题与知识点', path: '/wrongbook', color: '#d65353' },
+  { icon: 'trend', title: '排行榜', desc: '查看当前最高成绩排名', path: '/ranking', color: '#0475FA' }
 ]
 
 const getMenuIcon = (icon: string) => {
@@ -179,8 +187,12 @@ const getMenuIcon = (icon: string) => {
 
 const navigateTo = (path: string) => router.push(path)
 
+const isLegacyDefaultAvatar = (raw: string) =>
+  raw.includes('@vant/assets/cat.jpeg') || raw.includes('img.yzcdn.cn/vant/cat.jpeg')
+
 const resolveAvatarUrl = (raw?: string | null) => {
   if (!raw) return defaultAvatar
+  if (isLegacyDefaultAvatar(raw)) return defaultAvatar
   if (raw.startsWith('http')) return raw
   return '/api' + raw
 }
@@ -218,7 +230,12 @@ const saveEdit = async () => {
   try {
     const resp: any = await updateUserProfile(editForm)
     const updated = resp?.data ?? resp
-    Object.assign(userInfo, { name: updated?.name || editForm.name, phone: updated?.phone || editForm.phone, email: updated?.email || editForm.email, department: updated?.department || editForm.department })
+    Object.assign(userInfo, {
+      name: updated?.name || editForm.name,
+      phone: updated?.phone || editForm.phone,
+      email: updated?.email || editForm.email,
+      department: updated?.department || editForm.department
+    })
     if (userStore.userInfo) {
       userStore.setUserInfo({ ...userStore.userInfo, ...userInfo } as any)
     }
@@ -251,11 +268,26 @@ onMounted(async () => {
   try {
     const resp: any = await getUserProfile()
     const data = resp?.data ?? resp
-    Object.assign(userInfo, { name: data.name || '', studentId: data.studentId || '', department: data.department || '', phone: data.phone || '', email: data.email || '', avatar: resolveAvatarUrl(data.avatar) })
+    Object.assign(userInfo, {
+      name: data.name || '',
+      studentId: data.studentId || '',
+      department: data.department || '',
+      phone: data.phone || '',
+      email: data.email || '',
+      avatar: resolveAvatarUrl(data.avatar)
+    })
+
+    if (userStore.userInfo) {
+      userStore.setUserInfo({ ...userStore.userInfo, ...userInfo } as any)
+    }
 
     const statsResp: any = await getUserProfileStats()
     const statsData = statsResp?.data ?? statsResp
-    stats.value = { examCount: statsData?.examCount ?? 0, passCount: statsData?.passCount ?? 0, certCount: statsData?.certCount ?? 0 }
+    stats.value = {
+      examCount: statsData?.examCount ?? 0,
+      passCount: statsData?.passCount ?? 0,
+      certCount: statsData?.certCount ?? 0
+    }
   } catch (err: any) {
     ElMessage.error(err?.message || '加载用户信息失败')
   }
@@ -265,174 +297,270 @@ onMounted(async () => {
 <style scoped>
 .desktop-profile {
   padding: 0;
+  color: #1f2937;
 }
 
-/* 用户信息卡片 */
-.profile-card {
+.page-heading {
   display: flex;
-  gap: 24px;
-  padding: 24px;
-  background: #fff;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 8px 0 20px;
+  border-bottom: 1px solid #dfe4ea;
+  margin-bottom: 20px;
 }
 
-.avatar-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+.page-heading h1 {
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 700;
+  color: #172033;
 }
 
-.el-avatar {
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.el-avatar:hover {
-  transform: scale(1.05);
-}
-
-.avatar-tip {
-  font-size: 12px;
-  color: #909399;
-}
-
-.info-section {
-  flex: 1;
-}
-
-.user-name {
-  font-size: 22px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0 0 16px 0;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.page-heading p {
+  margin: 0;
   font-size: 14px;
-  color: #606266;
+  color: #8a96a8;
 }
 
-.info-item .el-icon {
-  font-size: 16px;
-  color: #909399;
-}
-
-.action-btns {
+.heading-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
-/* 统计数据 */
-.stats-row {
+.profile-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 16px;
   margin-bottom: 16px;
 }
 
-.stat-card {
+.identity-panel,
+.detail-panel,
+.stats-panel,
+.quick-panel {
+  background: #fff;
+  border: 1px solid #e2e7ed;
+}
+
+.identity-panel {
+  min-height: 270px;
+  padding: 30px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 24px;
+  text-align: center;
+}
+
+.avatar-wrap {
+  position: relative;
+  cursor: pointer;
+  margin-bottom: 18px;
+}
+
+.avatar-edit {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, 50%);
+  padding: 3px 10px;
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border: 1px solid #d9e0e8;
+  color: #64748b;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.identity-panel h2 {
+  margin: 4px 0 6px;
+  font-size: 21px;
+  color: #172033;
+}
+
+.student-id {
+  font-size: 14px;
+  color: #606b7a;
+  margin-bottom: 8px;
+}
+
+.department {
+  font-size: 13px;
+  color: #98a2b2;
+}
+
+.detail-panel {
+  padding: 22px 24px 24px;
+}
+
+.panel-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #172033;
+  margin-bottom: 16px;
+}
+
+.detail-table {
+  border-top: 1px solid #e8ecf1;
+  border-left: 1px solid #e8ecf1;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  min-height: 48px;
+}
+
+.detail-label,
+.detail-value {
+  display: flex;
+  align-items: center;
+  border-right: 1px solid #e8ecf1;
+  border-bottom: 1px solid #e8ecf1;
+}
+
+.detail-label {
+  gap: 8px;
+  padding: 0 16px;
+  background: #f6f8fa;
+  color: #687386;
+  font-size: 13px;
+}
+
+.detail-label .el-icon {
+  color: #8d98a8;
+}
+
+.detail-value {
+  padding: 0 18px;
+  color: #273244;
+  font-size: 14px;
+}
+
+.stats-panel,
+.quick-panel {
+  padding: 20px 24px;
+  margin-bottom: 16px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid #e5eaf0;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 94px;
+  padding: 16px 22px;
+  border-right: 1px solid #e5eaf0;
+}
+
+.stat-item:last-child {
+  border-right: none;
 }
 
 .stat-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
-}
-
-.stat-icon .el-icon {
+  border: 1px solid currentColor;
   font-size: 20px;
-  color: #fff;
 }
 
-.stat-icon.primary { background: #0475FA; }
-.stat-icon.success { background: #67c23a; }
-.stat-icon.warning { background: #e6a23c; }
+.stat-icon.primary { color: #0475FA; background: #f0f7ff; }
+.stat-icon.success { color: #3a9b54; background: #f2faf4; }
+.stat-icon.warning { color: #d99721; background: #fff8ea; }
 
-.stat-num {
-  font-size: 28px;
+.stat-value {
+  font-size: 26px;
   font-weight: 700;
-  color: #0475FA;
-  line-height: 1.2;
+  line-height: 1;
+  color: #172033;
+  margin-bottom: 7px;
 }
 
-.stat-num.success { color: #67c23a; }
-.stat-num.warning { color: #e6a23c; }
-
-.stat-label {
+.stat-name {
+  color: #8792a3;
   font-size: 13px;
-  color: #909399;
-  margin-top: 4px;
 }
 
-/* 快捷功能 */
-.quick-section {
-  background: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 16px;
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid #e5eaf0;
+  border-left: 1px solid #e5eaf0;
 }
 
 .quick-item {
+  appearance: none;
+  border: none;
+  border-right: 1px solid #e5eaf0;
+  border-bottom: 1px solid #e5eaf0;
+  background: #fff;
+  min-height: 82px;
+  padding: 15px 18px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 20px;
-  background: #f5f7fa;
-  border-radius: 8px;
+  text-align: left;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
 .quick-item:hover {
-  background: #ecf5ff;
+  background: #f7fbff;
 }
 
 .quick-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: 36px;
+  font-size: 22px;
+  flex: 0 0 36px;
+}
+
+.quick-copy {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
 }
 
-.quick-icon .el-icon {
-  font-size: 20px;
-  color: #fff;
+.quick-copy strong {
+  color: #253044;
+  font-size: 14px;
 }
 
-.quick-title {
-  font-size: 13px;
-  font-weight: 500;
-  color: #303133;
+.quick-copy small {
+  color: #929cac;
+  font-size: 12px;
+}
+
+.quick-arrow {
+  margin-left: 12px;
+  color: #a8b1bf;
+  font-size: 22px;
+  line-height: 1;
+}
+
+:deep(.el-dialog) {
+  border-radius: 0 !important;
+}
+
+:deep(.el-dialog__header) {
+  border-bottom: 1px solid #e5eaf0;
+  margin-right: 0;
+  padding: 18px 20px;
+}
+
+:deep(.el-dialog__footer) {
+  border-top: 1px solid #e5eaf0;
+  padding: 14px 20px;
+}
+
+@media (max-width: 1100px) {
+  .profile-layout {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
 }
 </style>
