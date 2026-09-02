@@ -393,7 +393,7 @@ onMounted(async () => {
   justify-content: center;
 }
 
-/* 与移动端保持同一套证书比例和视觉层级。 */
+/* 证书几何比例、标题、编号和正文均按移动端最终版本等比例映射。 */
 .honor-cert {
   width: 800px;
   height: 562px;
@@ -454,9 +454,11 @@ onMounted(async () => {
   transform: translateY(-12px);
 }
 
+/* 移动端在典型 375px 视口下正文为 10px / 353px 证书宽度，
+   桌面端 800px 证书按同一比例映射约为 23px。 */
 .honor-text {
   width: 100%;
-  font-size: 18px;
+  font-size: 23px;
   color: #27231f;
   line-height: 1.9;
   letter-spacing: 0.012em;
@@ -494,8 +496,9 @@ onMounted(async () => {
   color: #3c372f;
 }
 
+/* 落款字号同样按移动端证书宽度比例映射。 */
 .honor-org {
-  font-size: 13px;
+  font-size: 18px;
   line-height: 1.3;
   font-weight: 500;
   margin: 0 0 3px 0;
@@ -504,7 +507,7 @@ onMounted(async () => {
 }
 
 .honor-date {
-  font-size: 12px;
+  font-size: 17px;
   line-height: 1.25;
   font-weight: 500;
   margin: 0;
