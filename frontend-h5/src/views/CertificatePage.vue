@@ -28,7 +28,6 @@ interface GradeLevel {
   tag: CertificateTagType
 }
 
-// 计算成绩等级
 const getGradeLevel = (score: number): GradeLevel => {
   if (score >= 90) return { level: '优秀', color: '#FFD700', tag: 'warning' }
   if (score >= 80) return { level: '良好', color: '#07c160', tag: 'success' }
@@ -36,7 +35,6 @@ const getGradeLevel = (score: number): GradeLevel => {
 }
 
 const certificates = ref<Certificate[]>([])
-
 const selectedCert = ref<Certificate | null>(null)
 const showPreview = ref(false)
 const certRef = ref<HTMLElement | null>(null)
@@ -57,7 +55,6 @@ const viewCertificate = (cert: Certificate) => {
 
 onMounted(async () => {
   try {
-    // 加载学生可读的发证单位设置
     try {
       const settingsResp: any = await request.get('/user/contact')
       const settingsData = settingsResp?.data || settingsResp
@@ -68,10 +65,8 @@ onMounted(async () => {
       console.warn('加载发证单位设置失败，使用默认值:', err)
     }
 
-    // 加载证书列表
     const resp: any = await getMyCertificates()
     const data = resp?.data ?? resp
-    console.log('[Certificate] getMyCertificates response:', data)
     certificates.value = (data || []) as Certificate[]
   } catch (err: any) {
     console.error('[Certificate] getMyCertificates error:', err)
@@ -79,42 +74,69 @@ onMounted(async () => {
   }
 })
 
-// 延迟函数
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-// 检测是否在微信浏览器中
 const isWechat = () => {
   const ua = navigator.userAgent.toLowerCase()
   return ua.includes('micromessenger')
 }
 
-// 生成证书图片
+// 移动端证书本身只有数百 CSS 像素宽，导出时提高渲染倍率，
+// 避免直接按屏幕尺寸截图造成文字和边框发虚。
+const getCertificateRenderScale = () => {
+  const deviceScale = Number(window.devicePixelRatio || 1)
+  return Math.min(5, Math.max(4, deviceScale * 1.5))
+}
+
+const waitForCertificateAssets = async () => {
+  try {
+    const fonts = (document as any).fonts
+    if (fonts?.ready) await fonts.ready
+  } catch {}
+
+  await new Promise<void>((resolve) => {
+    const image = new Image()
+    image.onload = () => resolve()
+    image.onerror = () => resolve()
+    image.src = certBgImage
+    if (image.complete) resolve()
+  })
+}
+
+const renderCertificateCanvas = async () => {
+  await nextTick()
+  await waitForCertificateAssets()
+  await delay(120)
+
+  if (!certRef.value) {
+    throw new Error('证书元素未找到')
+  }
+
+  const html2canvasModule = await import('html2canvas')
+  const html2canvas = html2canvasModule.default
+
+  return html2canvas(certRef.value, {
+    scale: getCertificateRenderScale(),
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: '#ffffff',
+    logging: false,
+    imageTimeout: 15000,
+    removeContainer: true,
+    windowWidth: document.documentElement.clientWidth,
+    windowHeight: document.documentElement.clientHeight
+  })
+}
+
 const generateImage = async () => {
   if (isDownloading.value) return
 
   isDownloading.value = true
-  showLoadingToast({ message: '生成证书中...', forbidClick: true, duration: 0 })
+  showLoadingToast({ message: '生成高清证书中...', forbidClick: true, duration: 0 })
 
   try {
-    await nextTick()
-    await delay(300)
-
-    if (!certRef.value) {
-      throw new Error('证书元素未找到')
-    }
-
-    const html2canvasModule = await import('html2canvas')
-    const html2canvas = html2canvasModule.default
-
-    const canvas = await html2canvas(certRef.value, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      logging: false
-    })
-
-    generatedImageUrl.value = canvas.toDataURL('image/png')
+    const canvas = await renderCertificateCanvas()
+    generatedImageUrl.value = canvas.toDataURL('image/png', 1.0)
     closeToast()
 
     if (isWechat()) {
@@ -128,7 +150,7 @@ const generateImage = async () => {
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      showToast({ message: '证书图片已下载', type: 'success' })
+      showToast({ message: '高清证书图片已下载', type: 'success' })
     }
   } catch (error) {
     closeToast()
@@ -139,7 +161,6 @@ const generateImage = async () => {
   }
 }
 
-// 保存证书
 const saveCertificate = async () => {
   if (isWechat()) {
     await generateImage()
@@ -149,34 +170,15 @@ const saveCertificate = async () => {
   if (isDownloading.value) return
 
   isDownloading.value = true
-  showLoadingToast({ message: '生成PDF中...', forbidClick: true, duration: 0 })
+  showLoadingToast({ message: '生成高清PDF中...', forbidClick: true, duration: 0 })
 
   try {
-    await nextTick()
-    await delay(300)
-
-    if (!certRef.value) {
-      throw new Error('证书元素未找到')
-    }
-
-    const [html2canvasModule, jspdfModule] = await Promise.all([
-      import('html2canvas'),
+    const [canvas, jspdfModule] = await Promise.all([
+      renderCertificateCanvas(),
       import('jspdf')
     ])
-
-    const html2canvas = html2canvasModule.default
     const jsPDF = jspdfModule.jsPDF
-
-    const canvas = await html2canvas(certRef.value, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      logging: false
-    })
-
-    const imgData = canvas.toDataURL('image/png')
-    // 横版A4
+    const imgData = canvas.toDataURL('image/png', 1.0)
     const pdf = new jsPDF('l', 'mm', 'a4')
 
     const pdfWidth = pdf.internal.pageSize.getWidth()
@@ -184,7 +186,6 @@ const saveCertificate = async () => {
     const imgWidth = canvas.width
     const imgHeight = canvas.height
     const ratio = Math.min((pdfWidth - 20) / imgWidth, (pdfHeight - 20) / imgHeight)
-
     const imgX = (pdfWidth - imgWidth * ratio) / 2
     const imgY = (pdfHeight - imgHeight * ratio) / 2
 
@@ -192,7 +193,7 @@ const saveCertificate = async () => {
     pdf.save(`实验室安全教育考试合格证书_${selectedCert.value?.studentName || '证书'}.pdf`)
 
     closeToast()
-    showToast({ message: '证书PDF已下载', type: 'success' })
+    showToast({ message: '高清证书PDF已下载', type: 'success' })
   } catch (error) {
     closeToast()
     console.error('PDF生成失败:', error)
@@ -254,7 +255,6 @@ const saveCertificate = async () => {
       </van-empty>
     </div>
 
-    <!-- 证书预览弹窗 -->
     <van-popup
       :show="showPreview"
       @update:show="val => (showPreview = val)"
@@ -265,17 +265,20 @@ const saveCertificate = async () => {
     >
       <div class="cert-popup-wrapper">
         <div class="cert-popup-content">
-          <div v-if="selectedCert" ref="certRef" class="honor-cert" :style="{ backgroundImage: `url(${certBgImage})` }">
-            <!-- 证书内容 -->
+          <div
+            v-if="selectedCert"
+            ref="certRef"
+            class="honor-cert"
+            :style="{ backgroundImage: `url(${certBgImage})` }"
+          >
             <div class="honor-content">
               <h1 class="honor-title">荣 誉 证 书</h1>
               <p class="honor-serial">编号：{{ selectedCert.certificateNo }}</p>
 
               <div class="honor-body">
                 <p class="honor-text">
-                  <span class="honor-name">{{ selectedCert.studentName }}</span> 同学于{{ selectedCert.examDate }}参加"{{
-                  selectedCert.examName }}"考试，考试成绩为:<span class="honor-score">{{ selectedCert.score
-                    }}分</span>,考试结果为:<span class="honor-grade">{{ selectedGrade?.level }}</span>！
+                  <span class="honor-name">{{ selectedCert.studentName }}</span>
+                  同学于{{ selectedCert.examDate }}参加“{{ selectedCert.examName }}”考试，考试成绩为：<span class="honor-score">{{ selectedCert.score }}分</span>，考试结果为：<span class="honor-grade">{{ selectedGrade?.level }}</span>！
                 </p>
               </div>
 
@@ -289,13 +292,12 @@ const saveCertificate = async () => {
 
         <div class="cert-popup-footer">
           <van-button type="primary" block @click="saveCertificate" :loading="isDownloading">
-            <van-icon name="down" /> 保存证书
+            <van-icon name="down" /> 保存高清证书
           </van-button>
         </div>
       </div>
     </van-popup>
 
-    <!-- 图片预览弹窗 -->
     <van-popup
       :show="showImagePreview"
       @update:show="val => (showImagePreview = val)"
@@ -305,7 +307,7 @@ const saveCertificate = async () => {
       close-icon-position="top-right"
     >
       <div class="image-preview-container">
-        <div class="preview-tip">长按图片保存到相册</div>
+        <div class="preview-tip">长按高清图片保存到相册</div>
         <img v-if="generatedImageUrl" :src="generatedImageUrl" class="preview-image" alt="证书" />
         <van-button type="primary" block @click="showImagePreview = false" style="margin-top: 3vw;">
           关闭
@@ -316,7 +318,6 @@ const saveCertificate = async () => {
 </template>
 
 <style scoped>
-/* ========== 页面基础样式 ========== */
 .certificate-page {
   min-height: 100vh;
   background: #f7f8fa;
@@ -326,7 +327,6 @@ const saveCertificate = async () => {
   padding: 4vw;
 }
 
-/* ========== 证书卡片列表样式 ========== */
 .cert-list {
   display: flex;
   flex-direction: column;
@@ -415,7 +415,6 @@ const saveCertificate = async () => {
   flex: 1;
 }
 
-/* ========== 弹窗布局 ========== */
 .cert-popup-wrapper {
   height: 100%;
   display: flex;
@@ -441,7 +440,7 @@ const saveCertificate = async () => {
   font-size: 4vw;
 }
 
-/* ========== 荣誉证书样式（横版）========== */
+/* 横版证书。保留原背景比例，但给文字区增加更安全的底部空间。 */
 .honor-cert {
   width: 94vw;
   height: 66vw;
@@ -450,92 +449,118 @@ const saveCertificate = async () => {
   background-position: center;
   box-sizing: border-box;
   position: relative;
+  overflow: hidden;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  transform: translateZ(0);
 }
 
-/* 证书内容 - 叠加在背景图上，必须在中间空白区域内 */
 .honor-content {
   position: absolute;
-  top: 18%;
-  left: 20%;
-  right: 20%;
-  bottom: 15%;
+  top: 16%;
+  left: 17%;
+  right: 17%;
+  bottom: 18%;
   display: flex;
   flex-direction: column;
+  color: #28241f;
+  font-family: "Songti SC", "STSong", "SimSun", "宋体", "Noto Serif CJK SC", "Noto Serif SC", serif;
 }
 
 .honor-title {
   text-align: center;
-  font-size: 4vw;
-  color: #cc0000;
-  font-weight: normal;
-  letter-spacing: 1.2vw;
-  margin: 2.5vw 0 0.5vw 0;
-  font-family: "STXingkai", "华文行楷", "STKaiti", "楷体", "KaiTi", serif;
+  font-size: clamp(15px, 4vw, 29px);
+  line-height: 1.15;
+  color: #b92722;
+  font-weight: 700;
+  letter-spacing: 1.15vw;
+  margin: 1.8vw 0 0.55vw 0;
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", "楷体", "Noto Serif SC", serif;
 }
 
+/* 编号作为辅助信息：小、粗、右对齐，不与标题争抢视觉层级。 */
 .honor-serial {
+  width: 100%;
+  box-sizing: border-box;
   text-align: right;
-  font-size: 1.4vw;
-  color: #555;
-  margin: 0 0 1vw 0;
-  font-family: "SimSun", "宋体", serif;
+  padding-right: 1.1vw;
+  font-size: clamp(7px, 1.05vw, 10px);
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #514b43;
+  margin: 0.15vw 0 0.6vw 0;
+  white-space: nowrap;
+  font-family: "Times New Roman", "Songti SC", "STSong", "SimSun", serif;
 }
 
 .honor-body {
   flex: 1;
   display: flex;
   align-items: center;
-  padding: 0;
+  padding: 0 0 3.8vw 0;
+  min-height: 0;
 }
 
 .honor-text {
-  font-size: 2.2vw;
-  color: #333;
-  line-height: 1.8;
+  width: 100%;
+  font-size: clamp(10px, 2.05vw, 16px);
+  color: #27231f;
+  line-height: 1.85;
+  letter-spacing: 0.015em;
   text-indent: 2em;
   margin: 0;
-  font-family: "SimSun", "宋体", serif;
+  font-weight: 400;
+  font-family: "Songti SC", "STSong", "SimSun", "宋体", "Noto Serif CJK SC", serif;
 }
 
 .honor-name {
-  font-size: 2vw;
-  font-weight: bold;
-  color: #000;
-  border-bottom: 1px solid #333;
-  padding-bottom: 0.2vw;
-  font-family: "STKaiti", "楷体", "KaiTi", serif;
+  font-size: inherit;
+  font-weight: 700;
+  color: #171411;
+  border-bottom: 1px solid #5e574d;
+  padding: 0 0.15em 0.08em;
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", "楷体", serif;
 }
 
 .honor-score {
-  font-weight: bold;
+  font-weight: 700;
+  color: #171411;
 }
 
 .honor-grade {
-  font-weight: bold;
-  color: #cc0000;
+  font-weight: 700;
+  color: #b92722;
 }
 
+/* 发证单位和日期固定在内容安全区内，并整体上移，避免压到下边框。 */
 .honor-sign {
-  text-align: right;
-  padding-right: 0;
+  position: absolute;
+  right: 0.6vw;
+  bottom: 0.55vw;
+  min-width: 30%;
+  text-align: center;
+  color: #3c372f;
 }
 
 .honor-org {
-  font-size: 2vw;
-  color: #333;
-  margin: 0 0 0.3vw 0;
-  font-family: "SimSun", "宋体", serif;
+  font-size: clamp(8px, 1.55vw, 12px);
+  line-height: 1.3;
+  font-weight: 500;
+  margin: 0 0 0.25vw 0;
+  white-space: nowrap;
+  font-family: "Songti SC", "STSong", "SimSun", "宋体", serif;
 }
 
 .honor-date {
-  font-size: 2vw;
-  color: #333;
+  font-size: clamp(8px, 1.45vw, 11px);
+  line-height: 1.25;
+  font-weight: 500;
   margin: 0;
-  font-family: "SimSun", "宋体", serif;
+  white-space: nowrap;
+  font-family: "Times New Roman", "Songti SC", "STSong", "SimSun", serif;
 }
 
-
-/* ========== 图片预览 ========== */
 .image-preview-container {
   background: #fff;
   padding: 4vw;
@@ -555,5 +580,6 @@ const saveCertificate = async () => {
   max-height: 70vh;
   object-fit: contain;
   display: block;
+  image-rendering: auto;
 }
 </style>
