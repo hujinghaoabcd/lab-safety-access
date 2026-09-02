@@ -57,6 +57,7 @@ router.beforeEach((to) => {
 
 // 全局样式
 import './styles/global.css'
+import './styles/desktop-certificate-polish.css'
 
 const app = createApp(App)
 
