@@ -30,7 +30,11 @@ export const useUserStore = defineStore('user', () => {
   function logout() {
     authenticated.value = false
     userInfo.value = null
-    clearStudentSession()
+    // Vant confirmation dialogs resolve before their leave animation has fully
+    // disappeared. Keep the login route from rendering for one transition cycle
+    // so the shrinking/fading white dialog cannot flash on top of the login page.
+    clearStudentSession({ routeHoldMs: 360 })
+
     // Existing mobile/desktop UI calls this synchronous store method. Fire the
     // idempotent server logout in the background so the HttpOnly cookie is
     // cleared without forcing a broad UI refactor in this security change.
