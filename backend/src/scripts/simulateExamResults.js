@@ -109,14 +109,11 @@ const login = async (studentId) => {
 };
 
 const resetTestData = async (examId, testUsers) => {
-  console.log('\n[reset] 清理该考试下测试账号的历史记录、错题和证书...');
+  console.log('\n[reset] 清理测试账号的全部错题，以及当前考试的历史记录和证书...');
   for (const user of testUsers) {
-    await dbRun(
-      `DELETE FROM wrong_questions
-        WHERE user_id = ?
-          AND question_id IN (SELECT id FROM questions WHERE exam_id = ?)`,
-      [user.id, examId]
-    );
+    // 这些 TEST00x 是专用测试账号。错题本是跨考试聚合的，所以若只删除
+    // 当前考试的错题，旧测试考试留下的错题仍会显示在“测试满分”账号中。
+    await dbRun('DELETE FROM wrong_questions WHERE user_id = ?', [user.id]);
     await dbRun('DELETE FROM certificates WHERE user_id = ? AND exam_id = ?', [user.id, examId]);
     await dbRun('DELETE FROM exam_records WHERE user_id = ? AND exam_id = ?', [user.id, examId]);
   }
@@ -285,7 +282,8 @@ const main = async () => {
        er.status,
        er.submit_time AS submitTime,
        c.grade AS certificateGrade,
-       c.certificate_no AS certificateNo
+       c.certificate_no AS certificateNo,
+       (SELECT COUNT(*) FROM wrong_questions wq WHERE wq.user_id = u.id) AS wrongbookCount
      FROM users u
      LEFT JOIN exam_records er ON er.user_id = u.id AND er.exam_id = ?
      LEFT JOIN certificates c ON c.user_id = u.id AND c.exam_id = ? AND c.status = 1
@@ -296,7 +294,15 @@ const main = async () => {
 
   console.log('\n=== 数据库验收结果 ===');
   console.table(verificationRows);
-  console.log('\n现在可以直接去后台“考试记录 / 证书管理”查看这些结果，无需人工答题。');
+
+  const perfectRow = verificationRows.find(
+    (row) => row.studentId === 'TEST006' && Number(row.score) === Number(exam.totalScore)
+  );
+  if (perfectRow && Number(perfectRow.wrongbookCount || 0) !== 0) {
+    throw new Error(`TEST006 满分后错题本仍有 ${perfectRow.wrongbookCount} 题，请检查错题写入逻辑`);
+  }
+
+  console.log('\n验收通过：满分账号错题本为 0；现在可以去后台“考试记录 / 证书管理”查看结果。');
 };
 
 main()
