@@ -4,8 +4,8 @@
       <div class="result-head">
         <div class="status-main">
           <span class="status-icon" :class="isPassed ? 'passed' : 'failed'">
-            <el-icon v-if="isPassed"><CircleCheck /></el-icon>
-            <el-icon v-else><CircleClose /></el-icon>
+            <el-icon v-if="isPassed"><CircleCheckFilled /></el-icon>
+            <el-icon v-else><WarningFilled /></el-icon>
           </span>
           <div class="status-copy">
             <div class="status-label">{{ isPassed ? '考试通过' : '考试未通过' }}</div>
@@ -27,27 +27,18 @@
 
       <div class="result-stats">
         <div class="stat-item">
-          <span class="stat-icon success"><el-icon><CircleCheck /></el-icon></span>
-          <div>
-            <span class="stat-label">答对题目</span>
-            <strong class="stat-value success-value">{{ correct }}<small>题</small></strong>
-          </div>
+          <span class="stat-label">答对题目</span>
+          <strong class="stat-value success-value">{{ correct }}<small>题</small></strong>
         </div>
 
         <div class="stat-item">
-          <span class="stat-icon error"><el-icon><CircleClose /></el-icon></span>
-          <div>
-            <span class="stat-label">答错题目</span>
-            <strong class="stat-value error-value">{{ wrong }}<small>题</small></strong>
-          </div>
+          <span class="stat-label">答错题目</span>
+          <strong class="stat-value error-value">{{ wrong }}<small>题</small></strong>
         </div>
 
         <div class="stat-item">
-          <span class="stat-icon score"><el-icon><Medal /></el-icon></span>
-          <div>
-            <span class="stat-label">及格分数</span>
-            <strong class="stat-value score-value">{{ passScore }}<small>分</small></strong>
-          </div>
+          <span class="stat-label">及格分数</span>
+          <strong class="stat-value score-value">{{ passScore }}<small>分</small></strong>
         </div>
       </div>
 
@@ -78,12 +69,11 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
-  CircleCheck,
-  CircleClose,
+  CircleCheckFilled,
   HomeFilled,
   List,
-  Medal,
-  RefreshRight
+  RefreshRight,
+  WarningFilled
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -144,22 +134,25 @@ const handleQuit = () => {
 }
 
 .status-icon {
-  width: 66px;
-  height: 66px;
-  flex: 0 0 66px;
+  width: 62px;
+  height: 62px;
+  flex: 0 0 62px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 34px;
+  font-size: 31px;
+  border: 1px solid transparent;
 }
 
 .status-icon.passed {
-  background: #ecf8f1;
+  background: #eef8f2;
+  border-color: #d9eee1;
   color: #25a85a;
 }
 
 .status-icon.failed {
-  background: #fff1f1;
+  background: #fff5f2;
+  border-color: #f4ded8;
   color: #e85b63;
 }
 
@@ -227,19 +220,22 @@ const handleQuit = () => {
 .result-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  padding: 26px 38px;
+  padding: 22px 38px;
   gap: 0;
   background: #fafbfd;
   border-bottom: 1px solid #e8ecf2;
 }
 
 .stat-item {
-  min-height: 78px;
-  padding: 8px 28px;
+  min-height: 82px;
+  padding: 10px 28px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
+  gap: 5px;
   border-right: 1px solid #e5eaf0;
+  text-align: center;
 }
 
 .stat-item:first-child {
@@ -251,44 +247,13 @@ const handleQuit = () => {
   border-right: 0;
 }
 
-.stat-icon {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-}
-
-.stat-icon.success {
-  background: #edf8f1;
-  color: #25a85a;
-}
-
-.stat-icon.error {
-  background: #fff1f1;
-  color: #e85b63;
-}
-
-.stat-icon.score {
-  background: #fff7e6;
-  color: #d89418;
-}
-
-.stat-item > div {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
 .stat-label {
   color: #8d99a9;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: 27px;
   line-height: 1.2;
   font-weight: 700;
 }
