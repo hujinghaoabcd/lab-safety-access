@@ -248,7 +248,7 @@ onMounted(async () => {
 }
 
 .panel-toolbar {
-  min-height: 58px;
+  min-height: 52px;
   padding: 0 20px;
   display: flex;
   align-items: center;
@@ -274,11 +274,12 @@ onMounted(async () => {
 }
 
 .panel-toolbar :deep(.el-radio-button__inner) {
-  min-width: 86px;
-  height: 34px;
-  padding: 8px 15px;
+  min-width: 72px;
+  height: 30px;
+  padding: 6px 11px;
   line-height: 16px;
   border-radius: 0 !important;
+  font-size: 13px;
 }
 
 .records-table :deep(.el-table__header th) {
