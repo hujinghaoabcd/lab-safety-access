@@ -1,6 +1,7 @@
 const { dbGet, dbRun } = require('../database/db');
 const { success, error } = require('../utils/response');
 const { hashPassword, verifyPassword, validatePassword } = require('../utils/password');
+const { loadSettingSection } = require('./adminSettingsController');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -47,6 +48,16 @@ const getProfile = async (req, res) => {
   } catch (err) {
     console.error('获取用户信息错误:', err);
     return error(res, '获取用户信息失败', 500);
+  }
+};
+
+const getContactInfo = async (_req, res) => {
+  try {
+    const contact = await loadSettingSection('contact');
+    return success(res, { contact }, '获取成功');
+  } catch (err) {
+    console.error('获取联系方式错误:', err);
+    return error(res, '获取联系方式失败', 500);
   }
 };
 
@@ -253,6 +264,7 @@ const changeAvatar = async (req, res) => {
 
 module.exports = {
   getProfile,
+  getContactInfo,
   updateProfile,
   getProfileStats,
   changePassword,
