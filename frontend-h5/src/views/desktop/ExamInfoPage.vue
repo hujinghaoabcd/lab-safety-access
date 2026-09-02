@@ -3,11 +3,7 @@
     <section class="exam-overview">
       <div class="overview-head">
         <div class="overview-title-block">
-          <div class="overview-title-row">
-            <span class="overview-title-icon"><el-icon><InfoFilled /></el-icon></span>
-            <h1>{{ examInfo.name || '实验室安全考试' }}</h1>
-            <span class="overview-type">考试说明</span>
-          </div>
+          <h1>{{ examInfo.name || '实验室安全考试' }}</h1>
           <p>请确认考试信息并阅读考试须知后开始答题</p>
         </div>
       </div>
@@ -209,8 +205,8 @@ onMounted(async () => {
 }
 
 .overview-head {
-  min-height: 82px;
-  padding: 17px 24px;
+  min-height: 78px;
+  padding: 16px 24px;
   display: flex;
   align-items: center;
   border-bottom: 1px solid #e8ecf2;
@@ -220,45 +216,16 @@ onMounted(async () => {
   min-width: 0;
 }
 
-.overview-title-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.overview-title-icon {
-  width: 30px;
-  height: 30px;
-  flex: 0 0 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #eaf4ff;
-  color: #0475FA;
-  font-size: 16px;
-}
-
-.overview-title-row h1 {
+.overview-title-block h1 {
   margin: 0;
   color: #1f2d3d;
-  font-size: 21px;
+  font-size: 22px;
   line-height: 1.3;
   font-weight: 700;
 }
 
-.overview-type {
-  height: 24px;
-  padding: 0 8px;
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid #cfe3fb;
-  background: #f4f9ff;
-  color: #0475FA;
-  font-size: 12px;
-}
-
 .overview-title-block p {
-  margin: 7px 0 0 40px;
+  margin: 6px 0 0;
   color: #8a97a8;
   font-size: 13px;
   line-height: 1.4;
