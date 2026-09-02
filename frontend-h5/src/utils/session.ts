@@ -2,6 +2,7 @@ let known = false
 let authenticated = false
 let inFlight: Promise<boolean> | null = null
 let routeHoldUntil = 0
+let explicitLogoutUntil = 0
 
 const waitForRouteHold = async () => {
   const remaining = routeHoldUntil - Date.now()
@@ -12,7 +13,10 @@ const waitForRouteHold = async () => {
 export const markStudentSession = (value: boolean) => {
   known = true
   authenticated = value
-  if (value) routeHoldUntil = 0
+  if (value) {
+    routeHoldUntil = 0
+    explicitLogoutUntil = 0
+  }
 }
 
 export const clearStudentSession = ({ routeHoldMs = 0 } = {}) => {
@@ -22,6 +26,18 @@ export const clearStudentSession = ({ routeHoldMs = 0 } = {}) => {
     routeHoldUntil = Math.max(routeHoldUntil, Date.now() + routeHoldMs)
   }
 }
+
+// Explicit logout is different from an expired session. During logout there can
+// still be profile/stats requests in flight. If those requests return 401 after
+// the cookie is cleared, the Axios interceptor must not start another hard
+// redirect to /login, otherwise the freshly rendered login page can repeatedly
+// reload/flicker and its inputs lose focus.
+export const beginStudentLogout = ({ routeHoldMs = 0, quietMs = 2500 } = {}) => {
+  clearStudentSession({ routeHoldMs })
+  explicitLogoutUntil = Math.max(explicitLogoutUntil, Date.now() + quietMs)
+}
+
+export const isStudentLogoutInProgress = () => Date.now() < explicitLogoutUntil
 
 export const checkStudentSession = async ({ force = false } = {}) => {
   // During an explicit mobile logout, Vant's confirmation dialog is still
