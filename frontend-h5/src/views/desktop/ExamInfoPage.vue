@@ -2,11 +2,14 @@
   <div class="desktop-exam-info" v-loading="loading">
     <section class="exam-overview">
       <div class="overview-head">
-        <div>
-          <div class="overview-kicker">考试说明</div>
-          <h1>{{ examInfo.name || '实验室安全考试' }}</h1>
+        <div class="overview-title-block">
+          <div class="overview-title-row">
+            <span class="overview-title-icon"><el-icon><InfoFilled /></el-icon></span>
+            <h1>{{ examInfo.name || '实验室安全考试' }}</h1>
+            <span class="overview-type">考试说明</span>
+          </div>
+          <p>请确认考试信息并阅读考试须知后开始答题</p>
         </div>
-        <div class="overview-note">请确认考试信息并阅读考试须知后开始答题</div>
       </div>
 
       <div class="exam-meta-grid">
@@ -210,30 +213,55 @@ onMounted(async () => {
   padding: 17px 24px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
   border-bottom: 1px solid #e8ecf2;
 }
 
-.overview-kicker {
-  margin-bottom: 4px;
-  color: #0475FA;
-  font-size: 12px;
-  font-weight: 600;
+.overview-title-block {
+  min-width: 0;
 }
 
-.overview-head h1 {
+.overview-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.overview-title-icon {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eaf4ff;
+  color: #0475FA;
+  font-size: 16px;
+}
+
+.overview-title-row h1 {
   margin: 0;
   color: #1f2d3d;
-  font-size: 22px;
+  font-size: 21px;
   line-height: 1.3;
   font-weight: 700;
 }
 
-.overview-note {
+.overview-type {
+  height: 24px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #cfe3fb;
+  background: #f4f9ff;
+  color: #0475FA;
+  font-size: 12px;
+}
+
+.overview-title-block p {
+  margin: 7px 0 0 40px;
   color: #8a97a8;
   font-size: 13px;
-  white-space: nowrap;
+  line-height: 1.4;
 }
 
 .exam-meta-grid {
@@ -428,10 +456,6 @@ onMounted(async () => {
 @media (max-width: 1100px) {
   .exam-meta-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .overview-note {
-    display: none;
   }
 }
 </style>
