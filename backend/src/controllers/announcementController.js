@@ -3,10 +3,21 @@ const { success, error } = require('../utils/response');
 const logger = require('../utils/logger');
 
 /**
- * 获取公告列表（H5前端使用，仅返回启用的）
+ * 获取公告（学生端使用）。默认保持原有行为只返回第一条启用公告；
+ * desktop 首页通过 ?all=1 获取全部启用公告，避免展示前端写死的假数据。
  */
 exports.getAnnouncements = async (req, res) => {
   try {
+    if (String(req.query.all || '') === '1') {
+      const announcements = await dbQuery(`
+        SELECT id, content, order_num as orderNum, created_at as createdAt
+        FROM announcements
+        WHERE status = 1
+        ORDER BY order_num ASC, created_at DESC
+      `);
+      return success(res, announcements || [], '获取成功');
+    }
+
     const announcements = await dbQuery(`
       SELECT id, content, order_num as orderNum
       FROM announcements
@@ -14,8 +25,7 @@ exports.getAnnouncements = async (req, res) => {
       ORDER BY order_num ASC, created_at DESC
       LIMIT 1
     `);
-    
-    // 返回第一条公告内容（前端只显示一条）
+
     success(res, announcements && announcements.length > 0 ? announcements[0].content : '', '获取成功');
   } catch (err) {
     logger.error('获取公告失败', { error: err.message });
@@ -29,20 +39,18 @@ exports.getAnnouncements = async (req, res) => {
 exports.getAllAnnouncements = async (req, res) => {
   try {
     const { page = 1, pageSize = 10, status } = req.query;
-    
+
     let whereSql = 'WHERE 1=1';
     const params = [];
-    
+
     if (status !== undefined && status !== '') {
       whereSql += ' AND status = ?';
       params.push(parseInt(status, 10));
     }
-    
-    // 总数
+
     const countRow = await dbGet(`SELECT COUNT(*) as count FROM announcements ${whereSql}`, params);
     const total = countRow ? countRow.count || 0 : 0;
-    
-    // 分页查询
+
     const limit = parseInt(pageSize, 10);
     const offset = (parseInt(page, 10) - 1) * limit;
     const announcements = await dbQuery(`
@@ -52,7 +60,7 @@ exports.getAllAnnouncements = async (req, res) => {
       ORDER BY order_num ASC, created_at DESC
       LIMIT ? OFFSET ?
     `, [...params, limit, offset]);
-    
+
     success(res, {
       list: announcements || [],
       total,
@@ -71,17 +79,17 @@ exports.getAllAnnouncements = async (req, res) => {
 exports.createAnnouncement = async (req, res) => {
   try {
     const { content, orderNum, status } = req.body;
-    
+
     if (!content || !content.trim()) {
       return error(res, '公告内容不能为空', 400);
     }
-    
+
     const result = await dbRun(
       `INSERT INTO announcements (content, order_num, status)
        VALUES (?, ?, ?)`,
       [content.trim(), orderNum || 0, status !== undefined ? status : 1]
     );
-    
+
     const announcement = await dbGet('SELECT * FROM announcements WHERE id = ?', [result.lastID]);
     success(res, {
       id: announcement.id,
@@ -102,10 +110,10 @@ exports.updateAnnouncement = async (req, res) => {
   try {
     const { id } = req.params;
     const { content, orderNum, status } = req.body;
-    
+
     const updateFields = [];
     const updateValues = [];
-    
+
     if (content !== undefined) {
       if (!content.trim()) {
         return error(res, '公告内容不能为空', 400);
@@ -121,19 +129,19 @@ exports.updateAnnouncement = async (req, res) => {
       updateFields.push('status = ?');
       updateValues.push(status);
     }
-    
+
     if (updateFields.length === 0) {
       return error(res, '没有要更新的字段', 400);
     }
-    
+
     updateFields.push('updated_at = CURRENT_TIMESTAMP');
     updateValues.push(id);
-    
+
     await dbRun(
       `UPDATE announcements SET ${updateFields.join(', ')} WHERE id = ?`,
       updateValues
     );
-    
+
     const announcement = await dbGet('SELECT * FROM announcements WHERE id = ?', [id]);
     success(res, {
       id: announcement.id,
@@ -160,4 +168,3 @@ exports.deleteAnnouncement = async (req, res) => {
     error(res, '删除公告失败', 500);
   }
 };
-
