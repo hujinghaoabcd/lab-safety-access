@@ -1,65 +1,57 @@
 <template>
-  <div class="desktop-exam-info">
-    <el-card class="page-header" shadow="never">
-      <h2>考试说明</h2>
-      <p>请仔细阅读考试须知后开始答题</p>
-    </el-card>
-
-    <el-card class="info-card" shadow="hover">
-      <div class="exam-title-wrapper">
-        <h3 class="exam-title">{{ examInfo.name || '实验室安全考试' }}</h3>
+  <div class="desktop-exam-info" v-loading="loading">
+    <section class="exam-overview">
+      <div class="overview-head">
+        <div>
+          <div class="overview-kicker">考试说明</div>
+          <h1>{{ examInfo.name || '实验室安全考试' }}</h1>
+        </div>
+        <div class="overview-note">请确认考试信息并阅读考试须知后开始答题</div>
       </div>
 
       <div class="exam-meta-grid">
-        <div class="meta-item">
-          <div class="meta-icon-wrapper" style="background: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%);">
-            <el-icon><Clock /></el-icon>
-          </div>
+        <div class="meta-item duration">
+          <span class="meta-icon"><el-icon><Clock /></el-icon></span>
           <div class="meta-content">
-            <div class="meta-label">考试时长</div>
-            <div class="meta-value">{{ examInfo.duration }}分钟</div>
+            <span class="meta-label">考试时长</span>
+            <strong class="meta-value">{{ examInfo.duration }}<small>分钟</small></strong>
           </div>
         </div>
 
-        <div class="meta-item">
-          <div class="meta-icon-wrapper" style="background: linear-gradient(135deg, #4ECDC4 0%, #6EDDD6 100%);">
-            <el-icon><Document /></el-icon>
-          </div>
+        <div class="meta-item questions">
+          <span class="meta-icon"><el-icon><Document /></el-icon></span>
           <div class="meta-content">
-            <div class="meta-label">题目数量</div>
-            <div class="meta-value">{{ examInfo.questionCount }}题</div>
+            <span class="meta-label">题目数量</span>
+            <strong class="meta-value">{{ examInfo.questionCount }}<small>题</small></strong>
           </div>
         </div>
 
-        <div class="meta-item">
-          <div class="meta-icon-wrapper" style="background: linear-gradient(135deg, #FFE66D 0%, #FFF89C 100%);">
-            <el-icon><Trophy /></el-icon>
-          </div>
+        <div class="meta-item pass-score">
+          <span class="meta-icon"><el-icon><Trophy /></el-icon></span>
           <div class="meta-content">
-            <div class="meta-label">及格分数</div>
-            <div class="meta-value">{{ examInfo.passScore }}分</div>
+            <span class="meta-label">及格分数</span>
+            <strong class="meta-value">{{ examInfo.passScore }}<small>分</small></strong>
           </div>
         </div>
 
-        <div class="meta-item">
-          <div class="meta-icon-wrapper" style="background: linear-gradient(135deg, #95E1D3 0%, #B5F0E3 100%);">
-            <el-icon><Star /></el-icon>
-          </div>
+        <div class="meta-item total-score">
+          <span class="meta-icon"><el-icon><Star /></el-icon></span>
           <div class="meta-content">
-            <div class="meta-label">满分</div>
-            <div class="meta-value">{{ examInfo.totalScore }}分</div>
+            <span class="meta-label">试卷满分</span>
+            <strong class="meta-value">{{ examInfo.totalScore }}<small>分</small></strong>
           </div>
         </div>
       </div>
-    </el-card>
+    </section>
 
-    <el-card class="rules-card" shadow="hover">
-      <template #header>
-        <div class="card-header">
+    <section class="rules-panel">
+      <div class="panel-head">
+        <div class="panel-title">
           <el-icon><InfoFilled /></el-icon>
-          <span>考试须知</span>
+          <strong>考试须知</strong>
         </div>
-      </template>
+        <span v-if="examInfo.rules.length">共 {{ examInfo.rules.length }} 条</span>
+      </div>
 
       <div v-if="examInfo.rules.length > 0" class="rules-list">
         <div
@@ -67,42 +59,50 @@
           :key="index"
           class="rule-item"
         >
-          <div class="rule-number">{{ index + 1 }}</div>
-          <div class="rule-text">{{ rule }}</div>
+          <span class="rule-number">{{ index + 1 }}</span>
+          <span class="rule-text">{{ rule }}</span>
         </div>
       </div>
-      <el-empty v-else description="暂无考试须知" />
-    </el-card>
 
-    <el-card class="agreement-card" shadow="hover">
-      <el-checkbox v-model="agreed" size="large">
+      <div v-else class="empty-rules">暂无考试须知</div>
+    </section>
+
+    <section class="confirm-panel">
+      <el-checkbox v-model="agreed" class="agreement-checkbox">
         <span class="agreement-text">我已阅读并理解以上考试须知，同意开始考试</span>
       </el-checkbox>
-    </el-card>
 
-    <div class="action-buttons">
-      <el-button size="large" @click="router.back()">
-        <el-icon><ArrowLeft /></el-icon>
-        返回
-      </el-button>
-      <el-button
-        type="primary"
-        size="large"
-        :disabled="!agreed"
-        @click="handleStartExam"
-      >
-        <el-icon><Right /></el-icon>
-        开始考试
-      </el-button>
-    </div>
+      <div class="action-buttons">
+        <el-button @click="router.back()">
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </el-button>
+        <el-button
+          type="primary"
+          :disabled="!agreed"
+          @click="handleStartExam"
+        >
+          开始考试
+          <el-icon><Right /></el-icon>
+        </el-button>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Clock, Document, Trophy, Star, InfoFilled, ArrowLeft, Right } from '@element-plus/icons-vue'
+import {
+  ArrowLeft,
+  Clock,
+  Document,
+  InfoFilled,
+  Right,
+  Star,
+  Trophy
+} from '@element-plus/icons-vue'
 import { getExamDetail } from '@/api'
 
 const router = useRouter()
@@ -161,24 +161,24 @@ onMounted(async () => {
     router.back()
     return
   }
+
   try {
     loading.value = true
     const resp: any = await getExamDetail(examId)
     const data = resp?.data ?? resp
-    console.log('[ExamInfo] getExamDetail response:', data)
 
     examInfo.value.id = String(data.id)
     examInfo.value.name = data.name || '实验室安全考试'
     examInfo.value.description = data.description || ''
-    examInfo.value.duration = data.duration || 0
-    examInfo.value.questionCount = data.questionCount || 0
-    examInfo.value.passScore = data.passScore || 0
-    examInfo.value.totalScore = data.totalScore || 100
+    examInfo.value.duration = Number(data.duration || 0)
+    examInfo.value.questionCount = Number(data.questionCount || 0)
+    examInfo.value.passScore = Number(data.passScore || 0)
+    examInfo.value.totalScore = Number(data.totalScore || 100)
 
     examInfo.value.rules = (examInfo.value.description || '')
       .split(/\r?\n/)
-      .map(line => line.trim())
-      .filter(line => line.length > 0)
+      .map((line: string) => line.trim())
+      .filter((line: string) => line.length > 0)
   } catch (err: any) {
     console.error('[ExamInfo] getExamDetail error:', err)
     ElMessage.error(err?.message || '加载考试信息失败')
@@ -191,226 +191,247 @@ onMounted(async () => {
 
 <style scoped>
 .desktop-exam-info {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
   padding: 0;
 }
 
-.page-header {
-  margin-bottom: 24px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 24px 32px;
+.exam-overview,
+.rules-panel,
+.confirm-panel {
+  background: #fff;
+  border: 1px solid #e2e7ee;
+  box-shadow: 0 3px 12px rgba(31, 45, 61, 0.06);
 }
 
-.page-header h2 {
-  font-size: 28px;
-  font-weight: 700;
-  color: #303133;
-  margin: 0 0 8px 0;
-  letter-spacing: 0.5px;
-  background: linear-gradient(135deg, #0475FA 0%, #1a8cff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.overview-head {
+  min-height: 82px;
+  padding: 17px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid #e8ecf2;
 }
 
-.page-header p {
-  font-size: 15px;
-  color: #606266;
+.overview-kicker {
+  margin-bottom: 4px;
+  color: #0475FA;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.overview-head h1 {
   margin: 0;
-  font-weight: 500;
-}
-
-.info-card {
-  margin-bottom: 24px;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-}
-
-.exam-title-wrapper {
-  text-align: center;
-  padding: 32px 0 24px;
-  background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%);
-  margin: -20px -20px 24px -20px;
-}
-
-.exam-title {
-  font-size: 26px;
+  color: #1f2d3d;
+  font-size: 22px;
+  line-height: 1.3;
   font-weight: 700;
-  color: #303133;
-  margin: 0;
-  letter-spacing: 0.5px;
+}
+
+.overview-note {
+  color: #8a97a8;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .exam-meta-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  padding: 0 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 20px 24px 22px;
+  gap: 16px;
 }
 
 .meta-item {
+  min-width: 0;
+  height: 76px;
+  padding: 13px 16px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px;
-  background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%);
-  border-radius: 12px;
-  border: 2px solid #ebeef5;
-  transition: all 0.3s ease;
+  gap: 13px;
+  background: #f7f9fc;
+  border: 1px solid #e7ebf0;
 }
 
-.meta-item:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border-color: #0475FA;
-}
-
-.meta-icon-wrapper {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
+.meta-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 24px;
-  flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 19px;
+}
+
+.duration .meta-icon {
+  background: #fff0f0;
+  color: #e95b67;
+}
+
+.questions .meta-icon {
+  background: #e9f8f6;
+  color: #28a99d;
+}
+
+.pass-score .meta-icon {
+  background: #fff7df;
+  color: #d99a16;
+}
+
+.total-score .meta-icon {
+  background: #e9f7f4;
+  color: #2ba894;
 }
 
 .meta-content {
-  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .meta-label {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 6px;
-  font-weight: 500;
+  color: #8f9aaa;
+  font-size: 12px;
 }
 
 .meta-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #273548;
   font-size: 20px;
+  line-height: 1.25;
   font-weight: 700;
-  color: #303133;
 }
 
-.rules-card {
-  margin-bottom: 24px;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #303133;
-  letter-spacing: 0.5px;
-}
-
-.card-header .el-icon {
-  color: #0475FA;
-  font-size: 22px;
-}
-
-.rules-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.rule-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 20px;
-  background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%);
-  border-radius: 12px;
-  border-left: 4px solid #0475FA;
-  transition: all 0.3s ease;
-}
-
-.rule-item:hover {
-  transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(4, 117, 250, 0.15);
-}
-
-.rule-number {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #0475FA 0%, #1a8cff 100%);
-  color: #fff;
-  font-size: 16px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(4, 117, 250, 0.3);
-}
-
-.rule-text {
-  flex: 1;
-  font-size: 15px;
-  color: #606266;
-  line-height: 1.7;
-  padding-top: 4px;
-}
-
-.agreement-card {
-  margin-bottom: 24px;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  padding: 24px;
-}
-
-.agreement-text {
-  font-size: 16px;
-  color: #606266;
+.meta-value small {
+  margin-left: 3px;
+  color: #647386;
+  font-size: 12px;
   font-weight: 500;
 }
 
-.action-buttons {
+.panel-head {
+  min-height: 56px;
+  padding: 0 22px;
   display: flex;
-  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e8ecf2;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #253447;
+  font-size: 16px;
+}
+
+.panel-title .el-icon {
+  color: #0475FA;
+  font-size: 18px;
+}
+
+.panel-head > span {
+  color: #9aa5b4;
+  font-size: 12px;
+}
+
+.rules-list {
+  padding: 8px 22px 12px;
+}
+
+.rule-item {
+  min-height: 54px;
+  padding: 11px 4px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.rule-item:last-child {
+  border-bottom: 0;
+}
+
+.rule-number {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 0 0 24px;
+  background: #eaf4ff;
+  color: #0475FA;
+  font-size: 13px;
+  font-weight: 700;
 }
 
-.action-buttons .el-button {
-  min-width: 160px;
-  border-radius: 12px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  font-size: 16px;
-  padding: 14px 32px;
+.rule-text {
+  color: #526173;
+  font-size: 14px;
+  line-height: 1.65;
 }
 
-.action-buttons .el-button--primary {
-  box-shadow: 0 4px 12px rgba(4, 117, 250, 0.25);
-  transition: all 0.3s ease;
+.empty-rules {
+  padding: 36px 22px;
+  text-align: center;
+  color: #9aa5b4;
+  font-size: 13px;
 }
 
-.action-buttons .el-button--primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(4, 117, 250, 0.35);
+.confirm-panel {
+  min-height: 72px;
+  padding: 14px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
 }
 
-:deep(.el-checkbox) {
-  font-size: 16px;
+.agreement-checkbox {
+  min-width: 0;
+}
+
+.agreement-text {
+  color: #4f5d6d;
+  font-size: 14px;
+}
+
+.action-buttons {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.action-buttons :deep(.el-button) {
+  min-width: 104px;
+  height: 36px;
+  padding: 0 18px;
+  border-radius: 0 !important;
+  font-size: 14px;
+}
+
+:deep(.el-checkbox__inner) {
+  border-radius: 0 !important;
 }
 
 :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
   background-color: #0475FA;
   border-color: #0475FA;
 }
-</style>
 
+@media (max-width: 1100px) {
+  .exam-meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .overview-note {
+    display: none;
+  }
+}
+</style>
