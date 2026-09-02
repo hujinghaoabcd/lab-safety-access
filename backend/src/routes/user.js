@@ -16,6 +16,7 @@ const upload = multer({
 });
 
 router.get('/profile', authMiddleware, userController.getProfile);
+router.get('/contact', authMiddleware, userController.getContactInfo);
 router.put('/profile', authMiddleware, userController.updateProfile);
 router.get('/profile/stats', authMiddleware, userController.getProfileStats);
 router.put('/profile/password', authMiddleware, userController.changePassword);
