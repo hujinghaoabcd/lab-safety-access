@@ -25,8 +25,8 @@
         <div class="panel-toolbar">
           <div class="panel-title">基本信息</div>
           <div class="panel-actions">
-            <el-button size="small" @click="openPasswordPopup">修改密码</el-button>
-            <el-button type="primary" size="small" @click="openEdit">编辑资料</el-button>
+            <el-button @click="openPasswordPopup">修改密码</el-button>
+            <el-button type="primary" @click="openEdit">编辑资料</el-button>
           </div>
         </div>
 
@@ -56,21 +56,21 @@
         <div class="panel-title">学习与考试概况</div>
         <div class="stats-grid">
           <div class="stat-item">
-            <div class="stat-icon primary"><el-icon><Document /></el-icon></div>
+            <div class="stat-icon stat-blue"><el-icon><Document /></el-icon></div>
             <div class="stat-copy">
               <div class="stat-value">{{ stats.examCount }}</div>
               <div class="stat-name">考试次数</div>
             </div>
           </div>
           <div class="stat-item">
-            <div class="stat-icon success"><el-icon><CircleCheck /></el-icon></div>
+            <div class="stat-icon stat-green"><el-icon><CircleCheck /></el-icon></div>
             <div class="stat-copy">
               <div class="stat-value">{{ stats.passCount }}</div>
               <div class="stat-name">通过次数</div>
             </div>
           </div>
           <div class="stat-item">
-            <div class="stat-icon warning"><el-icon><Trophy /></el-icon></div>
+            <div class="stat-icon stat-gold"><el-icon><Trophy /></el-icon></div>
             <div class="stat-copy">
               <div class="stat-value">{{ stats.certCount }}</div>
               <div class="stat-name">合格证书</div>
@@ -83,7 +83,7 @@
         <div class="panel-title">快捷功能</div>
         <div class="quick-grid">
           <button v-for="item in menuItems" :key="item.path" class="quick-item" @click="navigateTo(item.path)">
-            <span class="quick-icon" :style="{ color: item.color }">
+            <span class="quick-icon" :style="{ color: item.color, background: item.bg }">
               <el-icon><component :is="getMenuIcon(item.icon)" /></el-icon>
             </span>
             <span class="quick-copy">
@@ -198,10 +198,10 @@ const showPasswordPopup = ref(false)
 const stats = ref({ examCount: 0, passCount: 0, certCount: 0 })
 
 const menuItems = [
-  { icon: 'medal', title: '合格证书', desc: '查看和下载已获得证书', path: '/certificate', color: '#d99721' },
-  { icon: 'list', title: '考试记录', desc: '查看历史考试成绩与详情', path: '/records', color: '#3a9b54' },
-  { icon: 'edit', title: '错题本', desc: '复习历史错题与知识点', path: '/wrongbook', color: '#d65353' },
-  { icon: 'trend', title: '排行榜', desc: '查看当前最高成绩排名', path: '/ranking', color: '#0475FA' }
+  { icon: 'medal', title: '合格证书', desc: '查看和下载已获得证书', path: '/certificate', color: '#c88716', bg: '#fff5df' },
+  { icon: 'list', title: '考试记录', desc: '查看历史考试成绩与详情', path: '/records', color: '#2f9654', bg: '#edf8f1' },
+  { icon: 'edit', title: '错题本', desc: '复习历史错题与知识点', path: '/wrongbook', color: '#d64e55', bg: '#fff0f1' },
+  { icon: 'trend', title: '排行榜', desc: '查看当前最高成绩排名', path: '/ranking', color: '#0475FA', bg: '#edf5ff' }
 ]
 
 const getMenuIcon = (icon: string) => {
@@ -395,7 +395,7 @@ onMounted(async () => {
 }
 
 .panel-toolbar {
-  min-height: 32px;
+  min-height: 38px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -411,7 +411,14 @@ onMounted(async () => {
 
 .panel-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+}
+
+.panel-actions :deep(.el-button) {
+  height: 36px;
+  padding: 0 17px;
+  font-size: 13px;
+  border-radius: 0;
 }
 
 .detail-table {
@@ -475,40 +482,40 @@ onMounted(async () => {
 }
 
 .stat-item {
-  min-height: 92px;
+  min-height: 88px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 14px;
+  gap: 13px;
+  padding: 13px 14px;
   border-right: 1px solid #e5eaf0;
   border-bottom: 1px solid #e5eaf0;
 }
 
 .stat-icon {
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid currentColor;
-  font-size: 18px;
+  color: #fff;
+  font-size: 20px;
 }
 
-.stat-icon.primary { color: #0475FA; background: #f0f7ff; }
-.stat-icon.success { color: #3a9b54; background: #f2faf4; }
-.stat-icon.warning { color: #d99721; background: #fff8ea; }
+.stat-blue { background: #0475FA; }
+.stat-green { background: #35a765; }
+.stat-gold { background: #d99a2b; }
 
 .stat-copy {
   min-width: 0;
 }
 
 .stat-value {
-  font-size: 26px;
+  font-size: 27px;
   font-weight: 700;
   line-height: 1;
   color: #172033;
-  margin-bottom: 7px;
+  margin-bottom: 6px;
 }
 
 .stat-name {
@@ -530,8 +537,8 @@ onMounted(async () => {
   border-right: 1px solid #e5eaf0;
   border-bottom: 1px solid #e5eaf0;
   background: #fff;
-  min-height: 92px;
-  padding: 12px 12px;
+  min-height: 88px;
+  padding: 12px 13px;
   display: flex;
   align-items: center;
   text-align: left;
@@ -540,13 +547,18 @@ onMounted(async () => {
 }
 
 .quick-item:hover {
-  background: #f5f9ff;
+  background: #f7faff;
 }
 
 .quick-icon {
-  width: 30px;
-  font-size: 21px;
-  flex: 0 0 30px;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 11px;
+  font-size: 20px;
 }
 
 .quick-copy {
@@ -570,8 +582,8 @@ onMounted(async () => {
 }
 
 .quick-arrow {
-  margin-left: 5px;
-  color: #a8b1bf;
+  margin-left: 6px;
+  color: #b0bac7;
   font-size: 18px;
   line-height: 1;
 }
@@ -647,9 +659,15 @@ onMounted(async () => {
 }
 
 :deep(.profile-dialog .el-dialog__footer) {
-  padding: 12px 20px !important;
+  padding: 11px 20px 13px !important;
   background: #fff;
-  border-top: 1px solid #e5eaf0;
+  border-top: none !important;
+}
+
+:deep(.profile-dialog .el-dialog__footer .el-button) {
+  height: 36px;
+  padding: 0 17px;
+  border-radius: 0;
 }
 
 @media (max-width: 1250px) {
