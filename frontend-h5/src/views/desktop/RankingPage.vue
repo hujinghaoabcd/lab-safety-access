@@ -3,101 +3,112 @@
     <div class="page-heading">
       <div>
         <h1>排行榜</h1>
-        <p>按考试最高成绩展示当前成绩排名</p>
+        <p>按考试最高成绩统计当前排名</p>
       </div>
-      <div class="heading-meta">共 {{ myRanking.total || scoreRanking.length }} 人参与排名</div>
+      <div class="heading-meta">{{ participantCount }} 人参与排名</div>
     </div>
 
-    <div class="ranking-summary">
-      <div class="summary-item summary-primary">
-        <span class="summary-label">我的排名</span>
-        <div class="summary-value">
-          <strong>{{ myRanking.rank || '—' }}</strong>
-          <span v-if="myRanking.rank">/ {{ myRanking.total || scoreRanking.length }}</span>
-          <span v-else>未上榜</span>
+    <div v-if="scoreRanking.length" class="ranking-layout">
+      <section class="ranking-main">
+        <div class="panel-heading">
+          <div>
+            <h2>成绩排名</h2>
+            <p>按最高成绩从高到低排列</p>
+          </div>
+          <span class="panel-count">共 {{ participantCount }} 人</span>
         </div>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">我的最高分</span>
-        <div class="summary-value">
-          <strong>{{ myRanking.score || 0 }}</strong><span>分</span>
-        </div>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">当前榜首</span>
-        <div class="summary-value summary-name">
-          <strong>{{ scoreRanking[0]?.name || '—' }}</strong>
-          <span v-if="scoreRanking[0]">{{ scoreRanking[0].score }} 分</span>
-        </div>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">参与人数</span>
-        <div class="summary-value">
-          <strong>{{ myRanking.total || scoreRanking.length }}</strong><span>人</span>
-        </div>
-      </div>
-    </div>
 
-    <div v-if="scoreRanking.length" class="ranking-panel">
-      <div class="panel-header">
-        <div>
-          <h2>成绩榜单</h2>
-          <p>前 3 名重点展示，其余成员按最高分依次排列</p>
-        </div>
-      </div>
-
-      <div v-if="topThree.length" class="top-three-grid">
-        <div
-          v-for="item in topThree"
-          :key="item.userId"
-          class="top-rank-item"
-          :class="`rank-${item.rank}`"
+        <el-table
+          v-loading="loading"
+          :data="scoreRanking"
+          class="ranking-table"
+          :row-class-name="getRowClassName"
         >
-          <div class="rank-mark">{{ item.rank }}</div>
-          <el-avatar :size="64" :src="item.avatar">{{ item.name?.[0] }}</el-avatar>
-          <div class="top-user-info">
-            <div class="top-name">{{ item.name }}</div>
-            <div class="top-department">{{ item.department || '未设置院系' }}</div>
-          </div>
-          <div class="top-score">
-            <strong>{{ item.score }}</strong><span>分</span>
-          </div>
-        </div>
-      </div>
+          <el-table-column label="排名" width="92" align="center">
+            <template #default="{ row }">
+              <span class="rank-badge" :class="row.rank <= 3 ? `rank-badge-${row.rank}` : ''">
+                {{ row.rank }}
+              </span>
+            </template>
+          </el-table-column>
 
-      <el-table
-        v-loading="loading"
-        :data="scoreRanking"
-        class="ranking-table"
-        :row-class-name="getRowClassName"
-        border
-      >
-        <el-table-column label="排名" width="90" align="center">
-          <template #default="{ row }">
-            <span class="table-rank" :class="row.rank <= 3 ? `table-rank-${row.rank}` : ''">
-              {{ row.rank }}
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column label="学员" min-width="220">
-          <template #default="{ row }">
-            <div class="student-cell">
-              <el-avatar :size="40" :src="row.avatar">{{ row.name?.[0] }}</el-avatar>
-              <span>{{ row.name }}</span>
+          <el-table-column label="学员" min-width="250">
+            <template #default="{ row }">
+              <div class="student-cell">
+                <el-avatar :size="42" :src="row.avatar">{{ row.name?.[0] }}</el-avatar>
+                <div class="student-text">
+                  <div class="student-name-row">
+                    <span class="student-name">{{ row.name }}</span>
+                    <span v-if="myRanking.rank && row.rank === myRanking.rank" class="me-mark">我</span>
+                  </div>
+                  <span class="student-id">排名第 {{ row.rank }} 位</span>
+                </div>
+              </div>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="department" label="院系" min-width="240">
+            <template #default="{ row }">
+              <span class="department-text">{{ row.department || '—' }}</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="最高分" width="150" align="right">
+            <template #default="{ row }">
+              <span class="score-cell"><strong>{{ row.score }}</strong><em>分</em></span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </section>
+
+      <aside class="ranking-sidebar">
+        <section class="my-rank-panel">
+          <div class="my-rank-kicker">我的成绩</div>
+          <div class="my-rank-primary">
+            <div class="my-rank-number">
+              <strong>{{ myRanking.rank || '—' }}</strong>
+              <span v-if="myRanking.rank">/ {{ participantCount }}</span>
+              <span v-else>未上榜</span>
             </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="department" label="院系" min-width="240">
-          <template #default="{ row }">
-            {{ row.department || '—' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="最高分" width="140" align="right">
-          <template #default="{ row }">
-            <span class="score-cell"><strong>{{ row.score }}</strong> 分</span>
-          </template>
-        </el-table-column>
-      </el-table>
+            <div class="my-rank-label">当前排名</div>
+          </div>
+          <div class="my-rank-stats">
+            <div>
+              <span>最高分</span>
+              <strong>{{ myRanking.score || 0 }}<small>分</small></strong>
+            </div>
+            <div>
+              <span>参与人数</span>
+              <strong>{{ participantCount }}<small>人</small></strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="leaders-panel">
+          <div class="leaders-heading">
+            <div>
+              <h2>领先学员</h2>
+              <p>当前成绩前三名</p>
+            </div>
+          </div>
+
+          <div class="leaders-list">
+            <div
+              v-for="item in topThree"
+              :key="item.userId"
+              class="leader-item"
+            >
+              <span class="leader-rank" :class="`leader-rank-${item.rank}`">{{ item.rank }}</span>
+              <el-avatar :size="48" :src="item.avatar">{{ item.name?.[0] }}</el-avatar>
+              <div class="leader-info">
+                <div class="leader-name">{{ item.name }}</div>
+                <div class="leader-department">{{ item.department || '未设置院系' }}</div>
+              </div>
+              <div class="leader-score"><strong>{{ item.score }}</strong><span>分</span></div>
+            </div>
+          </div>
+        </section>
+      </aside>
     </div>
 
     <div v-else-if="!loading" class="ranking-empty">
@@ -135,7 +146,9 @@ const resolveAvatarUrl = (raw?: string | null) => {
 const scoreRanking = ref<RankingItem[]>([])
 const myRanking = ref({ rank: 0, score: 0, total: 0 })
 const loading = ref(false)
+
 const topThree = computed(() => scoreRanking.value.slice(0, 3))
+const participantCount = computed(() => myRanking.value.total || scoreRanking.value.length)
 
 const getRowClassName = ({ row }: { row: RankingItem }) => {
   return myRanking.value.rank && row.rank === myRanking.value.rank ? 'current-user-row' : ''
@@ -174,22 +187,22 @@ onMounted(async () => {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #dfe4ea;
+  border-bottom: 1px solid #dfe5ec;
 }
 
 .page-heading h1 {
   margin: 0 0 6px;
-  color: #1f2937;
+  color: #17202a;
   font-size: 24px;
-  font-weight: 600;
+  font-weight: 650;
+  letter-spacing: 0.2px;
 }
 
-.page-heading p,
-.panel-header p {
+.page-heading p {
   margin: 0;
-  color: #8a94a3;
+  color: #8b96a5;
   font-size: 13px;
 }
 
@@ -198,271 +211,347 @@ onMounted(async () => {
   font-size: 13px;
 }
 
-.ranking-summary {
+.ranking-layout {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-bottom: 20px;
-  background: #fff;
-  border: 1px solid #e1e6ec;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  align-items: start;
 }
 
-.summary-item {
-  min-height: 108px;
-  padding: 22px 26px;
-  border-right: 1px solid #e7ebf0;
-}
-
-.summary-item:last-child {
-  border-right: 0;
-}
-
-.summary-primary {
-  border-top: 3px solid #0475fa;
-  padding-top: 19px;
-}
-
-.summary-label {
-  display: block;
-  margin-bottom: 13px;
-  color: #7c8796;
-  font-size: 13px;
-}
-
-.summary-value {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-  color: #52606f;
-  font-size: 13px;
-}
-
-.summary-value strong {
-  color: #17202a;
-  font-size: 30px;
-  line-height: 1;
-  font-weight: 600;
-}
-
-.summary-name {
-  align-items: center;
-  justify-content: space-between;
-}
-
-.summary-name strong {
-  max-width: 65%;
-  overflow: hidden;
-  color: #1f2937;
-  font-size: 18px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ranking-panel,
+.ranking-main,
+.leaders-panel,
 .ranking-empty {
   background: #fff;
   border: 1px solid #e1e6ec;
 }
 
-.panel-header {
+.panel-heading,
+.leaders-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px 18px;
-  border-bottom: 1px solid #e7ebf0;
+  min-height: 72px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e8ecf1;
 }
 
-.panel-header h2 {
-  margin: 0 0 5px;
+.panel-heading h2,
+.leaders-heading h2 {
+  margin: 0 0 4px;
   color: #27313d;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
 }
 
-.top-three-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  border-bottom: 1px solid #e7ebf0;
-}
-
-.top-rank-item {
-  position: relative;
-  display: grid;
-  grid-template-columns: 44px 64px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px;
-  min-height: 112px;
-  padding: 20px 24px;
-  border-right: 1px solid #e7ebf0;
-}
-
-.top-rank-item:last-child {
-  border-right: 0;
-}
-
-.rank-mark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid #cfd6df;
-  color: #4f5c6b;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.rank-1 {
-  box-shadow: inset 0 3px 0 #c99b34;
-}
-
-.rank-2 {
-  box-shadow: inset 0 3px 0 #8e9aa8;
-}
-
-.rank-3 {
-  box-shadow: inset 0 3px 0 #a96f45;
-}
-
-.rank-1 .rank-mark {
-  border-color: #d2aa54;
-  background: #fff8e8;
-  color: #9a6d16;
-}
-
-.rank-2 .rank-mark {
-  border-color: #aeb8c3;
-  background: #f3f5f7;
-  color: #687582;
-}
-
-.rank-3 .rank-mark {
-  border-color: #bb8b69;
-  background: #faf1eb;
-  color: #8b5737;
-}
-
-.top-user-info {
-  min-width: 0;
-}
-
-.top-name {
-  overflow: hidden;
-  margin-bottom: 6px;
-  color: #1f2937;
-  font-size: 15px;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.top-department {
-  overflow: hidden;
-  color: #8a94a3;
+.panel-heading p,
+.leaders-heading p {
+  margin: 0;
+  color: #98a2af;
   font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.top-score {
-  color: #6b7683;
+.panel-count {
+  color: #8a95a2;
   font-size: 12px;
-  white-space: nowrap;
-}
-
-.top-score strong {
-  margin-right: 3px;
-  color: #0475fa;
-  font-size: 24px;
-  font-weight: 600;
 }
 
 .ranking-table {
   width: 100%;
 }
 
+.ranking-table :deep(.el-table__inner-wrapper::before) {
+  display: none;
+}
+
 .ranking-table :deep(.el-table__header th) {
-  height: 46px;
+  height: 44px;
   background: #f7f9fb;
-  color: #66717f;
+  color: #6f7b89;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .ranking-table :deep(.el-table__row td) {
-  height: 62px;
+  height: 68px;
+  border-bottom-color: #edf0f4;
+}
+
+.ranking-table :deep(.el-table__row:hover td) {
+  background: #f8fbff !important;
 }
 
 .ranking-table :deep(.current-user-row td) {
   background: #f1f7ff !important;
 }
 
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  color: #596675;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.rank-badge-1 {
+  border: 1px solid #d8ad4d;
+  background: #fff8e8;
+  color: #916817;
+}
+
+.rank-badge-2 {
+  border: 1px solid #b9c2cd;
+  background: #f5f7f9;
+  color: #66727f;
+}
+
+.rank-badge-3 {
+  border: 1px solid #c28e68;
+  background: #fbf2ec;
+  color: #8d5938;
+}
+
 .student-cell {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #27313d;
-  font-weight: 500;
 }
 
-.table-rank {
+.student-text {
+  min-width: 0;
+}
+
+.student-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.student-name {
+  overflow: hidden;
+  color: #27313d;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.me-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 30px;
-  height: 28px;
-  color: #536170;
+  height: 18px;
+  padding: 0 5px;
+  background: #eaf3ff;
+  color: #0475fa;
+  font-size: 10px;
   font-weight: 600;
 }
 
-.table-rank-1 {
-  color: #9a6d16;
-}
-
-.table-rank-2 {
-  color: #687582;
-}
-
-.table-rank-3 {
-  color: #8b5737;
+.student-id,
+.department-text {
+  color: #8994a2;
+  font-size: 12px;
 }
 
 .score-cell {
-  color: #66717f;
+  color: #7b8794;
+  font-style: normal;
+  white-space: nowrap;
 }
 
 .score-cell strong {
+  margin-right: 4px;
+  color: #0475fa;
+  font-size: 20px;
+  font-weight: 650;
+}
+
+.score-cell em {
+  font-size: 12px;
+  font-style: normal;
+}
+
+.ranking-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.my-rank-panel {
+  overflow: hidden;
+  background: linear-gradient(145deg, #086ee8 0%, #1688f6 100%);
+  color: #fff;
+}
+
+.my-rank-kicker {
+  padding: 18px 20px 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.my-rank-primary {
+  padding: 18px 20px 22px;
+}
+
+.my-rank-number {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.my-rank-number strong {
+  font-size: 44px;
+  line-height: 1;
+  font-weight: 650;
+  letter-spacing: -1px;
+}
+
+.my-rank-number span {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 14px;
+}
+
+.my-rank-label {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+}
+
+.my-rank-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.my-rank-stats > div {
+  padding: 14px 20px 16px;
+}
+
+.my-rank-stats > div + div {
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.my-rank-stats span {
+  display: block;
+  margin-bottom: 5px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 11px;
+}
+
+.my-rank-stats strong {
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.my-rank-stats small {
+  margin-left: 3px;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.leaders-list {
+  padding: 4px 0;
+}
+
+.leader-item {
+  display: grid;
+  grid-template-columns: 34px 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 78px;
+  padding: 12px 16px;
+}
+
+.leader-item + .leader-item {
+  border-top: 1px solid #edf0f4;
+}
+
+.leader-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #cfd6de;
+  color: #627080;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.leader-rank-1 {
+  border-color: #d8ad4d;
+  background: #fff8e8;
+  color: #916817;
+}
+
+.leader-rank-2 {
+  border-color: #b9c2cd;
+  background: #f5f7f9;
+  color: #66727f;
+}
+
+.leader-rank-3 {
+  border-color: #c28e68;
+  background: #fbf2ec;
+  color: #8d5938;
+}
+
+.leader-info {
+  min-width: 0;
+}
+
+.leader-name {
+  overflow: hidden;
+  margin-bottom: 4px;
+  color: #26313d;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leader-department {
+  overflow: hidden;
+  color: #929ca8;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leader-score {
+  white-space: nowrap;
+}
+
+.leader-score strong {
   margin-right: 3px;
   color: #0475fa;
-  font-size: 17px;
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.leader-score span {
+  color: #8b96a3;
+  font-size: 11px;
 }
 
 .ranking-empty {
-  padding: 60px 0;
+  padding: 70px 0;
 }
 
 @media (max-width: 1180px) {
-  .ranking-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .summary-item:nth-child(2) {
-    border-right: 0;
-  }
-
-  .summary-item:nth-child(-n + 2) {
-    border-bottom: 1px solid #e7ebf0;
-  }
-
-  .top-three-grid {
+  .ranking-layout {
     grid-template-columns: 1fr;
   }
 
-  .top-rank-item {
-    border-right: 0;
-    border-bottom: 1px solid #e7ebf0;
-  }
-
-  .top-rank-item:last-child {
-    border-bottom: 0;
+  .ranking-sidebar {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
   }
 }
 </style>
