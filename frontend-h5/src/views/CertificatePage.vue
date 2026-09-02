@@ -440,7 +440,7 @@ const saveCertificate = async () => {
   font-size: 4vw;
 }
 
-/* 横版证书。保留原背景比例，但给文字区增加更安全的底部空间。 */
+/* 横版证书：按照常见纸质荣誉证书的视觉层级布置标题、编号、正文和落款。 */
 .honor-cert {
   width: 94vw;
   height: 66vw;
@@ -457,10 +457,10 @@ const saveCertificate = async () => {
 
 .honor-content {
   position: absolute;
-  top: 16%;
+  top: 19.5%;
   left: 17%;
   right: 17%;
-  bottom: 18%;
+  bottom: 22%;
   display: flex;
   flex-direction: column;
   color: #28241f;
@@ -469,27 +469,28 @@ const saveCertificate = async () => {
 
 .honor-title {
   text-align: center;
-  font-size: clamp(15px, 4vw, 29px);
-  line-height: 1.15;
+  font-size: clamp(15px, 3.8vw, 28px);
+  line-height: 1.12;
   color: #b92722;
   font-weight: 700;
-  letter-spacing: 1.15vw;
-  margin: 1.8vw 0 0.55vw 0;
-  font-family: "Kaiti SC", "STKaiti", "KaiTi", "楷体", "Noto Serif SC", serif;
+  letter-spacing: 1.12vw;
+  margin: 0.8vw 0 0 0;
+  font-family: "STZhongsong", "华文中宋", "Songti SC", "STSong", "SimSun", "宋体", serif;
 }
 
-/* 编号作为辅助信息：小、粗、右对齐，不与标题争抢视觉层级。 */
+/* 真正纸质证书中编号通常是标题下方的弱层级辅助信息：字号更小、留出呼吸空间并靠右。 */
 .honor-serial {
-  width: 100%;
+  width: 92%;
+  align-self: flex-end;
   box-sizing: border-box;
   text-align: right;
-  padding-right: 1.1vw;
-  font-size: clamp(7px, 1.05vw, 10px);
-  line-height: 1.25;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  padding-right: 0.6vw;
+  font-size: clamp(6px, 0.78vw, 8px);
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   color: #514b43;
-  margin: 0.15vw 0 0.6vw 0;
+  margin: 1.55vw 0 1.05vw 0;
   white-space: nowrap;
   font-family: "Times New Roman", "Songti SC", "STSong", "SimSun", serif;
 }
@@ -498,16 +499,16 @@ const saveCertificate = async () => {
   flex: 1;
   display: flex;
   align-items: center;
-  padding: 0 0 3.8vw 0;
+  padding: 0 0 3.2vw 0;
   min-height: 0;
 }
 
 .honor-text {
   width: 100%;
-  font-size: clamp(10px, 2.05vw, 16px);
+  font-size: clamp(10px, 2.02vw, 16px);
   color: #27231f;
-  line-height: 1.85;
-  letter-spacing: 0.015em;
+  line-height: 1.9;
+  letter-spacing: 0.012em;
   text-indent: 2em;
   margin: 0;
   font-weight: 400;
@@ -533,27 +534,27 @@ const saveCertificate = async () => {
   color: #b92722;
 }
 
-/* 发证单位和日期固定在内容安全区内，并整体上移，避免压到下边框。 */
+/* 落款与日期整体向上收，和下边框保持明显留白。 */
 .honor-sign {
   position: absolute;
-  right: 0.6vw;
-  bottom: 0.55vw;
-  min-width: 30%;
+  right: 0.8vw;
+  bottom: 1.2vw;
+  min-width: 31%;
   text-align: center;
   color: #3c372f;
 }
 
 .honor-org {
-  font-size: clamp(8px, 1.55vw, 12px);
+  font-size: clamp(8px, 1.48vw, 12px);
   line-height: 1.3;
   font-weight: 500;
-  margin: 0 0 0.25vw 0;
+  margin: 0 0 0.34vw 0;
   white-space: nowrap;
   font-family: "Songti SC", "STSong", "SimSun", "宋体", serif;
 }
 
 .honor-date {
-  font-size: clamp(8px, 1.45vw, 11px);
+  font-size: clamp(8px, 1.38vw, 11px);
   line-height: 1.25;
   font-weight: 500;
   margin: 0;
