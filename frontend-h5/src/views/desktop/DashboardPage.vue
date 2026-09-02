@@ -1,28 +1,21 @@
 <template>
   <div class="desktop-dashboard">
     <div class="dashboard-main">
-      <!-- 左侧主内容区 -->
       <div class="main-content">
         <!-- 欢迎区域 -->
         <div class="welcome-section">
           <div class="welcome-left">
-            <span class="welcome-text">您好，{{ userInfo?.name || '用户' }}</span>
+            <span class="welcome-text">您好，{{ userInfo?.name || userInfo?.studentId || '用户' }}</span>
             <el-tag type="primary" effect="plain" class="role-tag">
               {{ userInfo?.department || '实验室安全教育考试系统' }}
             </el-tag>
-          </div>
-          <div class="welcome-right">
-            <el-link type="primary" :underline="false">
-              <el-icon><QuestionFilled /></el-icon>
-              帮助文档
-            </el-link>
           </div>
         </div>
 
         <!-- 功能卡片区域 -->
         <div class="function-cards">
-          <div 
-            v-for="item in functionCards" 
+          <div
+            v-for="item in functionCards"
             :key="item.path"
             class="function-card"
             @click="navigateTo(item)"
@@ -92,7 +85,6 @@
 
       <!-- 右侧边栏 -->
       <div class="sidebar">
-        <!-- 快捷入口卡片 -->
         <div class="sidebar-card quick-entry">
           <h3 class="card-title">快捷入口</h3>
           <div class="entry-buttons">
@@ -111,7 +103,7 @@
           </div>
         </div>
 
-        <!-- 系统公告 -->
+        <!-- 系统公告：直接读取后台启用公告 -->
         <div class="sidebar-card">
           <div class="card-header">
             <el-tabs v-model="activeTab">
@@ -121,13 +113,14 @@
           </div>
           <div class="card-body">
             <template v-if="activeTab === 'notice'">
-              <div class="notice-list">
-                <div v-for="(notice, idx) in notices" :key="idx" class="notice-item">
+              <div v-if="notices.length" class="notice-list">
+                <div v-for="notice in notices" :key="notice.id" class="notice-item">
                   <span class="notice-dot"></span>
-                  <span class="notice-text">{{ notice.title }}</span>
-                  <span class="notice-date">{{ notice.date }}</span>
+                  <span class="notice-text" :title="notice.title">{{ notice.title }}</span>
+                  <span v-if="notice.date" class="notice-date">{{ notice.date }}</span>
                 </div>
               </div>
+              <div v-else class="empty-notice">暂无公告</div>
             </template>
             <template v-else>
               <div class="guide-list">
@@ -147,21 +140,29 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-import { 
-  QuestionFilled, EditPen, Reading, Medal,
-  Document, Close, Trophy, User, Notebook, Clock
+import {
+  EditPen,
+  Reading,
+  Medal,
+  Document,
+  Close,
+  Trophy
 } from '@element-plus/icons-vue'
 import { getExamList, getAnnouncement } from '@/api'
-import { getUserProfileStats } from '@/api/auth'
+import { getUserProfile, getUserProfileStats } from '@/api/auth'
+
+interface NoticeItem {
+  id: number | string
+  title: string
+  date: string
+}
 
 const router = useRouter()
 const userStore = useUserStore()
 const userInfo = computed(() => userStore.userInfo)
 
 const activeTab = ref('notice')
-
 const passedCount = ref(0)
 const pendingExamCount = ref(0)
 const certCount = ref(0)
@@ -170,73 +171,67 @@ const studyHours = ref(0)
 const totalExams = ref(10)
 const totalCerts = ref(5)
 
-const certProgress = computed(() => totalCerts.value > 0 ? (certCount.value / totalCerts.value) * 100 : 0)
-const passProgress = computed(() => totalExams.value > 0 ? (passedCount.value / totalExams.value) * 100 : 0)
+const certProgress = computed(() => totalCerts.value > 0 ? Math.min(100, (certCount.value / totalCerts.value) * 100) : 0)
+const passProgress = computed(() => totalExams.value > 0 ? Math.min(100, (passedCount.value / totalExams.value) * 100) : 0)
 
 const functionCards = ref([
-  { 
-    iconComponent: Reading, 
-    title: '学习中心', 
+  {
+    iconComponent: Reading,
+    title: '学习中心',
     desc: '在线学习安全知识课程',
     subDesc: '支持视频、文档、图文等',
-    path: '/learning', 
-    iconBg: '#e6f4ff', 
-    iconColor: '#0475FA' 
+    path: '/learning',
+    iconBg: '#e6f4ff',
+    iconColor: '#0475FA'
   },
-  { 
-    iconComponent: EditPen, 
-    title: '考试中心', 
+  {
+    iconComponent: EditPen,
+    title: '考试中心',
     desc: '参加在线安全考核评测',
     subDesc: '支持多种题型在线答题',
-    path: '/exam-center', 
-    iconBg: '#f6ffed', 
-    iconColor: '#52c41a' 
+    path: '/exam-center',
+    iconBg: '#f6ffed',
+    iconColor: '#52c41a'
   },
-  { 
-    iconComponent: Medal, 
-    title: '合格证书', 
+  {
+    iconComponent: Medal,
+    title: '合格证书',
     desc: '下载安全合格证书',
     subDesc: '考核通过后自动生成',
-    path: '/certificate', 
-    iconBg: '#fff7e6', 
-    iconColor: '#fa8c16' 
+    path: '/certificate',
+    iconBg: '#fff7e6',
+    iconColor: '#fa8c16'
   },
-  { 
-    iconComponent: Close, 
-    title: '错题本', 
+  {
+    iconComponent: Close,
+    title: '错题本',
     desc: '复习巩固错题知识',
     subDesc: '智能归类历史错题',
-    path: '/wrongbook', 
-    iconBg: '#fff2f0', 
-    iconColor: '#ff4d4f' 
+    path: '/wrongbook',
+    iconBg: '#fff2f0',
+    iconColor: '#ff4d4f'
   },
-  { 
-    iconComponent: Document, 
-    title: '考试记录', 
+  {
+    iconComponent: Document,
+    title: '考试记录',
     desc: '查看历史考试成绩',
     subDesc: '支持成绩查询与分析',
-    path: '/records', 
-    iconBg: '#f9f0ff', 
-    iconColor: '#722ed1' 
+    path: '/records',
+    iconBg: '#f9f0ff',
+    iconColor: '#722ed1'
   },
-  { 
-    iconComponent: Trophy, 
-    title: '排行榜', 
+  {
+    iconComponent: Trophy,
+    title: '排行榜',
     desc: '查看成绩排名情况',
     subDesc: '与其他学员对比成绩',
-    path: '/ranking', 
-    iconBg: '#e6fffb', 
-    iconColor: '#13c2c2' 
+    path: '/ranking',
+    iconBg: '#e6fffb',
+    iconColor: '#13c2c2'
   }
 ])
 
-const notices = ref([
-  { title: '实验室安全考核系统更新说明', date: '12-26' },
-  { title: '2025年春季安全培训通知', date: '12-25' },
-  { title: '系统维护公告', date: '12-20' },
-  { title: '新增化学品安全课程', date: '12-15' },
-  { title: '年度安全考核提醒', date: '12-10' }
-])
+const notices = ref<NoticeItem[]>([])
 
 const guides = ref([
   '登录系统后进入学习中心',
@@ -250,7 +245,62 @@ const navigateTo = (item: any) => {
   router.push(item.path)
 }
 
+const formatNoticeDate = (raw: unknown) => {
+  const value = String(raw || '')
+  const match = value.match(/^\d{4}-(\d{2})-(\d{2})/)
+  return match ? `${match[1]}-${match[2]}` : ''
+}
+
+const syncUserInfo = async () => {
+  const profileResp: any = await getUserProfile()
+  const data = profileResp?.data ?? profileResp
+  if (!data) return
+
+  userStore.setUserInfo({
+    id: String(data.id ?? userStore.userInfo?.id ?? ''),
+    name: data.name || userStore.userInfo?.name || '',
+    studentId: data.studentId || userStore.userInfo?.studentId || '',
+    department: data.department || userStore.userInfo?.department || '',
+    avatar: data.avatar || null,
+    phone: data.phone || '',
+    email: data.email || ''
+  })
+}
+
+const loadAnnouncements = async () => {
+  try {
+    const annResp: any = await getAnnouncement({ all: true })
+    const annData = annResp?.data ?? annResp
+
+    if (Array.isArray(annData)) {
+      notices.value = annData.map((item: any, index: number) => ({
+        id: item.id ?? index,
+        title: item.content || '',
+        date: formatNoticeDate(item.createdAt)
+      })).filter((item: NoticeItem) => item.title.trim())
+      return
+    }
+
+    if (typeof annData === 'string' && annData.trim()) {
+      notices.value = [{ id: 'current', title: annData.trim(), date: '' }]
+    } else {
+      notices.value = []
+    }
+  } catch (err) {
+    console.warn('加载系统公告失败:', err)
+    notices.value = []
+  }
+}
+
 onMounted(async () => {
+  try {
+    await syncUserInfo()
+  } catch (err) {
+    console.warn('同步用户信息失败:', err)
+  }
+
+  await loadAnnouncements()
+
   try {
     const examResp: any = await getExamList()
     const examData = examResp?.data ?? examResp
@@ -267,10 +317,10 @@ onMounted(async () => {
     const statsResp: any = await getUserProfileStats()
     const statsData = statsResp?.data ?? statsResp
     certCount.value = statsData?.certCount ?? 0
-    wrongCount.value = statsData?.wrongCount ?? 12
-    studyHours.value = statsData?.studyHours ?? 8
-  } catch (err: any) {
-    console.error('加载数据失败:', err)
+    wrongCount.value = statsData?.wrongCount ?? 0
+    studyHours.value = statsData?.studyHours ?? 0
+  } catch (err) {
+    console.error('加载首页数据失败:', err)
   }
 })
 </script>
@@ -290,14 +340,12 @@ onMounted(async () => {
   min-width: 0;
 }
 
-/* 欢迎区域 */
 .welcome-section {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
   background: #fff;
-  border-radius: 8px;
+  border-radius: 0;
   margin-bottom: 20px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
@@ -315,19 +363,9 @@ onMounted(async () => {
 }
 
 .role-tag {
-  border-radius: 4px;
+  border-radius: 0;
 }
 
-.welcome-right {
-  display: flex;
-  gap: 16px;
-}
-
-.welcome-right .el-link {
-  font-size: 13px;
-}
-
-/* 功能卡片 */
 .function-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -337,7 +375,7 @@ onMounted(async () => {
 
 .function-card {
   background: #fff;
-  border-radius: 8px;
+  border-radius: 0;
   padding: 20px;
   display: flex;
   gap: 16px;
@@ -356,7 +394,7 @@ onMounted(async () => {
 .card-icon {
   width: 48px;
   height: 48px;
-  border-radius: 8px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -392,11 +430,10 @@ onMounted(async () => {
   margin-top: 4px;
 }
 
-/* 统计数据区域 */
 .stats-section {
   display: flex;
   background: #fff;
-  border-radius: 8px;
+  border-radius: 0;
   padding: 24px 0;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
@@ -447,7 +484,7 @@ onMounted(async () => {
   width: 80%;
   height: 4px;
   background: #f0f0f0;
-  border-radius: 2px;
+  border-radius: 0;
   margin: 0 auto;
   overflow: hidden;
 }
@@ -455,7 +492,7 @@ onMounted(async () => {
 .progress-bar {
   height: 100%;
   background: #0475FA;
-  border-radius: 2px;
+  border-radius: 0;
   transition: width 0.3s ease;
 }
 
@@ -463,7 +500,6 @@ onMounted(async () => {
   background: #52c41a;
 }
 
-/* 右侧边栏 */
 .sidebar {
   width: 320px;
   flex-shrink: 0;
@@ -474,7 +510,7 @@ onMounted(async () => {
 
 .sidebar-card {
   background: #fff;
-  border-radius: 8px;
+  border-radius: 0;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
@@ -488,7 +524,6 @@ onMounted(async () => {
   margin: 0;
 }
 
-/* 快捷入口 */
 .quick-entry .entry-buttons {
   padding: 20px;
   display: flex;
@@ -496,13 +531,14 @@ onMounted(async () => {
   gap: 12px;
 }
 
-.quick-entry .el-button {
+.quick-entry .entry-buttons :deep(.el-button) {
   width: 100%;
   height: 40px;
+  margin-left: 0 !important;
   font-size: 14px;
+  border-radius: 0;
 }
 
-/* 公告区域 */
 .card-header {
   padding: 0 20px;
   border-bottom: 1px solid #f0f0f0;
@@ -526,7 +562,8 @@ onMounted(async () => {
   padding: 16px 20px;
 }
 
-.notice-list, .guide-list {
+.notice-list,
+.guide-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -561,6 +598,13 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
+.empty-notice {
+  padding: 12px 0;
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: center;
+}
+
 .guide-item {
   display: flex;
   align-items: center;
@@ -573,7 +617,7 @@ onMounted(async () => {
   height: 20px;
   background: #0475FA;
   color: #fff;
-  border-radius: 50%;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
