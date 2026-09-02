@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { getRanking } from '../api/exam'
+import defaultAvatar from '../assets/default-cat-avatar.svg'
 
 const router = useRouter()
 
@@ -15,9 +16,12 @@ interface RankingItem {
   score: number
 }
 
-const defaultAvatar = 'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg'
+const isLegacyDefaultAvatar = (raw: string) =>
+  raw.includes('@vant/assets/cat.jpeg') || raw.includes('img.yzcdn.cn/vant/cat.jpeg')
+
 const resolveAvatarUrl = (raw?: string | null) => {
   if (!raw) return defaultAvatar
+  if (isLegacyDefaultAvatar(raw)) return defaultAvatar
   if (raw.startsWith('http')) return raw
   return '/api' + raw
 }
