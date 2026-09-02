@@ -3,8 +3,12 @@ declare module 'html2canvas' {
     scale?: number
     useCORS?: boolean
     allowTaint?: boolean
-    backgroundColor?: string
+    backgroundColor?: string | null
     logging?: boolean
+    imageTimeout?: number
+    removeContainer?: boolean
+    windowWidth?: number
+    windowHeight?: number
     onclone?: (document: Document) => void
   }
   
