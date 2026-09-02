@@ -176,7 +176,7 @@ const saveCertificate = async () => {
 onMounted(async () => {
   try {
     try {
-      const settingsResp: any = await request.get('/admin/settings')
+      const settingsResp: any = await request.get('/user/contact')
       const settingsData = settingsResp?.data || settingsResp
       if (settingsData?.cert?.issuer) issuerName.value = settingsData.cert.issuer
     } catch {}
