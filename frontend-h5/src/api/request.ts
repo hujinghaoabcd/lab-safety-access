@@ -1,6 +1,6 @@
 import axios from 'axios'
 import type { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
-import { showToast, showLoadingToast, closeToast } from 'vant'
+import { showToast, showLoadingToast } from 'vant'
 import { clearStudentSession } from '@/utils/session'
 
 // One-time cleanup for browsers that used the pre-cookie authentication flow.
@@ -16,23 +16,51 @@ interface ApiResponse<T = unknown> {
 const service = axios.create({
   baseURL: '/api',
   timeout: 30000,
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  withCredentials: true
 })
 
-const isAvatarUpload = (url?: string) => String(url || '').includes('/user/profile/avatar')
-
-const showRequestError = (message: string, url?: string) => {
-  // 当前部分 Android 内置 WebView 对 Vant Toast 的合成层偶发渲染成纯白块，
-  // 头像上传失败时不能只依赖 Toast，否则用户会感觉“没有任何报错”。
-  // 对头像上传使用原生提示框，确保格式、大小、网络等错误一定可见。
-  if (isAvatarUpload(url)) {
-    window.alert(`头像上传失败：${message}\n\n支持 JPG、PNG、WebP，文件大小不超过 5 MB。`)
-    return
+const endpointUnavailableMessage = (url: string) => {
+  if (url.includes('/user/profile/password')) {
+    return '修改密码服务暂不可用，请刷新页面后重试'
   }
+  if (url.includes('/user/profile/avatar')) {
+    return '头像上传服务暂不可用，请刷新页面后重试'
+  }
+  if (url.includes('/user/profile')) {
+    return '个人信息保存服务暂不可用，请刷新页面后重试'
+  }
+  return '请求的服务暂不可用，请刷新页面后重试'
+}
 
+const normalizeRequestError = (
+  status: number | undefined,
+  rawMessage: string | undefined,
+  url: string,
+  errorCode?: string
+) => {
+  const message = String(rawMessage || '').trim()
+  const genericAxiosMessage = /^Request failed with status code \d+$/i.test(message)
+
+  if (status === 404 && (!message || genericAxiosMessage || message === 'API 接口不存在')) {
+    return endpointUnavailableMessage(url)
+  }
+  if (status === 413) {
+    return url.includes('/user/profile/avatar')
+      ? '头像图片过大，请选择 5 MB 以内的图片'
+      : '上传文件过大，请选择更小的文件'
+  }
+  if (errorCode === 'ECONNABORTED' || /timeout/i.test(message)) {
+    return '请求超时，请检查网络后重试'
+  }
+  if (!status && (errorCode === 'ERR_NETWORK' || !message || /network error/i.test(message))) {
+    return '网络连接失败，请检查网络后重试'
+  }
+  return message || '请求失败，请稍后重试'
+}
+
+const showRequestError = (message: string) => {
+  // 所有失败请求统一使用已经做过 Android WebView 兼容处理的 Vant Toast。
+  // 不再为头像上传单独使用原生 alert，保持全站交互一致。
   showToast({
     message,
     type: 'fail'
@@ -43,17 +71,16 @@ service.interceptors.response.use(
   (response: AxiosResponse) => {
     const payload = response.data as ApiResponse<unknown>
     if (payload.code !== 0 && payload.code !== 200) {
-      showRequestError(payload.message || '请求失败', response.config?.url)
+      const url = response.config?.url || ''
+      const message = normalizeRequestError(payload.code, payload.message, url)
+      showRequestError(message)
 
-      if (payload.code === 401) {
-        const url = response.config?.url || ''
-        if (!url.includes('/auth/login')) {
-          clearStudentSession()
-          window.location.href = '/login'
-        }
+      if (payload.code === 401 && !url.includes('/auth/login')) {
+        clearStudentSession()
+        window.location.href = '/login'
       }
 
-      return Promise.reject(new Error(payload.message || '请求失败'))
+      return Promise.reject(new Error(message))
     }
     return response
   },
@@ -63,25 +90,33 @@ service.interceptors.response.use(
 
     const status = requestError.response?.status
     const payload = requestError.response?.data
-    const message = payload?.message || requestError.message || '网络错误'
     const url = requestError.config?.url || ''
+    const message = normalizeRequestError(
+      status,
+      payload?.message || requestError.message,
+      url,
+      requestError.code
+    )
 
     if (status === 401) {
       if (url.includes('/auth/login')) {
-        showToast({ message, type: 'fail' })
+        showRequestError(message)
         return Promise.reject(new Error(message))
       }
 
       clearStudentSession()
-      showToast({ message: '登录已过期，请重新登录', type: 'fail' })
+      const expiredMessage = '登录已过期，请重新登录'
+      showRequestError(expiredMessage)
       setTimeout(() => {
         window.location.href = '/login'
       }, 1000)
-      return Promise.reject(new Error('登录已过期，请重新登录'))
+      return Promise.reject(new Error(expiredMessage))
     }
 
-    showRequestError(message, url)
-    return Promise.reject(requestError)
+    showRequestError(message)
+    // 页面层的 catch 只会拿到整理后的业务错误，不再看到
+    // "Request failed with status code 404" 之类 Axios 原始状态文本。
+    return Promise.reject(new Error(message))
   }
 )
 
@@ -117,11 +152,13 @@ export const request = {
 
 export const requestWithLoading = {
   async get<T = ApiResponse>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    showLoadingToast({ message: '加载中...', forbidClick: true })
+    const loadingToast = showLoadingToast({ message: '加载中...', forbidClick: true })
     try {
       return await request.get<T>(url, config)
     } finally {
-      closeToast()
+      // 只关闭本次 loading 实例，不能使用全局 closeToast()，否则请求失败时
+      // response interceptor 刚显示的错误 Toast 会被 finally 立即一起关掉。
+      loadingToast.close()
     }
   },
 
@@ -130,11 +167,11 @@ export const requestWithLoading = {
     data?: unknown,
     config?: AxiosRequestConfig
   ): Promise<T> {
-    showLoadingToast({ message: '提交中...', forbidClick: true })
+    const loadingToast = showLoadingToast({ message: '提交中...', forbidClick: true })
     try {
       return await request.post<T>(url, data, config)
     } finally {
-      closeToast()
+      loadingToast.close()
     }
   }
 }
