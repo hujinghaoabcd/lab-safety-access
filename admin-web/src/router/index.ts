@@ -66,7 +66,7 @@ const routes: RouteRecordRaw[] = [
         path: 'learning-materials',
         name: 'LearningMaterials',
         component: () => import('@/views/LearningMaterialsPage.vue'),
-        meta: { title: '学习资料管理', icon: 'Reading' }
+        meta: { title: '资料管理', icon: 'Reading' }
       }
     ]
   }
