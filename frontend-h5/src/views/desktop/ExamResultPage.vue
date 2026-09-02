@@ -2,18 +2,12 @@
   <div class="desktop-exam-result">
     <section class="result-panel" :class="{ failed: !isPassed }">
       <div class="result-head">
-        <span class="status-icon" :class="isPassed ? 'passed' : 'failed'">
-          <el-icon v-if="isPassed"><CircleCheck /></el-icon>
-          <span v-else class="failure-emoji" aria-hidden="true">😔</span>
+        <span class="status-icon" :class="isPassed ? 'passed' : 'failed'" aria-hidden="true">
+          <span class="status-emoji">{{ isPassed ? '🙂' : '😔' }}</span>
         </span>
 
         <div class="status-copy">
           <h1>{{ isPassed ? '考试通过' : '考试未通过' }}</h1>
-          <p>
-            {{ isPassed
-              ? `答对 ${correct} 题，本次得分 ${score} 分。`
-              : `答对 ${correct} 题，答错 ${wrong} 题。` }}
-          </p>
         </div>
 
         <div class="score-block" :class="isPassed ? 'passed' : 'failed'">
@@ -69,7 +63,6 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
-  CircleCheck,
   HomeFilled,
   List,
   RefreshRight
@@ -116,8 +109,8 @@ const handleQuit = () => {
 }
 
 .result-head {
-  min-height: 272px;
-  padding: 28px 42px 26px;
+  min-height: 238px;
+  padding: 24px 42px 22px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -132,22 +125,13 @@ const handleQuit = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-  font-size: 56px;
 }
 
-.status-icon.passed {
-  color: #25a85a;
-}
-
-.status-icon.failed {
-  color: inherit;
-}
-
-.failure-emoji {
+.status-emoji {
   display: block;
   font-size: 58px;
   line-height: 1;
@@ -167,16 +151,9 @@ const handleQuit = () => {
   font-weight: 700;
 }
 
-.status-copy p {
-  margin: 9px 0 0;
-  color: #7f8c9d;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
 .score-block {
-  margin-top: 17px;
-  padding-top: 16px;
+  margin-top: 14px;
+  padding-top: 14px;
   min-width: 190px;
   text-align: center;
   border-top: 1px solid #edf0f4;
@@ -310,8 +287,8 @@ const handleQuit = () => {
   }
 
   .result-head {
-    min-height: 250px;
-    padding: 26px 22px 24px;
+    min-height: 226px;
+    padding: 22px 22px 20px;
   }
 
   .result-stats {
