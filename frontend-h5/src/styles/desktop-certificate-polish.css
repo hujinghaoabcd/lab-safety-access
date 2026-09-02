@@ -54,6 +54,13 @@
   justify-content: center !important;
 }
 
+/* 桌面端证书预览里的证书编号需要保持可读，不再作为过小的辅助文字。 */
+.desktop-certificate .honor-serial {
+  font-size: 14px !important;
+  line-height: 1.25 !important;
+  font-weight: 600 !important;
+}
+
 @media (max-width: 1200px) {
   .desktop-certificate .certificate-panel .table-head,
   .desktop-certificate .certificate-panel .certificate-row {
