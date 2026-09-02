@@ -61,6 +61,7 @@ import './styles/desktop-certificate-polish.css'
 import './styles/desktop-record-detail-polish.css'
 import './styles/desktop-exam-center-polish.css'
 import './styles/desktop-exam-polish.css'
+import './styles/desktop-answer-card-dialog-fix.css'
 
 const app = createApp(App)
 
