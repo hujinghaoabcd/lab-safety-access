@@ -5,6 +5,7 @@ import router from './router'
 
 // Element Plus
 import ElementPlus from 'element-plus'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
@@ -59,8 +60,11 @@ import './styles/global.css'
 
 const app = createApp(App)
 
-// 注册 Element Plus
-app.use(ElementPlus)
+// 注册 Element Plus，并统一使用简体中文语言包。
+// 分页器、日期选择器、上传等组件默认文案不再出现 Total / Go to / page 等英文。
+app.use(ElementPlus, {
+  locale: zhCn
+})
 
 // 注册所有图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
