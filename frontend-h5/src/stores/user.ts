@@ -12,6 +12,35 @@ export interface UserInfo {
   email?: string
 }
 
+const suppressLogoutOverlayResidue = () => {
+  if (typeof document === 'undefined') return
+
+  const root = document.documentElement
+  const styleId = 'student-logout-overlay-suppression'
+
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style')
+    style.id = styleId
+    style.textContent = `
+      html.student-logging-out .van-dialog,
+      html.student-logging-out .van-toast,
+      html.student-logging-out .van-overlay {
+        display: none !important;
+      }
+    `
+    document.head.appendChild(style)
+  }
+
+  // The confirmation promise resolves slightly before Vant has fully removed
+  // its teleported Dialog/Overlay. ProfilePage then creates a logout Toast in
+  // the same frame. Hide all three only during this short logout window so no
+  // white residual rectangle can be painted by mobile WebViews.
+  root.classList.add('student-logging-out')
+  window.setTimeout(() => {
+    root.classList.remove('student-logging-out')
+  }, 800)
+}
+
 export const useUserStore = defineStore('user', () => {
   const authenticated = ref(false)
   const userInfo = ref<UserInfo | null>(null)
@@ -28,8 +57,10 @@ export const useUserStore = defineStore('user', () => {
   }
 
   function logout() {
+    suppressLogoutOverlayResidue()
     authenticated.value = false
     userInfo.value = null
+
     // Vant confirmation dialogs resolve before their leave animation has fully
     // disappeared. Keep the login route from rendering for one transition cycle
     // so the shrinking/fading white dialog cannot flash on top of the login page.
