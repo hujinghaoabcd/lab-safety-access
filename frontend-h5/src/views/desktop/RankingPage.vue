@@ -1,89 +1,114 @@
 <template>
   <div class="desktop-ranking">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-left">
-        <div class="header-icon">
-          <el-icon><Trophy /></el-icon>
+    <div class="page-heading">
+      <div>
+        <h1>排行榜</h1>
+        <p>按考试最高成绩展示当前成绩排名</p>
+      </div>
+      <div class="heading-meta">共 {{ myRanking.total || scoreRanking.length }} 人参与排名</div>
+    </div>
+
+    <div class="ranking-summary">
+      <div class="summary-item summary-primary">
+        <span class="summary-label">我的排名</span>
+        <div class="summary-value">
+          <strong>{{ myRanking.rank || '—' }}</strong>
+          <span v-if="myRanking.rank">/ {{ myRanking.total || scoreRanking.length }}</span>
+          <span v-else>未上榜</span>
         </div>
-        <div class="header-info">
-          <h1>排行榜</h1>
-          <p>查看考试成绩排名</p>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">我的最高分</span>
+        <div class="summary-value">
+          <strong>{{ myRanking.score || 0 }}</strong><span>分</span>
+        </div>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">当前榜首</span>
+        <div class="summary-value summary-name">
+          <strong>{{ scoreRanking[0]?.name || '—' }}</strong>
+          <span v-if="scoreRanking[0]">{{ scoreRanking[0].score }} 分</span>
+        </div>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">参与人数</span>
+        <div class="summary-value">
+          <strong>{{ myRanking.total || scoreRanking.length }}</strong><span>人</span>
         </div>
       </div>
     </div>
 
-    <!-- 我的排名 -->
-    <div class="my-rank-card">
-      <div class="rank-item">
-        <span class="rank-label">我的排名</span>
-        <span class="rank-value">{{ myRanking.rank || '未上榜' }}<span class="rank-total">/{{ myRanking.total }}</span></span>
-      </div>
-      <div class="rank-divider"></div>
-      <div class="rank-item">
-        <span class="rank-label">最高分</span>
-        <span class="rank-value highlight">{{ myRanking.score }}分</span>
-      </div>
-    </div>
-
-    <!-- 前三名 -->
-    <div v-if="scoreRanking.length >= 3" class="top-three-section">
-      <div class="section-title">🏆 前三名</div>
-      <div class="top-three">
-        <div class="top-item second" v-if="scoreRanking[1]">
-          <span class="medal">🥈</span>
-          <el-avatar :size="64" :src="scoreRanking[1].avatar">{{ scoreRanking[1].name?.[0] }}</el-avatar>
-          <span class="top-name">{{ scoreRanking[1].name }}</span>
-          <span class="top-score">{{ scoreRanking[1].score }}分</span>
-        </div>
-        <div class="top-item first" v-if="scoreRanking[0]">
-          <span class="medal">🥇</span>
-          <el-avatar :size="80" :src="scoreRanking[0].avatar">{{ scoreRanking[0].name?.[0] }}</el-avatar>
-          <span class="top-name">{{ scoreRanking[0].name }}</span>
-          <span class="top-score">{{ scoreRanking[0].score }}分</span>
-        </div>
-        <div class="top-item third" v-if="scoreRanking[2]">
-          <span class="medal">🥉</span>
-          <el-avatar :size="64" :src="scoreRanking[2].avatar">{{ scoreRanking[2].name?.[0] }}</el-avatar>
-          <span class="top-name">{{ scoreRanking[2].name }}</span>
-          <span class="top-score">{{ scoreRanking[2].score }}分</span>
+    <div v-if="scoreRanking.length" class="ranking-panel">
+      <div class="panel-header">
+        <div>
+          <h2>成绩榜单</h2>
+          <p>前 3 名重点展示，其余成员按最高分依次排列</p>
         </div>
       </div>
-    </div>
 
-    <!-- 排行榜列表 -->
-    <div class="ranking-section">
-      <div class="section-title">排行榜单</div>
+      <div v-if="topThree.length" class="top-three-grid">
+        <div
+          v-for="item in topThree"
+          :key="item.userId"
+          class="top-rank-item"
+          :class="`rank-${item.rank}`"
+        >
+          <div class="rank-mark">{{ item.rank }}</div>
+          <el-avatar :size="64" :src="item.avatar">{{ item.name?.[0] }}</el-avatar>
+          <div class="top-user-info">
+            <div class="top-name">{{ item.name }}</div>
+            <div class="top-department">{{ item.department || '未设置院系' }}</div>
+          </div>
+          <div class="top-score">
+            <strong>{{ item.score }}</strong><span>分</span>
+          </div>
+        </div>
+      </div>
 
-      <el-table :data="scoreRanking.slice(3)" style="width: 100%">
-        <el-table-column type="index" label="排名" width="80">
-          <template #default="{ $index }">
-            <span class="rank-num">{{ $index + 4 }}</span>
+      <el-table
+        v-loading="loading"
+        :data="scoreRanking"
+        class="ranking-table"
+        :row-class-name="getRowClassName"
+        border
+      >
+        <el-table-column label="排名" width="90" align="center">
+          <template #default="{ row }">
+            <span class="table-rank" :class="row.rank <= 3 ? `table-rank-${row.rank}` : ''">
+              {{ row.rank }}
+            </span>
           </template>
         </el-table-column>
-        <el-table-column label="头像" width="80">
+        <el-table-column label="学员" min-width="220">
           <template #default="{ row }">
-            <el-avatar :size="40" :src="row.avatar">{{ row.name?.[0] }}</el-avatar>
+            <div class="student-cell">
+              <el-avatar :size="40" :src="row.avatar">{{ row.name?.[0] }}</el-avatar>
+              <span>{{ row.name }}</span>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column prop="name" label="姓名" min-width="120" />
-        <el-table-column prop="department" label="院系" min-width="160" />
-        <el-table-column label="分数" width="100">
+        <el-table-column prop="department" label="院系" min-width="240">
           <template #default="{ row }">
-            <span class="score-num">{{ row.score }}分</span>
+            {{ row.department || '—' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="最高分" width="140" align="right">
+          <template #default="{ row }">
+            <span class="score-cell"><strong>{{ row.score }}</strong> 分</span>
           </template>
         </el-table-column>
       </el-table>
+    </div>
 
-      <el-empty v-if="!loading && scoreRanking.length === 0" description="暂无排行榜数据" />
+    <div v-else-if="!loading" class="ranking-empty">
+      <el-empty description="暂无排行榜数据" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Trophy } from '@element-plus/icons-vue'
 import { getRanking } from '@/api/exam'
 
 interface RankingItem {
@@ -95,8 +120,6 @@ interface RankingItem {
   score: number
 }
 
-// 使用原来 Vant 官方 @vant/assets/cat.jpeg 的同一张小猫图片。
-// 改走 unpkg 镜像，避免部分 iPhone 环境无法访问 fastly.jsdelivr.net。
 const defaultAvatar = 'https://unpkg.com/@vant/assets@1.0.8/cat.jpeg'
 
 const isLegacyDefaultAvatar = (raw: string) =>
@@ -112,6 +135,11 @@ const resolveAvatarUrl = (raw?: string | null) => {
 const scoreRanking = ref<RankingItem[]>([])
 const myRanking = ref({ rank: 0, score: 0, total: 0 })
 const loading = ref(false)
+const topThree = computed(() => scoreRanking.value.slice(0, 3))
+
+const getRowClassName = ({ row }: { row: RankingItem }) => {
+  return myRanking.value.rank && row.rank === myRanking.value.rank ? 'current-user-row' : ''
+}
 
 onMounted(async () => {
   try {
@@ -139,168 +167,302 @@ onMounted(async () => {
 
 <style scoped>
 .desktop-ranking {
-  padding: 0;
+  width: 100%;
 }
 
-/* 页面头部 */
-.page-header {
+.page-heading {
   display: flex;
+  align-items: flex-end;
   justify-content: space-between;
-  align-items: center;
-  padding: 24px;
-  background: #fff;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #dfe4ea;
 }
 
-.header-left {
+.page-heading h1 {
+  margin: 0 0 6px;
+  color: #1f2937;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.page-heading p,
+.panel-header p {
+  margin: 0;
+  color: #8a94a3;
+  font-size: 13px;
+}
+
+.heading-meta {
+  color: #7b8794;
+  font-size: 13px;
+}
+
+.ranking-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 20px;
+  background: #fff;
+  border: 1px solid #e1e6ec;
+}
+
+.summary-item {
+  min-height: 108px;
+  padding: 22px 26px;
+  border-right: 1px solid #e7ebf0;
+}
+
+.summary-item:last-child {
+  border-right: 0;
+}
+
+.summary-primary {
+  border-top: 3px solid #0475fa;
+  padding-top: 19px;
+}
+
+.summary-label {
+  display: block;
+  margin-bottom: 13px;
+  color: #7c8796;
+  font-size: 13px;
+}
+
+.summary-value {
   display: flex;
+  align-items: baseline;
+  gap: 5px;
+  color: #52606f;
+  font-size: 13px;
+}
+
+.summary-value strong {
+  color: #17202a;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.summary-name {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.summary-name strong {
+  max-width: 65%;
+  overflow: hidden;
+  color: #1f2937;
+  font-size: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranking-panel,
+.ranking-empty {
+  background: #fff;
+  border: 1px solid #e1e6ec;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 18px;
+  border-bottom: 1px solid #e7ebf0;
+}
+
+.panel-header h2 {
+  margin: 0 0 5px;
+  color: #27313d;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.top-three-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-bottom: 1px solid #e7ebf0;
+}
+
+.top-rank-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px 64px minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
+  min-height: 112px;
+  padding: 20px 24px;
+  border-right: 1px solid #e7ebf0;
 }
 
-.header-icon {
-  width: 48px;
-  height: 48px;
-  background: #e6a23c;
-  border-radius: 8px;
+.top-rank-item:last-child {
+  border-right: 0;
+}
+
+.rank-mark {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.header-icon .el-icon {
-  font-size: 24px;
-  color: #fff;
-}
-
-.header-info h1 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0 0 4px 0;
-}
-
-.header-info p {
-  font-size: 13px;
-  color: #909399;
-  margin: 0;
-}
-
-/* 我的排名 */
-.my-rank-card {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 40px;
-  padding: 24px;
-  background: #0475FA;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  color: #fff;
-}
-
-.rank-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.rank-label {
-  font-size: 14px;
-  opacity: 0.9;
-  margin-bottom: 8px;
-}
-
-.rank-value {
-  font-size: 32px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #cfd6df;
+  color: #4f5c6b;
+  font-size: 15px;
   font-weight: 700;
 }
 
-.rank-total {
-  font-size: 18px;
-  opacity: 0.7;
+.rank-1 {
+  box-shadow: inset 0 3px 0 #c99b34;
 }
 
-.rank-value.highlight {
-  color: #ffd700;
+.rank-2 {
+  box-shadow: inset 0 3px 0 #8e9aa8;
 }
 
-.rank-divider {
-  width: 1px;
-  height: 48px;
-  background: rgba(255, 255, 255, 0.3);
+.rank-3 {
+  box-shadow: inset 0 3px 0 #a96f45;
 }
 
-/* 前三名 */
-.top-three-section {
-  background: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+.rank-1 .rank-mark {
+  border-color: #d2aa54;
+  background: #fff8e8;
+  color: #9a6d16;
 }
 
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 16px;
+.rank-2 .rank-mark {
+  border-color: #aeb8c3;
+  background: #f3f5f7;
+  color: #687582;
 }
 
-.top-three {
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  gap: 32px;
-  padding: 20px 0;
+.rank-3 .rank-mark {
+  border-color: #bb8b69;
+  background: #faf1eb;
+  color: #8b5737;
 }
 
-.top-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.top-item.first { order: 2; }
-.top-item.second { order: 1; }
-.top-item.third { order: 3; }
-
-.medal {
-  font-size: 32px;
+.top-user-info {
+  min-width: 0;
 }
 
 .top-name {
-  font-size: 14px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  color: #1f2937;
+  font-size: 15px;
   font-weight: 600;
-  color: #303133;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-department {
+  overflow: hidden;
+  color: #8a94a3;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .top-score {
-  font-size: 18px;
-  font-weight: 700;
-  color: #e6a23c;
+  color: #6b7683;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
-/* 排行榜列表 */
-.ranking-section {
-  background: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-.rank-num {
-  font-size: 16px;
+.top-score strong {
+  margin-right: 3px;
+  color: #0475fa;
+  font-size: 24px;
   font-weight: 600;
-  color: #303133;
 }
 
-.score-num {
-  font-size: 16px;
+.ranking-table {
+  width: 100%;
+}
+
+.ranking-table :deep(.el-table__header th) {
+  height: 46px;
+  background: #f7f9fb;
+  color: #66717f;
   font-weight: 600;
-  color: #e6a23c;
+}
+
+.ranking-table :deep(.el-table__row td) {
+  height: 62px;
+}
+
+.ranking-table :deep(.current-user-row td) {
+  background: #f1f7ff !important;
+}
+
+.student-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #27313d;
+  font-weight: 500;
+}
+
+.table-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 28px;
+  color: #536170;
+  font-weight: 600;
+}
+
+.table-rank-1 {
+  color: #9a6d16;
+}
+
+.table-rank-2 {
+  color: #687582;
+}
+
+.table-rank-3 {
+  color: #8b5737;
+}
+
+.score-cell {
+  color: #66717f;
+}
+
+.score-cell strong {
+  margin-right: 3px;
+  color: #0475fa;
+  font-size: 17px;
+}
+
+.ranking-empty {
+  padding: 60px 0;
+}
+
+@media (max-width: 1180px) {
+  .ranking-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .summary-item:nth-child(2) {
+    border-right: 0;
+  }
+
+  .summary-item:nth-child(-n + 2) {
+    border-bottom: 1px solid #e7ebf0;
+  }
+
+  .top-three-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .top-rank-item {
+    border-right: 0;
+    border-bottom: 1px solid #e7ebf0;
+  }
+
+  .top-rank-item:last-child {
+    border-bottom: 0;
+  }
 }
 </style>
