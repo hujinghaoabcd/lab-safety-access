@@ -8,7 +8,7 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+    if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.mimetype)) {
       return cb(new Error('仅支持 JPG、PNG 或 WebP 图片'));
     }
     return cb(null, true);
