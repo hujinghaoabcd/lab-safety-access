@@ -211,11 +211,12 @@ input, textarea {
   .honor-serial {
     width: 100% !important;
     align-self: stretch !important;
-    text-align: right !important;
-    padding-right: 0.5vw !important;
-    font-size: clamp(6px, 0.66vw, 7px) !important;
+    text-align: center !important;
+    padding-right: 0 !important;
+    font-size: clamp(5px, 0.54vw, 6px) !important;
     line-height: 1.15 !important;
     font-weight: 600 !important;
+    letter-spacing: 0.005em !important;
     margin-top: 4.2vw !important;
     margin-bottom: 0.85vw !important;
   }
