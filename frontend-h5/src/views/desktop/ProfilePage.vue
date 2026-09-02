@@ -58,22 +58,22 @@
           <div class="stat-item">
             <div class="stat-icon primary"><el-icon><Document /></el-icon></div>
             <div class="stat-copy">
-              <div class="stat-name">考试次数</div>
               <div class="stat-value">{{ stats.examCount }}</div>
+              <div class="stat-name">考试次数</div>
             </div>
           </div>
           <div class="stat-item">
             <div class="stat-icon success"><el-icon><CircleCheck /></el-icon></div>
             <div class="stat-copy">
-              <div class="stat-name">通过次数</div>
               <div class="stat-value">{{ stats.passCount }}</div>
+              <div class="stat-name">通过次数</div>
             </div>
           </div>
           <div class="stat-item">
             <div class="stat-icon warning"><el-icon><Trophy /></el-icon></div>
             <div class="stat-copy">
-              <div class="stat-name">合格证书</div>
               <div class="stat-value">{{ stats.certCount }}</div>
+              <div class="stat-name">合格证书</div>
             </div>
           </div>
         </div>
@@ -96,8 +96,24 @@
       </section>
     </div>
 
-    <el-dialog class="profile-dialog" v-model="showEditPopup" title="编辑资料" width="480px">
-      <el-form :model="editForm" label-width="80px">
+    <el-dialog
+      class="profile-dialog"
+      v-model="showEditPopup"
+      width="520px"
+      :show-close="false"
+      :close-on-click-modal="false"
+    >
+      <template #header="{ close }">
+        <div class="dialog-titlebar">
+          <div>
+            <div class="dialog-title">编辑资料</div>
+            <div class="dialog-subtitle">更新个人联系方式与基本信息</div>
+          </div>
+          <button class="dialog-close" type="button" aria-label="关闭" @click="close">×</button>
+        </div>
+      </template>
+
+      <el-form class="profile-form" :model="editForm" label-width="72px">
         <el-form-item label="姓名">
           <el-input v-model="editForm.name" placeholder="请输入姓名" />
         </el-form-item>
@@ -117,8 +133,24 @@
       </template>
     </el-dialog>
 
-    <el-dialog class="profile-dialog" v-model="showPasswordPopup" title="修改密码" width="480px">
-      <el-form :model="passwordForm" label-width="80px">
+    <el-dialog
+      class="profile-dialog"
+      v-model="showPasswordPopup"
+      width="520px"
+      :show-close="false"
+      :close-on-click-modal="false"
+    >
+      <template #header="{ close }">
+        <div class="dialog-titlebar">
+          <div>
+            <div class="dialog-title">修改密码</div>
+            <div class="dialog-subtitle">请设置便于记忆且安全性较高的新密码</div>
+          </div>
+          <button class="dialog-close" type="button" aria-label="关闭" @click="close">×</button>
+        </div>
+      </template>
+
+      <el-form class="profile-form" :model="passwordForm" label-width="72px">
         <el-form-item label="旧密码">
           <el-input v-model="passwordForm.oldPassword" type="password" placeholder="请输入旧密码" show-password />
         </el-form-item>
@@ -299,11 +331,8 @@ onMounted(async () => {
 
 <style scoped>
 .desktop-profile {
-  min-height: calc(100vh - 116px);
   padding: 0;
   color: #1f2937;
-  display: flex;
-  flex-direction: column;
 }
 
 .profile-layout {
@@ -323,7 +352,7 @@ onMounted(async () => {
 
 .identity-panel {
   min-height: 270px;
-  padding: 30px 24px;
+  padding: 26px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -368,16 +397,16 @@ onMounted(async () => {
 }
 
 .detail-panel {
-  padding: 20px 24px 24px;
+  padding: 18px 22px 22px;
 }
 
 .panel-toolbar {
-  min-height: 34px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .panel-title {
@@ -429,52 +458,47 @@ onMounted(async () => {
 }
 
 .lower-layout {
-  flex: 1;
-  min-height: 280px;
   display: grid;
-  grid-template-columns: minmax(330px, 0.82fr) minmax(0, 1.18fr);
+  grid-template-columns: minmax(440px, 0.9fr) minmax(0, 1.35fr);
   gap: 16px;
 }
 
 .stats-panel,
 .quick-panel {
-  min-height: 280px;
-  padding: 20px 24px 24px;
-  display: flex;
-  flex-direction: column;
+  padding: 16px 18px 18px;
 }
 
 .stats-panel > .panel-title,
 .quick-panel > .panel-title {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .stats-grid {
-  flex: 1;
   display: grid;
-  grid-template-rows: repeat(3, minmax(72px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   border-top: 1px solid #e5eaf0;
   border-left: 1px solid #e5eaf0;
 }
 
 .stat-item {
+  min-height: 92px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 14px 18px;
+  gap: 12px;
+  padding: 14px 14px;
   border-right: 1px solid #e5eaf0;
   border-bottom: 1px solid #e5eaf0;
 }
 
 .stat-icon {
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid currentColor;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .stat-icon.primary { color: #0475FA; background: #f0f7ff; }
@@ -483,30 +507,25 @@ onMounted(async () => {
 
 .stat-copy {
   min-width: 0;
-  display: flex;
-  flex: 1;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 18px;
 }
 
 .stat-value {
-  font-size: 27px;
+  font-size: 26px;
   font-weight: 700;
   line-height: 1;
   color: #172033;
+  margin-bottom: 7px;
 }
 
 .stat-name {
   color: #687386;
-  font-size: 14px;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .quick-grid {
-  flex: 1;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: repeat(2, minmax(96px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border-top: 1px solid #e5eaf0;
   border-left: 1px solid #e5eaf0;
 }
@@ -517,27 +536,29 @@ onMounted(async () => {
   border-right: 1px solid #e5eaf0;
   border-bottom: 1px solid #e5eaf0;
   background: #fff;
-  padding: 18px 20px;
+  min-height: 92px;
+  padding: 12px 12px;
   display: flex;
   align-items: center;
   text-align: left;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
 .quick-item:hover {
-  background: #f7fbff;
+  background: #f5f9ff;
 }
 
 .quick-icon {
-  width: 38px;
-  font-size: 23px;
-  flex: 0 0 38px;
+  width: 30px;
+  font-size: 21px;
+  flex: 0 0 30px;
 }
 
 .quick-copy {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   flex: 1;
 }
@@ -545,65 +566,118 @@ onMounted(async () => {
 .quick-copy strong {
   color: #253044;
   font-size: 14px;
+  line-height: 1.3;
 }
 
 .quick-copy small {
   color: #929cac;
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .quick-arrow {
-  margin-left: 12px;
+  margin-left: 5px;
   color: #a8b1bf;
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1;
 }
 
 :deep(.profile-dialog.el-dialog) {
+  padding: 0 !important;
   border-radius: 0 !important;
   overflow: hidden;
+  box-shadow: 0 16px 40px rgba(19, 39, 70, 0.24);
 }
 
 :deep(.profile-dialog .el-dialog__header) {
-  min-height: 52px;
-  margin: 0;
-  padding: 15px 20px;
-  background: #eef4fb;
-  border-bottom: 1px solid #dbe4ee;
-  border-left: 4px solid #0475FA;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-:deep(.profile-dialog .el-dialog__title) {
-  font-size: 16px;
-  line-height: 22px;
+.dialog-titlebar {
+  min-height: 58px;
+  padding: 10px 16px 10px 18px;
+  background: linear-gradient(90deg, #0b6fdb 0%, #1989fa 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dialog-title {
+  font-size: 17px;
+  line-height: 1.3;
   font-weight: 700;
-  color: #253044;
 }
 
-:deep(.profile-dialog .el-dialog__headerbtn) {
-  top: 0;
-  right: 0;
-  width: 52px;
-  height: 52px;
+.dialog-subtitle {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.dialog-close {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 25px;
+  line-height: 30px;
+  cursor: pointer;
+}
+
+.dialog-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
 }
 
 :deep(.profile-dialog .el-dialog__body) {
-  padding: 24px 24px 12px;
+  padding: 20px 24px 8px !important;
+  background: #fff;
+}
+
+.profile-form :deep(.el-form-item) {
+  margin-bottom: 16px;
+}
+
+.profile-form :deep(.el-form-item__label) {
+  color: #596579;
+  font-size: 13px;
+}
+
+.profile-form :deep(.el-input__wrapper) {
+  min-height: 38px;
+  border-radius: 0;
+  box-shadow: 0 0 0 1px #d9e0e8 inset;
+}
+
+.profile-form :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #1989fa inset;
 }
 
 :deep(.profile-dialog .el-dialog__footer) {
-  padding: 14px 20px;
-  background: #f8fafc;
+  padding: 12px 24px !important;
+  background: #f7f9fc;
   border-top: 1px solid #e5eaf0;
+}
+
+@media (max-width: 1250px) {
+  .lower-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 1100px) {
   .profile-layout {
     grid-template-columns: 240px minmax(0, 1fr);
-  }
-
-  .lower-layout {
-    grid-template-columns: 1fr;
   }
 }
 </style>
