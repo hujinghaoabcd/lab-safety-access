@@ -36,9 +36,12 @@
         <!-- 统计数据区域 -->
         <div class="stats-section">
           <div class="stat-item">
-            <div class="stat-value">
-              <span class="number">{{ certCount }}</span>
-              <span class="total">/{{ totalCerts }}</span>
+            <div class="stat-main">
+              <el-icon class="stat-icon certificate-icon"><Medal /></el-icon>
+              <div class="stat-value">
+                <span class="number">{{ certCount }}</span>
+                <span class="total">/{{ totalCerts }}</span>
+              </div>
             </div>
             <div class="stat-label">合格证书</div>
             <div class="stat-progress">
@@ -47,9 +50,12 @@
           </div>
 
           <div class="stat-item">
-            <div class="stat-value">
-              <span class="number">{{ passedCount }}</span>
-              <span class="total">/{{ totalExams }}</span>
+            <div class="stat-main">
+              <el-icon class="stat-icon passed-icon"><CircleCheck /></el-icon>
+              <div class="stat-value">
+                <span class="number">{{ passedCount }}</span>
+                <span class="total">/{{ totalExams }}</span>
+              </div>
             </div>
             <div class="stat-label">已通过考试</div>
             <div class="stat-progress">
@@ -58,25 +64,34 @@
           </div>
 
           <div class="stat-item">
-            <div class="stat-value">
-              <span class="number text-primary">{{ pendingExamCount }}</span>
-              <span class="unit">项</span>
+            <div class="stat-main">
+              <el-icon class="stat-icon pending-icon"><Calendar /></el-icon>
+              <div class="stat-value">
+                <span class="number text-primary">{{ pendingExamCount }}</span>
+                <span class="unit">项</span>
+              </div>
             </div>
             <div class="stat-label">待考试</div>
           </div>
 
           <div class="stat-item">
-            <div class="stat-value">
-              <span class="number">{{ wrongCount }}</span>
-              <span class="unit">题</span>
+            <div class="stat-main">
+              <el-icon class="stat-icon wrong-icon"><CircleClose /></el-icon>
+              <div class="stat-value">
+                <span class="number">{{ wrongCount }}</span>
+                <span class="unit">题</span>
+              </div>
             </div>
             <div class="stat-label">错题数量</div>
           </div>
 
           <div class="stat-item">
-            <div class="stat-value">
-              <span class="number">{{ studyHours }}</span>
-              <span class="unit">小时</span>
+            <div class="stat-main">
+              <el-icon class="stat-icon time-icon"><Clock /></el-icon>
+              <div class="stat-value">
+                <span class="number">{{ studyHours }}</span>
+                <span class="unit">小时</span>
+              </div>
             </div>
             <div class="stat-label">学习时长</div>
           </div>
@@ -142,6 +157,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import {
+  Calendar,
+  CircleCheck,
+  CircleClose,
+  Clock,
   EditPen,
   Reading,
   Medal,
@@ -449,8 +468,44 @@ onMounted(async () => {
   border-right: none;
 }
 
-.stat-value {
+.stat-main {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   margin-bottom: 8px;
+}
+
+.stat-icon {
+  flex: 0 0 auto;
+  font-size: 24px;
+  stroke-width: 1.6;
+}
+
+.certificate-icon {
+  color: #d99212;
+}
+
+.passed-icon {
+  color: #3cae58;
+}
+
+.pending-icon {
+  color: #0475FA;
+}
+
+.wrong-icon {
+  color: #e85b63;
+}
+
+.time-icon {
+  color: #7866d7;
+}
+
+.stat-value {
+  margin-bottom: 0;
+  line-height: 1;
 }
 
 .stat-value .number {
