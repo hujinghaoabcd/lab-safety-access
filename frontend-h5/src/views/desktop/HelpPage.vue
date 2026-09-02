@@ -1,12 +1,5 @@
 <template>
   <div class="desktop-help-page">
-    <div class="page-heading">
-      <div>
-        <h1>帮助中心</h1>
-        <p>查看系统使用说明、常见问题与联系方式</p>
-      </div>
-    </div>
-
     <div class="help-layout">
       <section class="faq-panel">
         <div class="panel-heading">
@@ -66,22 +59,22 @@
 
           <div class="contact-list">
             <div class="contact-item">
-              <div class="contact-icon"><el-icon><Phone /></el-icon></div>
-              <div>
+              <el-icon class="contact-icon"><Phone /></el-icon>
+              <div class="contact-copy">
                 <div class="contact-label">咨询电话</div>
                 <div class="contact-value">{{ contactInfo.phone }}</div>
               </div>
             </div>
             <div class="contact-item">
-              <div class="contact-icon"><el-icon><Message /></el-icon></div>
-              <div>
+              <el-icon class="contact-icon"><Message /></el-icon>
+              <div class="contact-copy">
                 <div class="contact-label">电子邮箱</div>
                 <div class="contact-value">{{ contactInfo.email }}</div>
               </div>
             </div>
             <div class="contact-item">
-              <div class="contact-icon"><el-icon><Location /></el-icon></div>
-              <div>
+              <el-icon class="contact-icon"><OfficeBuilding /></el-icon>
+              <div class="contact-copy">
                 <div class="contact-label">工作地点</div>
                 <div class="contact-value">{{ contactInfo.address }}</div>
               </div>
@@ -103,44 +96,39 @@ import {
   User,
   Phone,
   Message,
-  Location
+  OfficeBuilding
 } from '@element-plus/icons-vue'
 import { request } from '@/api/request'
 
 const router = useRouter()
-
 const activeNames = ref<string[]>([])
 
+// 与移动端帮助页保持完全一致，避免两端说明口径不同。
 const helpItems = ref([
   {
     id: '1',
     title: '如何开始学习？',
-    content: '进入“学习中心”后，可查看系统已发布的学习资料。根据资料类型阅读文档、查看图文或其他内容，完成考试前的知识准备。'
+    content: '点击首页"学习中心"，选择需要学习的内容。学习过程中请认真阅读内容，确保理解安全知识要点。'
   },
   {
     id: '2',
     title: '如何参加考试？',
-    content: '进入“考试中心”后，系统会显示当前账号可参加的考试。选择考试后请先阅读考试说明，再进入答题页面完成考试并提交。'
+    content: '完成相关课程学习后，进入"考试中心"选择对应的考试。考试前请仔细阅读考试须知，考试过程中请勿退出页面。'
   },
   {
     id: '3',
-    title: '考试未通过怎么办？',
-    content: '如考试未通过，可在允许的考试次数范围内重新参加考试。建议先进入“错题本”复习答错题目，再重新作答。具体可考试次数以当前考试设置为准。'
+    title: '考试不及格怎么办？',
+    content: '每门考试有3次考试机会。如未通过，可在"考试中心"重新参加考试。建议先复习"错题本"中的错题，巩固薄弱知识点后再次尝试。'
   },
   {
     id: '4',
     title: '如何获取合格证书？',
-    content: '考试成绩达到该场考试设置的合格分数后，系统会自动生成合格证书。可在“合格证书”页面预览并下载高清证书。'
+    content: '通过所有必修课程的考试后，系统将自动生成电子合格证书。您可在"合格证书"页面查看和下载证书。'
   },
   {
     id: '5',
-    title: '在哪里查看历史考试成绩？',
-    content: '进入“考试记录”页面即可查看历史考试时间、成绩和通过状态，并可继续查看相应考试详情。'
-  },
-  {
-    id: '6',
-    title: '个人信息或头像如何修改？',
-    content: '进入“个人中心”后，可修改允许编辑的个人资料、更换头像或修改登录密码。学号等由管理员维护的信息不可自行修改。'
+    title: '证书有效期是多久？',
+    content: '合格证书有效期为一年。证书到期前，系统会提醒您重新学习和考核，以确保您始终掌握最新的安全知识。'
   }
 ])
 
@@ -187,25 +175,6 @@ onMounted(async () => {
   color: #1f2937;
 }
 
-.page-heading {
-  padding: 8px 0 20px;
-  border-bottom: 1px solid #dfe4ea;
-  margin-bottom: 20px;
-}
-
-.page-heading h1 {
-  margin: 0 0 6px;
-  font-size: 26px;
-  font-weight: 700;
-  color: #172033;
-}
-
-.page-heading p {
-  margin: 0;
-  font-size: 14px;
-  color: #8a96a8;
-}
-
 .help-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
@@ -221,16 +190,16 @@ onMounted(async () => {
 }
 
 .panel-heading {
-  padding: 20px 22px 16px;
+  padding: 18px 22px 14px;
   border-bottom: 1px solid #e8ecf1;
 }
 
 .panel-heading.compact {
-  padding: 18px 20px 14px;
+  padding: 16px 18px 13px;
 }
 
 .panel-heading h2 {
-  margin: 0 0 5px;
+  margin: 0 0 4px;
   font-size: 16px;
   font-weight: 700;
   color: #172033;
@@ -265,11 +234,11 @@ onMounted(async () => {
 }
 
 .faq-content {
-  padding: 18px 22px 22px;
+  padding: 17px 22px 20px;
   background: #fafbfc;
   color: #5f6b7a;
   font-size: 14px;
-  line-height: 1.9;
+  line-height: 1.85;
 }
 
 .side-column {
@@ -286,10 +255,10 @@ onMounted(async () => {
 .quick-link {
   appearance: none;
   width: 100%;
-  min-height: 72px;
+  min-height: 68px;
   display: flex;
   align-items: center;
-  padding: 13px 18px;
+  padding: 12px 18px;
   background: #fff;
   border: none;
   border-bottom: 1px solid #edf0f4;
@@ -306,13 +275,12 @@ onMounted(async () => {
 }
 
 .quick-icon {
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #cfe3fa;
   color: #0475FA;
   background: #f3f8ff;
   font-size: 18px;
@@ -324,7 +292,7 @@ onMounted(async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .quick-copy strong {
@@ -339,17 +307,19 @@ onMounted(async () => {
 
 .quick-arrow {
   color: #a9b2bf;
-  font-size: 22px;
+  font-size: 21px;
 }
 
 .contact-list {
-  padding: 4px 18px 12px;
+  padding: 4px 18px 10px;
 }
 
 .contact-item {
-  display: flex;
-  gap: 12px;
-  padding: 15px 0;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 14px 0;
   border-bottom: 1px solid #edf0f4;
 }
 
@@ -358,21 +328,19 @@ onMounted(async () => {
 }
 
 .contact-icon {
-  width: 32px;
-  height: 32px;
-  flex: 0 0 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  margin-top: 2px;
+  font-size: 17px;
   color: #0475FA;
-  background: #f3f8ff;
-  border: 1px solid #d8e8fa;
+}
+
+.contact-copy {
+  min-width: 0;
 }
 
 .contact-label {
-  color: #97a1b0;
+  color: #7f8a99;
   font-size: 12px;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 
 .contact-value {
