@@ -252,7 +252,7 @@ const handleLogin = async () => {
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style scoped>
 .login-page {
   min-height: 100vh;
   background: #f5f7fa;
@@ -327,69 +327,67 @@ const handleLogin = async () => {
 
 .login-form {
   width: 100%;
+}
 
-  .el-form-item {
-    margin-bottom: 20px;
+.login-form :deep(.el-form-item) {
+  margin-bottom: 20px;
+}
 
-    &:last-of-type {
-      margin-bottom: 0;
-      margin-top: 8px;
-    }
-  }
+.login-form :deep(.el-form-item:last-of-type) {
+  margin-bottom: 0;
+  margin-top: 8px;
+}
 
-  .login-input {
-    :deep(.el-input__wrapper) {
-      border-radius: 0;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      padding: 12px 16px;
-      height: 48px;
-      transition: all 0.3s ease;
+.login-form .login-input :deep(.el-input__wrapper) {
+  border-radius: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 12px 16px;
+  height: 48px;
+  transition: all 0.3s ease;
+}
 
-      &:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-      }
+.login-form .login-input :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
 
-      &.is-focus {
-        box-shadow: 0 4px 16px rgba(4, 117, 250, 0.2);
-      }
-    }
+.login-form .login-input :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 4px 16px rgba(4, 117, 250, 0.2);
+}
 
-    :deep(.el-input__inner) {
-      font-size: 15px;
-      line-height: 1.5;
-    }
+.login-form .login-input :deep(.el-input__inner) {
+  font-size: 15px;
+  line-height: 1.5;
+}
 
-    :deep(.el-input__prefix) {
-      margin-right: 12px;
+.login-form .login-input :deep(.el-input__prefix) {
+  margin-right: 12px;
+}
 
-      .el-icon {
-        font-size: 18px;
-        color: #909399;
-      }
-    }
-  }
+.login-form .login-input :deep(.el-input__prefix .el-icon) {
+  font-size: 18px;
+  color: #909399;
+}
 
-  .login-btn {
-    width: 100%;
-    height: 50px;
-    font-size: 16px;
-    font-weight: 500;
-    border-radius: 0;
-    background: #0475FA;
-    border: none;
-    margin-top: 10px;
-    transition: all 0.3s ease;
+.login-form .login-btn {
+  width: 100%;
+  height: 50px;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 0;
+  background: #0475FA;
+  border: none;
+  margin-top: 10px;
+  transition: all 0.3s ease;
+}
 
-    &:hover {
-      background: #3d93fc;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(4, 117, 250, 0.3);
-    }
+.login-form .login-btn:hover {
+  background: #3d93fc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(4, 117, 250, 0.3);
+}
 
-    &:active {
-      transform: translateY(0);
-    }
-  }
+.login-form .login-btn:active {
+  transform: translateY(0);
 }
 
 .login-tip {
@@ -444,7 +442,7 @@ const handleLogin = async () => {
 }
 </style>
 
-<style lang="scss">
+<style>
 .particles-canvas {
   position: absolute;
   width: 100%;
