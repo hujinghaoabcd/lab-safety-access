@@ -352,8 +352,8 @@ onMounted(() => loadWrongBook())
 
 .options-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 12px;
+  grid-template-columns: 1fr;
+  gap: 8px;
   margin-bottom: 14px;
 }
 
@@ -431,10 +431,6 @@ onMounted(() => loadWrongBook())
 }
 
 @media (max-width: 1100px) {
-  .options-grid {
-    grid-template-columns: 1fr;
-  }
-
   .last-time {
     display: none;
   }
