@@ -1,0 +1,125 @@
+@media (min-width: 768px) {
+  /* 首页欢迎区：保持原结构，只强化个人工作台层级。 */
+  .desktop-dashboard .welcome-section {
+    min-height: 56px;
+    padding: 14px 20px !important;
+    border: 1px solid #eef2f7;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06) !important;
+  }
+
+  .desktop-dashboard .welcome-left {
+    gap: 10px !important;
+  }
+
+  .desktop-dashboard .welcome-text {
+    color: #1e293b !important;
+    font-size: 15px !important;
+    font-weight: 650 !important;
+    letter-spacing: 0.01em;
+  }
+
+  .desktop-dashboard .role-tag {
+    height: 26px;
+    padding: 0 10px;
+    color: #0475fa !important;
+    background: #eef6ff !important;
+    border: 1px solid #cfe4ff !important;
+    border-radius: 0 !important;
+    font-size: 12px;
+  }
+
+  /* 六个功能入口：不改三列结构，减少移动端卡片感，增强桌面信息层级。 */
+  .desktop-dashboard .function-cards {
+    gap: 16px !important;
+  }
+
+  .desktop-dashboard .function-card {
+    min-height: 124px;
+    padding: 20px 22px !important;
+    gap: 17px !important;
+    align-items: center;
+    border-color: #edf1f5 !important;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.065) !important;
+    transform: none !important;
+  }
+
+  .desktop-dashboard .function-card:hover {
+    border-color: #8fc5ff !important;
+    box-shadow: 0 3px 10px rgba(4, 117, 250, 0.10) !important;
+    transform: none !important;
+  }
+
+  .desktop-dashboard .card-icon {
+    width: 52px !important;
+    height: 52px !important;
+    flex: 0 0 52px !important;
+  }
+
+  .desktop-dashboard .card-icon .el-icon {
+    font-size: 25px !important;
+  }
+
+  .desktop-dashboard .card-info h3 {
+    margin-bottom: 7px !important;
+    color: #162033 !important;
+    font-size: 16px !important;
+    font-weight: 650 !important;
+  }
+
+  .desktop-dashboard .card-info p {
+    color: #64748b !important;
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+  }
+
+  .desktop-dashboard .card-info .sub-desc {
+    margin-top: 4px !important;
+    color: #a0aec0 !important;
+    font-size: 12px !important;
+  }
+
+  /* 右侧快捷入口：主操作突出，辅助操作更轻。 */
+  .desktop-dashboard .quick-entry .entry-buttons {
+    padding: 18px 20px 20px !important;
+    gap: 10px !important;
+  }
+
+  .desktop-dashboard .quick-entry .entry-buttons .el-button {
+    height: 44px !important;
+    justify-content: flex-start;
+    padding: 0 18px !important;
+    font-size: 14px !important;
+    font-weight: 500;
+    border-radius: 0 !important;
+  }
+
+  .desktop-dashboard .quick-entry .entry-buttons .el-button .el-icon {
+    margin-right: 8px;
+    font-size: 17px;
+  }
+
+  .desktop-dashboard .quick-entry .entry-buttons .el-button:not(.el-button--primary) {
+    color: #334155;
+    background: #f8fafc;
+    border-color: #e5eaf0;
+  }
+
+  .desktop-dashboard .quick-entry .entry-buttons .el-button:not(.el-button--primary):hover {
+    color: #0475fa;
+    background: #eef6ff;
+    border-color: #b9d8ff;
+  }
+
+  /* 公告区域在内容较少时也维持稳定的桌面侧栏比例。 */
+  .desktop-dashboard .sidebar-card .card-body {
+    min-height: 104px;
+  }
+
+  .desktop-dashboard .notice-text {
+    color: #334155 !important;
+  }
+
+  .desktop-dashboard .notice-date {
+    color: #a7b1c0 !important;
+  }
+}
