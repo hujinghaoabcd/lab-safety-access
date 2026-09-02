@@ -188,15 +188,15 @@ onMounted(async () => {
   grid-template-columns: repeat(3, 1fr);
   background: #fff;
   border: 1px solid #e5eaf2;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .summary-item {
-  min-height: 88px;
-  padding: 16px 24px;
+  min-height: 62px;
+  padding: 10px 20px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   border-right: 1px solid #e5eaf2;
 }
 
@@ -205,9 +205,9 @@ onMounted(async () => {
 }
 
 .summary-icon {
-  width: 44px;
-  height: 44px;
-  flex: 0 0 44px;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -215,7 +215,7 @@ onMounted(async () => {
 }
 
 .summary-icon .el-icon {
-  font-size: 22px;
+  font-size: 18px;
 }
 
 .summary-icon.primary { background: #0475fa; }
@@ -224,18 +224,20 @@ onMounted(async () => {
 
 .summary-copy {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
 }
 
 .summary-label {
   font-size: 13px;
   color: #8793a5;
+  white-space: nowrap;
 }
 
 .summary-copy strong {
-  font-size: 25px;
-  line-height: 1.15;
+  font-size: 23px;
+  line-height: 1;
   color: #1f2d3d;
 }
 
@@ -398,7 +400,11 @@ onMounted(async () => {
 
 @media (max-width: 1100px) {
   .summary-item {
-    padding: 14px 18px;
+    padding: 9px 14px;
+  }
+
+  .summary-copy {
+    gap: 7px;
   }
 
   .panel-toolbar {
