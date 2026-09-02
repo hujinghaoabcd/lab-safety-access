@@ -232,8 +232,7 @@ const handleCertificatePageSizeChange = (size: number) => {
               type="danger" 
               link 
               size="small" 
-              @click="handleRevoke(row)"
-            >
+              @click="handleRevoke(row)">
               撤销
             </el-button>
             <el-button 
@@ -241,8 +240,7 @@ const handleCertificatePageSizeChange = (size: number) => {
               type="success" 
               link 
               size="small" 
-              @click="handleReissue(row)"
-            >
+              @click="handleReissue(row)">
               重新发放
             </el-button>
           </template>
@@ -265,8 +263,46 @@ const handleCertificatePageSizeChange = (size: number) => {
     <el-dialog v-model="showCertDetail" title="证书详情" width="500px">
       <div v-if="currentCert" class="cert-detail">
         <div class="cert-detail-header">
-          <el-icon class="cert-icon"><Medal /></el-icon>
+          <svg class="cert-emblem" viewBox="0 0 144 96" aria-hidden="true">
+            <defs>
+              <linearGradient id="certGold" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#8f6b24" />
+                <stop offset="0.45" stop-color="#d3ad57" />
+                <stop offset="1" stop-color="#8a6420" />
+              </linearGradient>
+              <linearGradient id="certBlue" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#2f6bc6" />
+                <stop offset="1" stop-color="#174b96" />
+              </linearGradient>
+            </defs>
+
+            <g class="laurel" fill="none" stroke="url(#certGold)" stroke-width="2.2" stroke-linecap="round">
+              <path d="M43 77C22 68 17 45 29 26" />
+              <path d="M101 77c21-9 26-32 14-51" />
+            </g>
+            <g fill="url(#certGold)">
+              <ellipse cx="29" cy="64" rx="3" ry="8" transform="rotate(-47 29 64)" />
+              <ellipse cx="24" cy="52" rx="3" ry="8" transform="rotate(-29 24 52)" />
+              <ellipse cx="25" cy="39" rx="3" ry="8" transform="rotate(-10 25 39)" />
+              <ellipse cx="34" cy="70" rx="3" ry="8" transform="rotate(-66 34 70)" />
+              <ellipse cx="115" cy="64" rx="3" ry="8" transform="rotate(47 115 64)" />
+              <ellipse cx="120" cy="52" rx="3" ry="8" transform="rotate(29 120 52)" />
+              <ellipse cx="119" cy="39" rx="3" ry="8" transform="rotate(10 119 39)" />
+              <ellipse cx="110" cy="70" rx="3" ry="8" transform="rotate(66 110 70)" />
+            </g>
+
+            <path d="M57 65 49 91l23-9 23 9-8-26Z" fill="#244f91" opacity=".96" />
+            <path d="M61 66 57 84l15-6 15 6-4-18Z" fill="#d9b35f" opacity=".92" />
+
+            <circle cx="72" cy="45" r="28" fill="#fffdf8" stroke="url(#certGold)" stroke-width="3" />
+            <circle cx="72" cy="45" r="22" fill="url(#certBlue)" stroke="#e2c171" stroke-width="1.6" />
+            <circle cx="72" cy="45" r="17" fill="none" stroke="rgba(255,255,255,.42)" stroke-width="1" />
+            <path d="m72 30 4.1 8.4 9.2 1.3-6.7 6.5 1.6 9.1-8.2-4.3-8.2 4.3 1.6-9.1-6.7-6.5 9.2-1.3Z" fill="#f5d786" />
+            <circle cx="72" cy="45" r="3.1" fill="#fff7d8" />
+          </svg>
+          <div class="cert-kicker">CERTIFICATE OF ACHIEVEMENT</div>
           <h3>实验室安全教育考试合格证书</h3>
+          <div class="cert-title-rule"><span></span></div>
         </div>
         <el-descriptions :column="1" border>
           <el-descriptions-item label="证书编号">{{ currentCert.certificateNo }}</el-descriptions-item>
@@ -312,18 +348,55 @@ const handleCertificatePageSizeChange = (size: number) => {
   .cert-detail {
     .cert-detail-header {
       text-align: center;
-      margin-bottom: 20px;
-      
-      .cert-icon {
-        display: inline-flex;
-        font-size: 42px;
-        color: #b08d3a;
-        margin-bottom: 10px;
+      margin-bottom: 22px;
+      padding-top: 2px;
+
+      .cert-emblem {
+        display: block;
+        width: 104px;
+        height: 70px;
+        margin: 0 auto 6px;
+        filter: drop-shadow(0 2px 2px rgba(70, 49, 13, 0.12));
+      }
+
+      .cert-kicker {
+        margin-bottom: 5px;
+        color: #9b7a37;
+        font-size: 8px;
+        font-weight: 600;
+        letter-spacing: 1.7px;
       }
       
       h3 {
         margin: 0;
-        color: #303133;
+        color: #2b2f36;
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+
+      .cert-title-rule {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 10px;
+
+        &::before,
+        &::after {
+          content: '';
+          width: 54px;
+          height: 1px;
+          background: #d8c291;
+        }
+
+        span {
+          width: 5px;
+          height: 5px;
+          margin: 0 9px;
+          border: 1px solid #b99750;
+          transform: rotate(45deg);
+          background: #fff;
+        }
       }
     }
   }
