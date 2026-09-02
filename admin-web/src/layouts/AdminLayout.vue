@@ -27,8 +27,8 @@ onMounted(async () => {
 
 const menuItems = [
   { path: '/dashboard', title: '首页', icon: 'Odometer' },
-  { path: '/users', title: '用户管理', icon: 'User' },
   { path: '/management', title: '班级管理', icon: 'OfficeBuilding' },
+  { path: '/users', title: '用户管理', icon: 'User' },
   { path: '/questions', title: '题库管理', icon: 'Collection' },
   { path: '/exams', title: '考试管理', icon: 'Document' },
   { path: '/records', title: '考试记录', icon: 'Tickets' },
@@ -273,4 +273,3 @@ const handleLogout = async () => {
   height: 100%;
 }
 </style>
-
