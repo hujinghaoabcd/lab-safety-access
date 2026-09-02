@@ -1,16 +1,5 @@
 <template>
   <div class="desktop-profile">
-    <div class="page-heading">
-      <div>
-        <h1>个人中心</h1>
-        <p>查看个人信息、账户状态与学习考试数据</p>
-      </div>
-      <div class="heading-actions">
-        <el-button @click="openPasswordPopup">修改密码</el-button>
-        <el-button type="primary" @click="openEdit">编辑资料</el-button>
-      </div>
-    </div>
-
     <div class="profile-layout">
       <section class="identity-panel">
         <div class="avatar-wrap" @click="handleAvatarClick">
@@ -33,7 +22,14 @@
       </section>
 
       <section class="detail-panel">
-        <div class="panel-title">基本信息</div>
+        <div class="panel-toolbar">
+          <div class="panel-title">基本信息</div>
+          <div class="panel-actions">
+            <el-button size="small" @click="openPasswordPopup">修改密码</el-button>
+            <el-button type="primary" size="small" @click="openEdit">编辑资料</el-button>
+          </div>
+        </div>
+
         <div class="detail-table">
           <div class="detail-row">
             <div class="detail-label"><el-icon><User /></el-icon>姓名</div>
@@ -55,50 +51,52 @@
       </section>
     </div>
 
-    <section class="stats-panel">
-      <div class="panel-title">学习与考试概况</div>
-      <div class="stats-grid">
-        <div class="stat-item">
-          <div class="stat-icon primary"><el-icon><Document /></el-icon></div>
-          <div>
-            <div class="stat-value">{{ stats.examCount }}</div>
-            <div class="stat-name">考试次数</div>
+    <div class="lower-layout">
+      <section class="stats-panel">
+        <div class="panel-title">学习与考试概况</div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-icon primary"><el-icon><Document /></el-icon></div>
+            <div class="stat-copy">
+              <div class="stat-name">考试次数</div>
+              <div class="stat-value">{{ stats.examCount }}</div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon success"><el-icon><CircleCheck /></el-icon></div>
+            <div class="stat-copy">
+              <div class="stat-name">通过次数</div>
+              <div class="stat-value">{{ stats.passCount }}</div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon warning"><el-icon><Trophy /></el-icon></div>
+            <div class="stat-copy">
+              <div class="stat-name">合格证书</div>
+              <div class="stat-value">{{ stats.certCount }}</div>
+            </div>
           </div>
         </div>
-        <div class="stat-item">
-          <div class="stat-icon success"><el-icon><CircleCheck /></el-icon></div>
-          <div>
-            <div class="stat-value">{{ stats.passCount }}</div>
-            <div class="stat-name">通过次数</div>
-          </div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-icon warning"><el-icon><Trophy /></el-icon></div>
-          <div>
-            <div class="stat-value">{{ stats.certCount }}</div>
-            <div class="stat-name">合格证书</div>
-          </div>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="quick-panel">
-      <div class="panel-title">快捷功能</div>
-      <div class="quick-grid">
-        <button v-for="item in menuItems" :key="item.path" class="quick-item" @click="navigateTo(item.path)">
-          <span class="quick-icon" :style="{ color: item.color }">
-            <el-icon><component :is="getMenuIcon(item.icon)" /></el-icon>
-          </span>
-          <span class="quick-copy">
-            <strong>{{ item.title }}</strong>
-            <small>{{ item.desc }}</small>
-          </span>
-          <span class="quick-arrow">›</span>
-        </button>
-      </div>
-    </section>
+      <section class="quick-panel">
+        <div class="panel-title">快捷功能</div>
+        <div class="quick-grid">
+          <button v-for="item in menuItems" :key="item.path" class="quick-item" @click="navigateTo(item.path)">
+            <span class="quick-icon" :style="{ color: item.color }">
+              <el-icon><component :is="getMenuIcon(item.icon)" /></el-icon>
+            </span>
+            <span class="quick-copy">
+              <strong>{{ item.title }}</strong>
+              <small>{{ item.desc }}</small>
+            </span>
+            <span class="quick-arrow">›</span>
+          </button>
+        </div>
+      </section>
+    </div>
 
-    <el-dialog v-model="showEditPopup" title="编辑资料" width="480px">
+    <el-dialog class="profile-dialog" v-model="showEditPopup" title="编辑资料" width="480px">
       <el-form :model="editForm" label-width="80px">
         <el-form-item label="姓名">
           <el-input v-model="editForm.name" placeholder="请输入姓名" />
@@ -119,7 +117,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="showPasswordPopup" title="修改密码" width="480px">
+    <el-dialog class="profile-dialog" v-model="showPasswordPopup" title="修改密码" width="480px">
       <el-form :model="passwordForm" label-width="80px">
         <el-form-item label="旧密码">
           <el-input v-model="passwordForm.oldPassword" type="password" placeholder="请输入旧密码" show-password />
@@ -221,7 +219,12 @@ const handleAvatarChange = async (event: Event) => {
 }
 
 const openEdit = () => {
-  Object.assign(editForm, { name: userInfo.name, phone: userInfo.phone, email: userInfo.email, department: userInfo.department })
+  Object.assign(editForm, {
+    name: userInfo.name,
+    phone: userInfo.phone,
+    email: userInfo.email,
+    department: userInfo.department
+  })
   showEditPopup.value = true
 }
 
@@ -296,35 +299,11 @@ onMounted(async () => {
 
 <style scoped>
 .desktop-profile {
+  min-height: calc(100vh - 116px);
   padding: 0;
   color: #1f2937;
-}
-
-.page-heading {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding: 8px 0 20px;
-  border-bottom: 1px solid #dfe4ea;
-  margin-bottom: 20px;
-}
-
-.page-heading h1 {
-  margin: 0 0 6px;
-  font-size: 26px;
-  font-weight: 700;
-  color: #172033;
-}
-
-.page-heading p {
-  margin: 0;
-  font-size: 14px;
-  color: #8a96a8;
-}
-
-.heading-actions {
-  display: flex;
-  gap: 10px;
+  flex-direction: column;
 }
 
 .profile-layout {
@@ -348,6 +327,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
@@ -388,14 +368,27 @@ onMounted(async () => {
 }
 
 .detail-panel {
-  padding: 22px 24px 24px;
+  padding: 20px 24px 24px;
+}
+
+.panel-toolbar {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
 }
 
 .panel-title {
   font-size: 16px;
   font-weight: 700;
   color: #172033;
-  margin-bottom: 16px;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .detail-table {
@@ -435,34 +428,48 @@ onMounted(async () => {
   font-size: 14px;
 }
 
+.lower-layout {
+  flex: 1;
+  min-height: 280px;
+  display: grid;
+  grid-template-columns: minmax(330px, 0.82fr) minmax(0, 1.18fr);
+  gap: 16px;
+}
+
 .stats-panel,
 .quick-panel {
-  padding: 20px 24px;
+  min-height: 280px;
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.stats-panel > .panel-title,
+.quick-panel > .panel-title {
   margin-bottom: 16px;
 }
 
 .stats-grid {
+  flex: 1;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  border: 1px solid #e5eaf0;
+  grid-template-rows: repeat(3, minmax(72px, 1fr));
+  border-top: 1px solid #e5eaf0;
+  border-left: 1px solid #e5eaf0;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
   gap: 16px;
-  min-height: 94px;
-  padding: 16px 22px;
+  padding: 14px 18px;
   border-right: 1px solid #e5eaf0;
-}
-
-.stat-item:last-child {
-  border-right: none;
+  border-bottom: 1px solid #e5eaf0;
 }
 
 .stat-icon {
   width: 42px;
   height: 42px;
+  flex: 0 0 42px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -474,22 +481,32 @@ onMounted(async () => {
 .stat-icon.success { color: #3a9b54; background: #f2faf4; }
 .stat-icon.warning { color: #d99721; background: #fff8ea; }
 
+.stat-copy {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+}
+
 .stat-value {
-  font-size: 26px;
+  font-size: 27px;
   font-weight: 700;
   line-height: 1;
   color: #172033;
-  margin-bottom: 7px;
 }
 
 .stat-name {
-  color: #8792a3;
-  font-size: 13px;
+  color: #687386;
+  font-size: 14px;
 }
 
 .quick-grid {
+  flex: 1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(96px, 1fr));
   border-top: 1px solid #e5eaf0;
   border-left: 1px solid #e5eaf0;
 }
@@ -500,8 +517,7 @@ onMounted(async () => {
   border-right: 1px solid #e5eaf0;
   border-bottom: 1px solid #e5eaf0;
   background: #fff;
-  min-height: 82px;
-  padding: 15px 18px;
+  padding: 18px 20px;
   display: flex;
   align-items: center;
   text-align: left;
@@ -513,15 +529,15 @@ onMounted(async () => {
 }
 
 .quick-icon {
-  width: 36px;
-  font-size: 22px;
-  flex: 0 0 36px;
+  width: 38px;
+  font-size: 23px;
+  flex: 0 0 38px;
 }
 
 .quick-copy {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   min-width: 0;
   flex: 1;
 }
@@ -543,24 +559,51 @@ onMounted(async () => {
   line-height: 1;
 }
 
-:deep(.el-dialog) {
+:deep(.profile-dialog.el-dialog) {
   border-radius: 0 !important;
+  overflow: hidden;
 }
 
-:deep(.el-dialog__header) {
-  border-bottom: 1px solid #e5eaf0;
-  margin-right: 0;
-  padding: 18px 20px;
+:deep(.profile-dialog .el-dialog__header) {
+  min-height: 52px;
+  margin: 0;
+  padding: 15px 20px;
+  background: #eef4fb;
+  border-bottom: 1px solid #dbe4ee;
+  border-left: 4px solid #0475FA;
 }
 
-:deep(.el-dialog__footer) {
-  border-top: 1px solid #e5eaf0;
+:deep(.profile-dialog .el-dialog__title) {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 700;
+  color: #253044;
+}
+
+:deep(.profile-dialog .el-dialog__headerbtn) {
+  top: 0;
+  right: 0;
+  width: 52px;
+  height: 52px;
+}
+
+:deep(.profile-dialog .el-dialog__body) {
+  padding: 24px 24px 12px;
+}
+
+:deep(.profile-dialog .el-dialog__footer) {
   padding: 14px 20px;
+  background: #f8fafc;
+  border-top: 1px solid #e5eaf0;
 }
 
 @media (max-width: 1100px) {
   .profile-layout {
     grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .lower-layout {
+    grid-template-columns: 1fr;
   }
 }
 </style>
