@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { dbQuery, dbGet, withTransaction } = require('../database/db');
 const { success, error } = require('../utils/response');
+const { formatAppDate, utcDateTimeNow } = require('../utils/time');
 const {
   ExamAccessError,
   getMaxExamAttempts,
@@ -257,7 +258,8 @@ const submitExam = async (req, res) => {
       const wrongCount = questions.length - correctCount;
       const passed = score >= Number(exam.pass_score);
       const status = passed ? '通过' : '未通过';
-      const submitTime = new Date().toISOString().replace('T', ' ').slice(0, 19);
+      // 数据库存 UTC，API 输出层统一转换为 Asia/Shanghai。
+      const submitTime = utcDateTimeNow();
 
       const insertResult = await tx.run(
         `INSERT INTO exam_records
@@ -286,9 +288,9 @@ const submitExam = async (req, res) => {
             ? (score / Number(exam.total_score)) * 100
             : 0;
           const grade = percentage >= 90 ? '优秀' : percentage >= 80 ? '良好' : '及格';
-          const year = new Date().getFullYear();
+          const issueDate = formatAppDate();
+          const year = issueDate.slice(0, 4);
           const certificateNo = `UCAS-LS-${year}-${crypto.randomBytes(8).toString('hex').toUpperCase()}`;
-          const issueDate = submitTime.slice(0, 10);
 
           await tx.run(
             `INSERT INTO certificates
