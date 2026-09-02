@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="默认猫咪头像">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d9f0e4"/>
+      <stop offset="1" stop-color="#8fcdb2"/>
+    </linearGradient>
+    <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4d5964"/>
+      <stop offset="1" stop-color="#242d35"/>
+    </linearGradient>
+  </defs>
+  <circle cx="80" cy="80" r="80" fill="url(#bg)"/>
+  <path d="M42 58 28 31 54 43c8-5 17-8 26-8s18 3 26 8l26-12-14 27c6 9 9 20 9 32 0 30-21 49-47 49S33 120 33 90c0-12 3-23 9-32Z" fill="url(#fur)"/>
+  <path d="M37 43 31 34l18 8-8 10Z" fill="#d8a6aa"/>
+  <path d="m123 43 6-9-18 8 8 10Z" fill="#d8a6aa"/>
+  <path d="M53 74c9-7 18-7 27 0" fill="none" stroke="#d7e6dc" stroke-width="5" stroke-linecap="round"/>
+  <path d="M80 74c9-7 18-7 27 0" fill="none" stroke="#d7e6dc" stroke-width="5" stroke-linecap="round"/>
+  <ellipse cx="62" cy="83" rx="7" ry="9" fill="#d8d85a"/>
+  <ellipse cx="98" cy="83" rx="7" ry="9" fill="#d8d85a"/>
+  <ellipse cx="62" cy="84" rx="2.2" ry="6" fill="#172027"/>
+  <ellipse cx="98" cy="84" rx="2.2" ry="6" fill="#172027"/>
+  <path d="M74 98c4-4 8-4 12 0-1 5-3 7-6 7s-5-2-6-7Z" fill="#dfa0a6"/>
+  <path d="M80 105c-4 6-9 7-14 3m14-3c4 6 9 7 14 3" fill="none" stroke="#eef5f1" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M49 100 20 95m29 13-28 4m90-12 29-5m-29 13 28 4" fill="none" stroke="#eef5f1" stroke-width="2" stroke-linecap="round" opacity=".9"/>
+  <path d="M57 55c7-4 14-6 23-6s16 2 23 6" fill="none" stroke="#707d86" stroke-width="4" stroke-linecap="round" opacity=".8"/>
+</svg>
