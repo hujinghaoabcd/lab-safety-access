@@ -1,0 +1,66 @@
+/* 桌面端合格证书列表的可读性微调。
+ * 仅作用于 desktop-certificate，避免影响移动端和其他 Element Plus 页面。
+ */
+.desktop-certificate .certificate-panel .table-head,
+.desktop-certificate .certificate-panel .certificate-row {
+  grid-template-columns: minmax(520px, 2fr) 120px 120px 140px 160px !important;
+}
+
+.desktop-certificate .certificate-panel .certificate-row {
+  min-height: 98px !important;
+}
+
+.desktop-certificate .certificate-main {
+  padding-right: 34px !important;
+}
+
+.desktop-certificate .certificate-copy {
+  padding: 4px 0 !important;
+}
+
+.desktop-certificate .certificate-title {
+  font-size: 15px !important;
+  line-height: 1.4 !important;
+  margin-bottom: 10px !important;
+}
+
+.desktop-certificate .certificate-meta {
+  gap: 10px !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+.desktop-certificate .certificate-exam {
+  max-width: 210px !important;
+  color: #59677a !important;
+}
+
+.desktop-certificate .certificate-no {
+  min-width: 0 !important;
+  color: #738095 !important;
+  font-size: 13px !important;
+}
+
+.desktop-certificate .meta-sep {
+  color: #b4bdc9 !important;
+}
+
+.desktop-certificate .certificate-row .el-tag {
+  min-width: 54px !important;
+  height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 14px !important;
+  line-height: 28px !important;
+  justify-content: center !important;
+}
+
+@media (max-width: 1200px) {
+  .desktop-certificate .certificate-panel .table-head,
+  .desktop-certificate .certificate-panel .certificate-row {
+    grid-template-columns: minmax(400px, 1.65fr) 105px 105px 125px 150px !important;
+  }
+
+  .desktop-certificate .certificate-exam {
+    max-width: 150px !important;
+  }
+}
