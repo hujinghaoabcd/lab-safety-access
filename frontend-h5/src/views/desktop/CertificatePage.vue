@@ -1,15 +1,12 @@
 <template>
   <div class="desktop-certificate">
-    <div class="page-heading">
-      <div>
-        <h1>合格证书</h1>
-        <p>查看和下载已获得的实验室安全教育考试合格证书</p>
-      </div>
-      <div class="certificate-count">共 {{ certificates.length }} 张证书</div>
-    </div>
-
     <section class="certificate-panel">
       <template v-if="certificates.length > 0">
+        <div class="panel-toolbar">
+          <div class="panel-title">证书列表</div>
+          <div class="certificate-count">共 {{ certificates.length }} 张</div>
+        </div>
+
         <div class="table-head">
           <div>证书信息</div>
           <div>考试成绩</div>
@@ -28,8 +25,11 @@
               <div class="cert-mark"><el-icon><Medal /></el-icon></div>
               <div class="certificate-copy">
                 <div class="certificate-title">实验室安全教育考试合格证书</div>
-                <div class="certificate-exam">{{ cert.examName }}</div>
-                <div class="certificate-no">证书编号：{{ cert.certificateNo }}</div>
+                <div class="certificate-meta">
+                  <span class="certificate-exam">{{ cert.examName }}</span>
+                  <span class="meta-sep">·</span>
+                  <span class="certificate-no">编号：{{ cert.certificateNo }}</span>
+                </div>
               </div>
             </div>
 
@@ -46,8 +46,8 @@
             <div class="date-cell">{{ cert.issueDate }}</div>
 
             <div class="action-cell">
-              <el-button type="primary" link @click="viewCertificate(cert)">预览</el-button>
-              <el-button link @click="viewCertificate(cert)">下载</el-button>
+              <el-button size="small" @click="viewCertificate(cert)">预览</el-button>
+              <el-button type="primary" size="small" @click="downloadCertificate(cert)">下载</el-button>
             </div>
           </div>
         </div>
@@ -70,7 +70,20 @@
       </div>
     </section>
 
-    <el-dialog v-model="showPreview" title="证书预览" width="900px" :close-on-click-modal="false">
+    <el-dialog
+      class="certificate-dialog"
+      v-model="showPreview"
+      width="860px"
+      :show-close="false"
+      :close-on-click-modal="false"
+    >
+      <template #header="{ close }">
+        <div class="dialog-titlebar">
+          <div class="dialog-title">证书预览</div>
+          <button class="dialog-close" type="button" aria-label="关闭" @click="close">×</button>
+        </div>
+      </template>
+
       <div class="cert-preview-content">
         <div
           v-if="selectedCert"
@@ -153,6 +166,13 @@ const pagedCertificates = computed(() => {
 const viewCertificate = (cert: Certificate) => {
   selectedCert.value = cert
   showPreview.value = true
+}
+
+const downloadCertificate = async (cert: Certificate) => {
+  selectedCert.value = cert
+  showPreview.value = true
+  await nextTick()
+  await saveCertificate()
 }
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -246,26 +266,24 @@ onMounted(async () => {
   color: #1f2937;
 }
 
-.page-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding: 8px 0 20px;
-  border-bottom: 1px solid #dfe4ea;
-  margin-bottom: 20px;
+.certificate-panel {
+  background: #fff;
+  border: 1px solid #e2e7ed;
 }
 
-.page-heading h1 {
-  margin: 0 0 6px;
-  font-size: 26px;
+.panel-toolbar {
+  min-height: 52px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e5eaf0;
+}
+
+.panel-title {
+  font-size: 16px;
   font-weight: 700;
   color: #172033;
-}
-
-.page-heading p {
-  margin: 0;
-  font-size: 14px;
-  color: #8a96a8;
 }
 
 .certificate-count {
@@ -273,22 +291,17 @@ onMounted(async () => {
   color: #8a96a8;
 }
 
-.certificate-panel {
-  background: #fff;
-  border: 1px solid #e2e7ed;
-}
-
 .table-head,
 .certificate-row {
   display: grid;
-  grid-template-columns: minmax(430px, 1.8fr) 130px 120px 150px 130px;
+  grid-template-columns: minmax(460px, 1.9fr) 120px 110px 140px 160px;
   align-items: center;
 }
 
 .table-head {
-  min-height: 48px;
+  min-height: 44px;
   padding: 0 20px;
-  background: #f5f7fa;
+  background: #f6f8fa;
   border-bottom: 1px solid #e2e7ed;
   color: #6f7b8d;
   font-size: 13px;
@@ -296,7 +309,7 @@ onMounted(async () => {
 }
 
 .certificate-row {
-  min-height: 112px;
+  min-height: 88px;
   padding: 0 20px;
   border-bottom: 1px solid #edf0f4;
 }
@@ -306,7 +319,7 @@ onMounted(async () => {
 }
 
 .certificate-row:hover {
-  background: #fafcff;
+  background: #f8fbff;
 }
 
 .certificate-main {
@@ -317,17 +330,16 @@ onMounted(async () => {
 }
 
 .cert-mark {
-  width: 46px;
-  height: 46px;
-  flex: 0 0 46px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e5c679;
-  background: #fff9e9;
-  color: #c98b17;
-  font-size: 22px;
-  margin-right: 16px;
+  background: #fff5dc;
+  color: #d79518;
+  font-size: 20px;
+  margin-right: 14px;
 }
 
 .certificate-copy {
@@ -335,27 +347,39 @@ onMounted(async () => {
 }
 
 .certificate-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: #243044;
   margin-bottom: 7px;
 }
 
-.certificate-exam {
-  font-size: 13px;
-  color: #5f6b7a;
-  margin-bottom: 7px;
+.certificate-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  color: #8b96a7;
+  font-size: 12px;
+}
+
+.certificate-exam,
+.certificate-no {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.certificate-exam {
+  color: #667386;
+  max-width: 180px;
+}
+
 .certificate-no {
-  font-size: 12px;
-  color: #9aa4b3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+}
+
+.meta-sep {
+  color: #c1c8d1;
 }
 
 .score-cell {
@@ -381,25 +405,89 @@ onMounted(async () => {
 .action-cell {
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.action-cell :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
+
+.action-cell :deep(.el-button) {
+  min-width: 56px;
+  height: 34px;
+  padding: 0 14px;
 }
 
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
-  padding: 16px 20px;
+  padding: 12px 20px;
   border-top: 1px solid #e2e7ed;
 }
 
 .empty-wrap {
-  min-height: 360px;
+  min-height: 260px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+:deep(.certificate-dialog.el-dialog) {
+  padding: 0 !important;
+  border-radius: 0 !important;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(19, 39, 70, 0.24);
+}
+
+:deep(.certificate-dialog .el-dialog__header) {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.dialog-titlebar {
+  height: 50px;
+  padding: 0 12px 0 18px;
+  background: #0475FA;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dialog-title {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.dialog-close {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 25px;
+  line-height: 30px;
+  cursor: pointer;
+}
+
+.dialog-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+:deep(.certificate-dialog .el-dialog__body) {
+  padding: 14px !important;
+  background: #f3f5f7;
+}
+
+:deep(.certificate-dialog .el-dialog__footer) {
+  padding: 12px 18px !important;
+  background: #fff;
+  border-top: none;
+}
+
 .cert-preview-content {
-  padding: 18px;
-  background: #e8e0c8;
   display: flex;
   justify-content: center;
 }
@@ -522,25 +610,10 @@ onMounted(async () => {
   font-family: "Times New Roman", "Songti SC", "STSong", "SimSun", serif;
 }
 
-:deep(.el-dialog) {
-  border-radius: 0 !important;
-}
-
-:deep(.el-dialog__header) {
-  margin-right: 0;
-  padding: 18px 20px;
-  border-bottom: 1px solid #e5eaf0;
-}
-
-:deep(.el-dialog__footer) {
-  padding: 14px 20px;
-  border-top: 1px solid #e5eaf0;
-}
-
 @media (max-width: 1200px) {
   .table-head,
   .certificate-row {
-    grid-template-columns: minmax(360px, 1.6fr) 110px 100px 130px 110px;
+    grid-template-columns: minmax(360px, 1.6fr) 105px 95px 125px 150px;
   }
 }
 </style>
