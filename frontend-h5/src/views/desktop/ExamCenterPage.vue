@@ -1,95 +1,123 @@
 <template>
   <div class="desktop-exam-center">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-left">
-        <div class="header-icon">
-          <el-icon><EditPen /></el-icon>
+    <section class="exam-section">
+      <div class="section-toolbar">
+        <div class="section-heading">
+          <strong>考试列表</strong>
+          <span>查看当前可参加及已完成的考试</span>
         </div>
-        <div class="header-info">
-          <h1>考试中心</h1>
-          <p>在线考试与测评 · 完成安全考核</p>
-        </div>
-      </div>
-      <div class="header-stats">
-        <div class="stat-item">
-          <span class="stat-num">{{ examList.length }}</span>
-          <span class="stat-text">总考试</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-num success">{{ examList.filter(e => e.status === 'available').length }}</span>
-          <span class="stat-text">可参加</span>
-        </div>
-      </div>
-    </div>
 
-    <!-- 考试列表 -->
-    <div class="exam-section">
-      <div class="section-title">考试列表</div>
-      
-      <el-empty v-if="!loading && !examList.length" description="暂无可参加的考试" />
-
-      <div v-else class="exam-list">
-        <div v-for="item in examList" :key="item.id" class="exam-card">
-          <div class="exam-header">
-            <div class="exam-title">{{ item.name }}</div>
-            <el-tag :type="getStatusType(item.status)" size="small">
-              {{ getStatusText(item.status) }}
-            </el-tag>
+        <div class="summary-strip">
+          <div class="summary-item">
+            <span>全部</span>
+            <strong>{{ totalCount }}</strong>
           </div>
-          
-          <div class="exam-desc">{{ item.description || '请仔细阅读考试说明，认真作答每一道题目。' }}</div>
-          
-          <div class="exam-meta">
-            <span class="meta-item">
-              <el-icon><Clock /></el-icon>
-              {{ item.duration }}分钟
-            </span>
-            <span class="meta-item">
-              <el-icon><Document /></el-icon>
-              {{ item.questionCount }}题
-            </span>
-            <span class="meta-item">
-              <el-icon><Trophy /></el-icon>
-              {{ item.passScore }}分及格
-            </span>
+          <div class="summary-item available">
+            <span>可参加</span>
+            <strong>{{ availableCount }}</strong>
           </div>
-
-          <el-button
-            v-if="item.status === 'available'"
-            type="primary"
-            class="exam-btn"
-            @click="startExam(item)"
-          >
-            进入考试
-          </el-button>
-          <el-button
-            v-else-if="item.status === 'passed'"
-            type="success"
-            class="exam-btn"
-            disabled
-          >
-            已通过
-          </el-button>
-          <el-button
-            v-else
-            class="exam-btn"
-            disabled
-          >
-            暂不可考
-          </el-button>
+          <div class="summary-item passed">
+            <span>已通过</span>
+            <strong>{{ passedCount }}</strong>
+          </div>
         </div>
       </div>
-    </div>
+
+      <div v-if="loading" class="loading-state">加载中...</div>
+
+      <div v-else-if="!examList.length" class="empty-state">
+        <div class="empty-icon"><el-icon><Document /></el-icon></div>
+        <div class="empty-title">暂无考试</div>
+        <div class="empty-desc">当前没有可显示的考试安排</div>
+      </div>
+
+      <template v-else>
+        <div class="exam-list">
+          <article v-for="item in pagedExams" :key="item.id" class="exam-card">
+            <div class="exam-card-head">
+              <div class="exam-title-wrap">
+                <span class="exam-icon"><el-icon><EditPen /></el-icon></span>
+                <div class="title-content">
+                  <div class="exam-title">{{ item.name }}</div>
+                  <div class="exam-category">{{ item.category || '实验室安全考试' }}</div>
+                </div>
+              </div>
+
+              <el-tag :type="getStatusType(item.status)" effect="plain">
+                {{ getStatusText(item.status) }}
+              </el-tag>
+            </div>
+
+            <div class="exam-desc">
+              {{ item.description || '请仔细阅读考试说明，认真完成本次安全考核。' }}
+            </div>
+
+            <div class="exam-meta">
+              <div class="meta-item">
+                <el-icon><Clock /></el-icon>
+                <span>时长</span>
+                <strong>{{ item.duration }} 分钟</strong>
+              </div>
+              <div class="meta-item">
+                <el-icon><Document /></el-icon>
+                <span>题量</span>
+                <strong>{{ item.questionCount }} 题</strong>
+              </div>
+              <div class="meta-item">
+                <el-icon><Trophy /></el-icon>
+                <span>及格</span>
+                <strong>{{ item.passScore }} 分</strong>
+              </div>
+            </div>
+
+            <div class="exam-card-foot">
+              <div class="attempt-info">
+                <span v-if="item.maxAttempts">已考 {{ item.attempts || 0 }} / {{ item.maxAttempts }} 次</span>
+                <span v-else>总分 {{ item.totalScore }} 分</span>
+              </div>
+
+              <el-button
+                v-if="item.status === 'available'"
+                type="primary"
+                class="exam-action"
+                @click="startExam(item)"
+              >
+                进入考试
+              </el-button>
+              <el-button
+                v-else-if="item.status === 'passed'"
+                type="success"
+                class="exam-action"
+                disabled
+              >
+                已通过
+              </el-button>
+              <el-button v-else class="exam-action" disabled>
+                暂不可考
+              </el-button>
+            </div>
+          </article>
+        </div>
+
+        <div v-if="examList.length > pageSize" class="pagination-row">
+          <el-pagination
+            v-model:current-page="currentPage"
+            :page-size="pageSize"
+            :total="examList.length"
+            layout="total, prev, pager, next"
+            background
+          />
+        </div>
+      </template>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { EditPen, Document, Clock, Trophy } from '@element-plus/icons-vue'
+import { Clock, Document, EditPen, Trophy } from '@element-plus/icons-vue'
 import { getExamList } from '@/api'
 
 const router = useRouter()
@@ -97,16 +125,29 @@ const router = useRouter()
 interface ExamItem {
   id: number | string
   name: string
+  category: string
   description: string
   duration: number
   questionCount: number
   passScore: number
   totalScore: number
+  attempts: number
+  maxAttempts: number
   status: 'available' | 'not_available' | 'passed'
 }
 
 const examList = ref<ExamItem[]>([])
 const loading = ref(false)
+const currentPage = ref(1)
+const pageSize = 9
+
+const totalCount = computed(() => examList.value.length)
+const availableCount = computed(() => examList.value.filter(item => item.status === 'available').length)
+const passedCount = computed(() => examList.value.filter(item => item.status === 'passed').length)
+const pagedExams = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return examList.value.slice(start, start + pageSize)
+})
 
 const getStatusText = (status: string) => {
   const map: Record<string, string> = {
@@ -139,21 +180,24 @@ onMounted(async () => {
     loading.value = true
     const resp: any = await getExamList()
     const data = resp?.data ?? resp
-    
+
     const list: any[] = Array.isArray(data?.list)
       ? data.list
       : Array.isArray(data)
         ? data
         : []
-    
+
     examList.value = list.map((item: any) => ({
       id: item.id,
       name: item.name,
-      description: item.description || '实验室安全考试',
-      duration: item.duration,
-      questionCount: item.questionCount,
-      passScore: item.passScore,
-      totalScore: item.totalScore,
+      category: item.category || '',
+      description: item.description || '',
+      duration: Number(item.duration || 0),
+      questionCount: Number(item.questionCount || 0),
+      passScore: Number(item.passScore || 0),
+      totalScore: Number(item.totalScore || 0),
+      attempts: Number(item.attempts || 0),
+      maxAttempts: Number(item.maxAttempts || 0),
       status: item.status
     }))
   } catch (err: any) {
@@ -170,168 +214,290 @@ onMounted(async () => {
   padding: 0;
 }
 
-/* 页面头部 */
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px;
+.exam-section {
   background: #fff;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e3e8ef;
 }
 
-.header-left {
+.section-toolbar {
+  min-height: 62px;
+  padding: 0 20px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid #e5eaf2;
 }
 
-.header-icon {
-  width: 48px;
-  height: 48px;
-  background: #0475FA;
-  border-radius: 8px;
+.section-heading {
   display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.section-heading strong {
+  font-size: 17px;
+  color: #1f2d3d;
+}
+
+.section-heading span {
+  font-size: 12px;
+  color: #98a3b3;
+}
+
+.summary-strip {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.summary-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  color: #8a97a8;
+}
+
+.summary-item strong {
+  font-size: 17px;
+  line-height: 1;
+  color: #344255;
+}
+
+.summary-item.available strong {
+  color: #0475FA;
+}
+
+.summary-item.passed strong {
+  color: #37a958;
+}
+
+.exam-list {
+  padding: 18px 20px 20px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  background: #f5f7fa;
+}
+
+.exam-card {
+  min-width: 0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #dfe5ec;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.exam-card:hover {
+  border-color: #9fc8fb;
+  box-shadow: 0 2px 8px rgba(31, 45, 61, 0.06);
+}
+
+.exam-card-head {
+  min-height: 44px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.exam-title-wrap {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.exam-icon {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eaf4ff;
+  color: #0475FA;
+}
+
+.exam-icon .el-icon {
+  font-size: 18px;
+}
+
+.title-content {
+  min-width: 0;
+}
+
+.exam-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+  color: #243446;
+}
+
+.exam-category {
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: #9aa5b4;
+}
+
+.exam-card-head :deep(.el-tag) {
+  height: 25px;
+  padding: 0 9px;
+  border-radius: 0;
+  font-size: 12px;
+}
+
+.exam-desc {
+  min-height: 42px;
+  margin: 12px 0 13px;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #667386;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.exam-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 10px 0;
+  border-top: 1px solid #edf0f4;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.meta-item {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  column-gap: 5px;
+  row-gap: 1px;
+  align-items: center;
+}
+
+.meta-item .el-icon {
+  grid-row: 1 / span 2;
+  font-size: 15px;
+  color: #8fa0b2;
+}
+
+.meta-item span {
+  font-size: 11px;
+  color: #9aa5b4;
+}
+
+.meta-item strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #4f5d6d;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.exam-card-foot {
+  min-height: 48px;
+  margin-top: 4px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.attempt-info {
+  padding-bottom: 7px;
+  color: #98a3b3;
+  font-size: 12px;
+}
+
+.exam-action {
+  min-width: 86px;
+  height: 32px;
+  padding: 0 15px;
+  border-radius: 0 !important;
+}
+
+.pagination-row {
+  min-height: 56px;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  border-top: 1px solid #e5eaf2;
+}
+
+.pagination-row :deep(.el-pagination button),
+.pagination-row :deep(.el-pager li) {
+  border-radius: 0 !important;
+}
+
+.loading-state {
+  padding: 70px 0;
+  text-align: center;
+  color: #909399;
+}
+
+.empty-state {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
 
-.header-icon .el-icon {
-  font-size: 24px;
-  color: #fff;
-}
-
-.header-info h1 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0 0 4px 0;
-}
-
-.header-info p {
-  font-size: 13px;
-  color: #909399;
-  margin: 0;
-}
-
-.header-stats {
+.empty-icon {
+  width: 46px;
+  height: 46px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 12px 20px;
-  background: #f5f7fa;
-  border-radius: 8px;
+  justify-content: center;
+  margin-bottom: 11px;
+  background: #edf5ff;
+  color: #0475FA;
 }
 
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.empty-icon .el-icon {
+  font-size: 23px;
 }
 
-.stat-num {
-  font-size: 24px;
-  font-weight: 700;
-  color: #303133;
-}
-
-.stat-num.success {
-  color: #67c23a;
-}
-
-.stat-text {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 2px;
-}
-
-.stat-divider {
-  width: 1px;
-  height: 32px;
-  background: #dcdfe6;
-}
-
-/* 考试列表 */
-.exam-section {
-  background: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-.section-title {
+.empty-title {
+  margin-bottom: 5px;
+  color: #425466;
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
-  margin-bottom: 16px;
 }
 
-.exam-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
-}
-
-.exam-card {
-  padding: 20px;
-  background: #fff;
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.exam-card:hover {
-  border-color: #0475FA;
-  box-shadow: 0 4px 12px rgba(4, 117, 250, 0.1);
-}
-
-.exam-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-
-.exam-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-  flex: 1;
-  margin-right: 12px;
-}
-
-.exam-desc {
+.empty-desc {
+  color: #98a3b3;
   font-size: 13px;
-  color: #606266;
-  line-height: 1.6;
-  margin-bottom: 16px;
 }
 
-.exam-meta {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-  padding: 12px;
-  background: #f5f7fa;
-  border-radius: 4px;
+@media (max-width: 1250px) {
+  .exam-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  color: #606266;
-}
+@media (max-width: 950px) {
+  .section-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 14px 16px;
+  }
 
-.meta-item .el-icon {
-  font-size: 14px;
-  color: #909399;
-}
-
-.exam-btn {
-  width: 100%;
+  .exam-list {
+    grid-template-columns: 1fr;
+    padding: 14px 16px 16px;
+  }
 }
 </style>
