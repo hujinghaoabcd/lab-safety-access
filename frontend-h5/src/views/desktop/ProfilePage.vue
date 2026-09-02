@@ -99,21 +99,18 @@
     <el-dialog
       class="profile-dialog"
       v-model="showEditPopup"
-      width="520px"
+      width="440px"
       :show-close="false"
       :close-on-click-modal="false"
     >
       <template #header="{ close }">
         <div class="dialog-titlebar">
-          <div>
-            <div class="dialog-title">编辑资料</div>
-            <div class="dialog-subtitle">更新个人联系方式与基本信息</div>
-          </div>
+          <div class="dialog-title">编辑资料</div>
           <button class="dialog-close" type="button" aria-label="关闭" @click="close">×</button>
         </div>
       </template>
 
-      <el-form class="profile-form" :model="editForm" label-width="72px">
+      <el-form class="profile-form" :model="editForm" label-width="68px">
         <el-form-item label="姓名">
           <el-input v-model="editForm.name" placeholder="请输入姓名" />
         </el-form-item>
@@ -136,21 +133,18 @@
     <el-dialog
       class="profile-dialog"
       v-model="showPasswordPopup"
-      width="520px"
+      width="440px"
       :show-close="false"
       :close-on-click-modal="false"
     >
       <template #header="{ close }">
         <div class="dialog-titlebar">
-          <div>
-            <div class="dialog-title">修改密码</div>
-            <div class="dialog-subtitle">请设置便于记忆且安全性较高的新密码</div>
-          </div>
+          <div class="dialog-title">修改密码</div>
           <button class="dialog-close" type="button" aria-label="关闭" @click="close">×</button>
         </div>
       </template>
 
-      <el-form class="profile-form" :model="passwordForm" label-width="72px">
+      <el-form class="profile-form" :model="passwordForm" label-width="68px">
         <el-form-item label="旧密码">
           <el-input v-model="passwordForm.oldPassword" type="password" placeholder="请输入旧密码" show-password />
         </el-form-item>
@@ -595,9 +589,9 @@ onMounted(async () => {
 }
 
 .dialog-titlebar {
-  min-height: 58px;
-  padding: 10px 16px 10px 18px;
-  background: linear-gradient(90deg, #0b6fdb 0%, #1989fa 100%);
+  min-height: 50px;
+  padding: 0 12px 0 18px;
+  background: #0475FA;
   color: #fff;
   display: flex;
   align-items: center;
@@ -611,20 +605,13 @@ onMounted(async () => {
   font-weight: 700;
 }
 
-.dialog-subtitle {
-  margin-top: 2px;
-  font-size: 11px;
-  line-height: 1.3;
-  color: rgba(255, 255, 255, 0.76);
-}
-
 .dialog-close {
   width: 32px;
   height: 32px;
   flex: 0 0 32px;
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 25px;
   line-height: 30px;
   cursor: pointer;
@@ -636,12 +623,12 @@ onMounted(async () => {
 }
 
 :deep(.profile-dialog .el-dialog__body) {
-  padding: 20px 24px 8px !important;
+  padding: 18px 20px 4px !important;
   background: #fff;
 }
 
 .profile-form :deep(.el-form-item) {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .profile-form :deep(.el-form-item__label) {
@@ -650,18 +637,18 @@ onMounted(async () => {
 }
 
 .profile-form :deep(.el-input__wrapper) {
-  min-height: 38px;
+  min-height: 36px;
   border-radius: 0;
   box-shadow: 0 0 0 1px #d9e0e8 inset;
 }
 
 .profile-form :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #1989fa inset;
+  box-shadow: 0 0 0 1px #0475FA inset;
 }
 
 :deep(.profile-dialog .el-dialog__footer) {
-  padding: 12px 24px !important;
-  background: #f7f9fc;
+  padding: 12px 20px !important;
+  background: #fff;
   border-top: 1px solid #e5eaf0;
 }
 
