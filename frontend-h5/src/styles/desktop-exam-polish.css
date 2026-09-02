@@ -199,33 +199,91 @@
     border-radius: 0 !important;
   }
 
-  /* 答题卡 Dialog 与其他桌面弹窗保持一致。 */
+  /* 答题卡 Dialog：固定成紧凑桌面弹窗，避免全局 Dialog 样式把头尾区域撑高。 */
   .el-dialog:has(.answer-card-grid) {
+    width: 560px !important;
+    max-width: calc(100vw - 64px) !important;
+    margin-top: 15vh !important;
     border-radius: 0 !important;
     overflow: hidden;
+    box-shadow: 0 14px 38px rgba(21, 38, 61, 0.22) !important;
   }
 
   .el-dialog:has(.answer-card-grid) .el-dialog__header {
-    margin: 0;
-    padding: 15px 20px;
-    background: #0475FA;
+    box-sizing: border-box !important;
+    height: 52px !important;
+    min-height: 52px !important;
+    margin: 0 !important;
+    padding: 0 18px !important;
+    display: flex !important;
+    align-items: center !important;
+    background: #0475FA !important;
   }
 
-  .el-dialog:has(.answer-card-grid) .el-dialog__title,
+  .el-dialog:has(.answer-card-grid) .el-dialog__title {
+    color: #fff !important;
+    font-size: 17px !important;
+    line-height: 1 !important;
+    font-weight: 600 !important;
+  }
+
+  .el-dialog:has(.answer-card-grid) .el-dialog__headerbtn {
+    top: 0 !important;
+    right: 0 !important;
+    width: 52px !important;
+    height: 52px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
   .el-dialog:has(.answer-card-grid) .el-dialog__headerbtn .el-dialog__close {
-    color: #fff;
+    color: #fff !important;
+    font-size: 18px !important;
   }
 
   .el-dialog:has(.answer-card-grid) .el-dialog__body {
-    padding: 22px 24px 18px;
+    min-height: 0 !important;
+    padding: 20px 26px 16px !important;
+  }
+
+  .el-dialog:has(.answer-card-grid) .answer-card-grid {
+    grid-template-columns: repeat(8, 40px) !important;
+    justify-content: start !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .el-dialog:has(.answer-card-grid) .card-item {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .el-dialog:has(.answer-card-grid) .card-legend {
+    min-height: 42px !important;
+    margin: 0 !important;
+    padding: 14px 0 0 !important;
+    justify-content: center !important;
+    border-top: 1px solid #e8ecf2 !important;
   }
 
   .el-dialog:has(.answer-card-grid) .el-dialog__footer {
-    padding: 12px 24px 16px;
-    border-top: 1px solid #e8ecf2;
+    box-sizing: border-box !important;
+    min-height: 58px !important;
+    height: 58px !important;
+    margin: 0 !important;
+    padding: 10px 26px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    background: #fff !important;
+    border-top: 1px solid #e8ecf2 !important;
   }
 
-  .el-dialog:has(.answer-card-grid) .el-button {
+  .el-dialog:has(.answer-card-grid) .el-dialog__footer .el-button {
+    min-width: 78px !important;
+    height: 34px !important;
+    margin: 0 !important;
     border-radius: 0 !important;
   }
 }
