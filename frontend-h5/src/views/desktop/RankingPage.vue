@@ -10,12 +10,9 @@
 
     <div v-if="scoreRanking.length" class="ranking-layout">
       <section class="ranking-main">
-        <div class="panel-heading">
-          <div>
-            <h2>成绩排名</h2>
-            <p>按最高成绩从高到低排列</p>
-          </div>
-          <span class="panel-count">共 {{ participantCount }} 人</span>
+        <div class="panel-heading compact-heading">
+          <h2>成绩排名</h2>
+          <span class="panel-count">按最高成绩从高到低 · 共 {{ participantCount }} 人</span>
         </div>
 
         <el-table
@@ -35,13 +32,10 @@
           <el-table-column label="学员" min-width="250">
             <template #default="{ row }">
               <div class="student-cell">
-                <el-avatar :size="42" :src="row.avatar">{{ row.name?.[0] }}</el-avatar>
-                <div class="student-text">
-                  <div class="student-name-row">
-                    <span class="student-name">{{ row.name }}</span>
-                    <span v-if="myRanking.rank && row.rank === myRanking.rank" class="me-mark">我</span>
-                  </div>
-                  <span class="student-id">排名第 {{ row.rank }} 位</span>
+                <el-avatar :size="38" :src="row.avatar">{{ row.name?.[0] }}</el-avatar>
+                <div class="student-name-row">
+                  <span class="student-name">{{ row.name }}</span>
+                  <span v-if="myRanking.rank && row.rank === myRanking.rank" class="me-mark">我</span>
                 </div>
               </div>
             </template>
@@ -63,14 +57,16 @@
 
       <aside class="ranking-sidebar">
         <section class="my-rank-panel">
-          <div class="my-rank-kicker">我的成绩</div>
-          <div class="my-rank-primary">
+          <div class="my-rank-top">
+            <div class="my-rank-copy">
+              <div class="my-rank-kicker">我的成绩</div>
+              <div class="my-rank-label">当前排名</div>
+            </div>
             <div class="my-rank-number">
               <strong>{{ myRanking.rank || '—' }}</strong>
               <span v-if="myRanking.rank">/ {{ participantCount }}</span>
               <span v-else>未上榜</span>
             </div>
-            <div class="my-rank-label">当前排名</div>
           </div>
           <div class="my-rank-stats">
             <div>
@@ -85,11 +81,9 @@
         </section>
 
         <section class="leaders-panel">
-          <div class="leaders-heading">
-            <div>
-              <h2>领先学员</h2>
-              <p>当前成绩前三名</p>
-            </div>
+          <div class="leaders-heading compact-heading">
+            <h2>领先学员</h2>
+            <span class="panel-count">当前前三名</span>
           </div>
 
           <div class="leaders-list">
@@ -99,7 +93,7 @@
               class="leader-item"
             >
               <span class="leader-rank" :class="`leader-rank-${item.rank}`">{{ item.rank }}</span>
-              <el-avatar :size="48" :src="item.avatar">{{ item.name?.[0] }}</el-avatar>
+              <el-avatar :size="46" :src="item.avatar">{{ item.name?.[0] }}</el-avatar>
               <div class="leader-info">
                 <div class="leader-name">{{ item.name }}</div>
                 <div class="leader-department">{{ item.department || '未设置院系' }}</div>
@@ -187,13 +181,13 @@ onMounted(async () => {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 22px;
-  padding-bottom: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 13px;
   border-bottom: 1px solid #dfe5ec;
 }
 
 .page-heading h1 {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   color: #17202a;
   font-size: 24px;
   font-weight: 650;
@@ -230,24 +224,21 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 72px;
-  padding: 16px 20px;
+  min-height: 60px;
+  padding: 13px 20px;
   border-bottom: 1px solid #e8ecf1;
+}
+
+.compact-heading {
+  min-height: 56px;
 }
 
 .panel-heading h2,
 .leaders-heading h2 {
-  margin: 0 0 4px;
+  margin: 0;
   color: #27313d;
   font-size: 16px;
   font-weight: 600;
-}
-
-.panel-heading p,
-.leaders-heading p {
-  margin: 0;
-  color: #98a2af;
-  font-size: 12px;
 }
 
 .panel-count {
@@ -264,7 +255,7 @@ onMounted(async () => {
 }
 
 .ranking-table :deep(.el-table__header th) {
-  height: 44px;
+  height: 42px;
   background: #f7f9fb;
   color: #6f7b89;
   font-size: 13px;
@@ -272,7 +263,7 @@ onMounted(async () => {
 }
 
 .ranking-table :deep(.el-table__row td) {
-  height: 68px;
+  height: 58px;
   border-bottom-color: #edf0f4;
 }
 
@@ -319,21 +310,17 @@ onMounted(async () => {
   gap: 12px;
 }
 
-.student-text {
-  min-width: 0;
-}
-
 .student-name-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
+  min-width: 0;
 }
 
 .student-name {
   overflow: hidden;
   color: #27313d;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -343,18 +330,17 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 18px;
-  padding: 0 5px;
+  height: 19px;
+  padding: 0 6px;
   background: #eaf3ff;
   color: #0475fa;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
 }
 
-.student-id,
 .department-text {
-  color: #8994a2;
-  font-size: 12px;
+  color: #7f8a98;
+  font-size: 13px;
 }
 
 .score-cell {
@@ -378,7 +364,7 @@ onMounted(async () => {
 .ranking-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .my-rank-panel {
@@ -387,39 +373,47 @@ onMounted(async () => {
   color: #fff;
 }
 
-.my-rank-kicker {
-  padding: 18px 20px 0;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 12px;
-  letter-spacing: 0.5px;
+.my-rank-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 92px;
+  padding: 16px 20px;
 }
 
-.my-rank-primary {
-  padding: 18px 20px 22px;
+.my-rank-copy {
+  min-width: 0;
+}
+
+.my-rank-kicker {
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.my-rank-label {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
 }
 
 .my-rank-number {
   display: flex;
   align-items: baseline;
-  gap: 7px;
+  gap: 6px;
 }
 
 .my-rank-number strong {
-  font-size: 44px;
+  font-size: 38px;
   line-height: 1;
   font-weight: 650;
-  letter-spacing: -1px;
+  letter-spacing: -0.8px;
 }
 
 .my-rank-number span {
-  color: rgba(255, 255, 255, 0.76);
+  color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
-}
-
-.my-rank-label {
-  margin-top: 8px;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 12px;
 }
 
 .my-rank-stats {
@@ -430,7 +424,7 @@ onMounted(async () => {
 }
 
 .my-rank-stats > div {
-  padding: 14px 20px 16px;
+  padding: 11px 20px 12px;
 }
 
 .my-rank-stats > div + div {
@@ -439,33 +433,34 @@ onMounted(async () => {
 
 .my-rank-stats span {
   display: block;
-  margin-bottom: 5px;
-  color: rgba(255, 255, 255, 0.68);
-  font-size: 11px;
+  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 12px;
 }
 
 .my-rank-stats strong {
-  font-size: 19px;
+  font-size: 21px;
+  line-height: 1.2;
   font-weight: 600;
 }
 
 .my-rank-stats small {
   margin-left: 3px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
 }
 
 .leaders-list {
-  padding: 4px 0;
+  padding: 2px 0;
 }
 
 .leader-item {
   display: grid;
-  grid-template-columns: 34px 48px minmax(0, 1fr) auto;
+  grid-template-columns: 34px 46px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  min-height: 78px;
-  padding: 12px 16px;
+  min-height: 70px;
+  padding: 10px 16px;
 }
 
 .leader-item + .leader-item {
@@ -508,9 +503,9 @@ onMounted(async () => {
 
 .leader-name {
   overflow: hidden;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   color: #26313d;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -518,8 +513,8 @@ onMounted(async () => {
 
 .leader-department {
   overflow: hidden;
-  color: #929ca8;
-  font-size: 11px;
+  color: #8a95a2;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -531,13 +526,13 @@ onMounted(async () => {
 .leader-score strong {
   margin-right: 3px;
   color: #0475fa;
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 650;
 }
 
 .leader-score span {
   color: #8b96a3;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .ranking-empty {
