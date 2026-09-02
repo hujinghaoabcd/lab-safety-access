@@ -33,7 +33,7 @@ const menuItems = [
   { path: '/exams', title: '考试管理', icon: 'Document' },
   { path: '/records', title: '考试记录', icon: 'Tickets' },
   { path: '/certificates', title: '证书管理', icon: 'Medal' },
-  { path: '/learning-materials', title: '学习资料管理', icon: 'Reading' },
+  { path: '/learning-materials', title: '资料管理', icon: 'Reading' },
   { path: '/settings', title: '系统设置', icon: 'Setting' }
 ]
 
