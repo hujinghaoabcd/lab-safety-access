@@ -41,12 +41,26 @@ html, body {
   background: #f5f7fa;
 }
 
-// 卡片统一样式
+// 管理端卡片统一使用直角样式
 .page-card {
   background: #fff;
-  border-radius: 4px;
+  border-radius: 0;
   padding: 20px;
   margin-bottom: 20px;
+}
+
+// 主内容区中各页面自定义的白色卡片统一取消圆角。
+// 仅限制在 main-content 内，避免影响头像等本应保持圆形的组件。
+.main-content .el-card,
+.main-content [class$='-card'],
+.main-content [class*='-card '] {
+  border-radius: 0 !important;
+}
+
+// Element Plus 对话框和确认框统一使用直角样式
+.el-dialog,
+.el-message-box {
+  border-radius: 0 !important;
 }
 
 // 页面标题
