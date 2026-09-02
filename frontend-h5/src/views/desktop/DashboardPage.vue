@@ -36,64 +36,84 @@
         <!-- 统计数据区域 -->
         <div class="stats-section">
           <div class="stat-item">
-            <div class="stat-main">
-              <el-icon class="stat-icon certificate-icon"><Medal /></el-icon>
-              <div class="stat-value">
-                <span class="number">{{ certCount }}</span>
-                <span class="total">/{{ totalCerts }}</span>
+            <div class="stat-content">
+              <span class="stat-icon-frame certificate-icon">
+                <el-icon><GoldMedal /></el-icon>
+              </span>
+              <div class="stat-copy">
+                <div class="stat-value">
+                  <span class="number">{{ certCount }}</span>
+                  <span class="total">/{{ totalCerts }}</span>
+                </div>
+                <div class="stat-label">合格证书</div>
               </div>
             </div>
-            <div class="stat-label">合格证书</div>
             <div class="stat-progress">
               <div class="progress-bar" :style="{ width: certProgress + '%' }"></div>
             </div>
           </div>
 
           <div class="stat-item">
-            <div class="stat-main">
-              <el-icon class="stat-icon passed-icon"><CircleCheck /></el-icon>
-              <div class="stat-value">
-                <span class="number">{{ passedCount }}</span>
-                <span class="total">/{{ totalExams }}</span>
+            <div class="stat-content">
+              <span class="stat-icon-frame passed-icon">
+                <el-icon><DocumentChecked /></el-icon>
+              </span>
+              <div class="stat-copy">
+                <div class="stat-value">
+                  <span class="number">{{ passedCount }}</span>
+                  <span class="total">/{{ totalExams }}</span>
+                </div>
+                <div class="stat-label">已通过考试</div>
               </div>
             </div>
-            <div class="stat-label">已通过考试</div>
             <div class="stat-progress">
               <div class="progress-bar success" :style="{ width: passProgress + '%' }"></div>
             </div>
           </div>
 
           <div class="stat-item">
-            <div class="stat-main">
-              <el-icon class="stat-icon pending-icon"><Calendar /></el-icon>
-              <div class="stat-value">
-                <span class="number text-primary">{{ pendingExamCount }}</span>
-                <span class="unit">项</span>
+            <div class="stat-content">
+              <span class="stat-icon-frame pending-icon">
+                <el-icon><AlarmClock /></el-icon>
+              </span>
+              <div class="stat-copy">
+                <div class="stat-value">
+                  <span class="number text-primary">{{ pendingExamCount }}</span>
+                  <span class="unit">项</span>
+                </div>
+                <div class="stat-label">待考试</div>
               </div>
             </div>
-            <div class="stat-label">待考试</div>
           </div>
 
           <div class="stat-item">
-            <div class="stat-main">
-              <el-icon class="stat-icon wrong-icon"><CircleClose /></el-icon>
-              <div class="stat-value">
-                <span class="number">{{ wrongCount }}</span>
-                <span class="unit">题</span>
+            <div class="stat-content">
+              <span class="stat-icon-frame wrong-icon">
+                <el-icon><Failed /></el-icon>
+              </span>
+              <div class="stat-copy">
+                <div class="stat-value">
+                  <span class="number">{{ wrongCount }}</span>
+                  <span class="unit">题</span>
+                </div>
+                <div class="stat-label">错题数量</div>
               </div>
             </div>
-            <div class="stat-label">错题数量</div>
           </div>
 
           <div class="stat-item">
-            <div class="stat-main">
-              <el-icon class="stat-icon time-icon"><Clock /></el-icon>
-              <div class="stat-value">
-                <span class="number">{{ studyHours }}</span>
-                <span class="unit">小时</span>
+            <div class="stat-content">
+              <span class="stat-icon-frame time-icon">
+                <el-icon><Stopwatch /></el-icon>
+              </span>
+              <div class="stat-copy">
+                <div class="stat-value">
+                  <span class="number">{{ studyHours }}</span>
+                  <span class="unit">小时</span>
+                </div>
+                <div class="stat-label">学习时长</div>
               </div>
             </div>
-            <div class="stat-label">学习时长</div>
           </div>
         </div>
       </div>
@@ -157,10 +177,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import {
-  Calendar,
-  CircleCheck,
-  CircleClose,
-  Clock,
+  AlarmClock,
+  DocumentChecked,
+  Failed,
+  GoldMedal,
+  Stopwatch,
   EditPen,
   Reading,
   Medal,
@@ -459,8 +480,11 @@ onMounted(async () => {
 
 .stat-item {
   flex: 1;
-  text-align: center;
-  padding: 0 20px;
+  min-height: 124px;
+  padding: 0 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   border-right: 1px solid #f0f0f0;
 }
 
@@ -468,44 +492,71 @@ onMounted(async () => {
   border-right: none;
 }
 
-.stat-main {
-  min-height: 38px;
+.stat-content {
+  min-height: 68px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 13px;
 }
 
-.stat-icon {
-  flex: 0 0 auto;
-  font-size: 24px;
-  stroke-width: 1.6;
+.stat-icon-frame {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  box-sizing: border-box;
+}
+
+.stat-icon-frame .el-icon {
+  font-size: 25px;
 }
 
 .certificate-icon {
-  color: #d99212;
+  color: #c88608;
+  background: #fff8e8;
+  border-color: #efd28e;
 }
 
 .passed-icon {
-  color: #3cae58;
+  color: #2f9f50;
+  background: #f0faf3;
+  border-color: #b9dfc3;
 }
 
 .pending-icon {
   color: #0475FA;
+  background: #eef6ff;
+  border-color: #b9d8ff;
 }
 
 .wrong-icon {
-  color: #e85b63;
+  color: #e45860;
+  background: #fff2f3;
+  border-color: #f0c2c5;
 }
 
 .time-icon {
-  color: #7866d7;
+  color: #6f5bd5;
+  background: #f5f2ff;
+  border-color: #d1c8f1;
+}
+
+.stat-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
 }
 
 .stat-value {
-  margin-bottom: 0;
+  margin-bottom: 7px;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .stat-value .number {
@@ -530,9 +581,11 @@ onMounted(async () => {
 }
 
 .stat-label {
+  margin: 0;
   font-size: 13px;
   color: #64748b;
-  margin-bottom: 8px;
+  line-height: 1.25;
+  white-space: nowrap;
 }
 
 .stat-progress {
@@ -540,7 +593,7 @@ onMounted(async () => {
   height: 4px;
   background: #f0f0f0;
   border-radius: 0;
-  margin: 0 auto;
+  margin: 8px auto 0;
   overflow: hidden;
 }
 
