@@ -197,3 +197,26 @@ input, textarea {
   color: #fff !important;
 }
 
+/* 移动端证书微调：按纸质荣誉证书的视觉层级拉开标题、编号与正文。 */
+@media (max-width: 767px) {
+  .honor-content {
+    top: 21% !important;
+  }
+
+  .honor-title {
+    font-size: clamp(15px, 3.7vw, 27px) !important;
+    margin-top: 0.9vw !important;
+  }
+
+  .honor-serial {
+    width: 100% !important;
+    align-self: stretch !important;
+    text-align: right !important;
+    padding-right: 0.5vw !important;
+    font-size: clamp(6px, 0.66vw, 7px) !important;
+    line-height: 1.15 !important;
+    font-weight: 600 !important;
+    margin-top: 4.2vw !important;
+    margin-bottom: 0.85vw !important;
+  }
+}
