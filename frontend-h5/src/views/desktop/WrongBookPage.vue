@@ -60,8 +60,8 @@
             </div>
           </div>
 
-          <div class="answer-row">
-            <div class="answer-main">
+          <div class="answer-actions">
+            <div class="answer-box">
               <el-icon><CircleCheckFilled /></el-icon>
               <span class="answer-label">正确答案</span>
               <strong>{{ q.correctAnswer }}</strong>
@@ -206,7 +206,7 @@ onMounted(() => loadWrongBook())
 }
 
 .panel-toolbar {
-  min-height: 60px;
+  min-height: 56px;
   padding: 0 22px;
   display: flex;
   align-items: center;
@@ -235,10 +235,18 @@ onMounted(() => loadWrongBook())
   border-radius: 0;
 }
 
-.filter-row {
-  padding: 14px 22px;
+.desktop-wrongbook .filter-row {
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 10px 22px !important;
+  display: flex;
+  align-items: center;
   border-bottom: 1px solid #e5eaf2;
   background: #fafbfd;
+}
+
+.filter-row :deep(.el-radio-group) {
+  line-height: 1;
 }
 
 .filter-row :deep(.el-radio-button__inner) {
@@ -246,6 +254,7 @@ onMounted(() => loadWrongBook())
   height: 34px;
   padding: 8px 16px;
   border-radius: 0 !important;
+  line-height: 16px;
 }
 
 .loading-state {
@@ -291,23 +300,27 @@ onMounted(() => loadWrongBook())
 }
 
 .question-list {
-  padding: 0 22px;
+  padding: 14px 22px 0;
+  background: #f4f6f9;
 }
 
 .question-item {
-  padding: 20px 0;
-  border-bottom: 1px solid #e8edf3;
+  padding: 18px 18px 20px;
+  margin-bottom: 14px;
+  background: #fff;
+  border: 1px solid #dfe5ec;
+  border-left: 4px solid #cfd8e5;
 }
 
 .question-item:last-child {
-  border-bottom: 0;
+  margin-bottom: 14px;
 }
 
 .question-topline {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: 13px;
 }
 
 .question-meta {
@@ -376,25 +389,28 @@ onMounted(() => loadWrongBook())
   color: #334155;
 }
 
-.answer-row {
-  min-height: 44px;
-  padding: 0 12px;
+.answer-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #f2f9f3;
-  border-left: 3px solid #49b267;
+  gap: 14px;
 }
 
-.answer-main {
-  display: flex;
+.answer-box {
+  min-width: 260px;
+  max-width: 460px;
+  min-height: 42px;
+  padding: 0 14px;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
+  background: #f2f9f3;
+  border-left: 3px solid #49b267;
   color: #32964f;
   font-size: 14px;
 }
 
-.answer-main .el-icon {
+.answer-box .el-icon {
   font-size: 17px;
 }
 
@@ -402,15 +418,15 @@ onMounted(() => loadWrongBook())
   color: #587064;
 }
 
-.answer-main strong {
+.answer-box strong {
   font-size: 15px;
   color: #278844;
 }
 
-.answer-row :deep(.el-button) {
-  height: 32px;
+.answer-actions :deep(.el-button) {
+  height: 34px;
   border-radius: 0;
-  padding: 0 15px;
+  padding: 0 16px;
 }
 
 .pagination-row {
@@ -433,6 +449,10 @@ onMounted(() => loadWrongBook())
 @media (max-width: 1100px) {
   .last-time {
     display: none;
+  }
+
+  .answer-box {
+    max-width: 360px;
   }
 }
 </style>
