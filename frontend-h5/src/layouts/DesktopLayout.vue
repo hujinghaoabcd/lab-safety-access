@@ -65,7 +65,7 @@
 import { computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { getUserProfile } from '@/api/auth'
 import {
   ArrowDown,
@@ -133,9 +133,13 @@ const handleLogout = async () => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    userStore.logout()
-    router.replace('/login')
-    ElMessage.success('已退出登录')
+
+    // Wait for the server to clear the HttpOnly cookie before changing routes.
+    // Previously the page navigated immediately while logout was still running;
+    // stale 401 handlers could then hard-reload /login repeatedly, causing the
+    // login screen to flash and making its inputs impossible to focus.
+    await userStore.logout()
+    await router.replace('/login')
   } catch {
     // 用户取消
   }
