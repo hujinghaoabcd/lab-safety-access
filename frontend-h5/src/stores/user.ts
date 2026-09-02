@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { clearStudentSession } from '@/utils/session'
+import { beginStudentLogout } from '@/utils/session'
 
 export interface UserInfo {
   id: string
@@ -32,9 +32,8 @@ const suppressLogoutOverlayResidue = () => {
   }
 
   // The confirmation promise resolves slightly before Vant has fully removed
-  // its teleported Dialog/Overlay. ProfilePage then creates a logout Toast in
-  // the same frame. Hide all three only during this short logout window so no
-  // white residual rectangle can be painted by mobile WebViews.
+  // its teleported Dialog/Overlay. Hide mobile transient overlays only during
+  // this short logout window so no residual white rectangle is painted.
   root.classList.add('student-logging-out')
   window.setTimeout(() => {
     root.classList.remove('student-logging-out')
@@ -56,24 +55,29 @@ export const useUserStore = defineStore('user', () => {
     authenticated.value = true
   }
 
-  function logout() {
+  async function logout() {
     suppressLogoutOverlayResidue()
     authenticated.value = false
     userInfo.value = null
 
-    // Vant confirmation dialogs resolve before their leave animation has fully
-    // disappeared. Keep the login route from rendering for one transition cycle
-    // so the shrinking/fading white dialog cannot flash on top of the login page.
-    clearStudentSession({ routeHoldMs: 360 })
+    // Mark this as an intentional logout before the cookie is cleared. Any
+    // profile/stats requests that finish with 401 during the next moments are
+    // expected and must not trigger another hard redirect to /login.
+    beginStudentLogout({ routeHoldMs: 360, quietMs: 2500 })
 
-    // Existing mobile/desktop UI calls this synchronous store method. Fire the
-    // idempotent server logout in the background so the HttpOnly cookie is
-    // cleared without forcing a broad UI refactor in this security change.
-    void fetch('/api/auth/logout', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { Accept: 'application/json' }
-    }).catch(() => {})
+    try {
+      // Logout is idempotent server-side. Awaiting it lets desktop navigation
+      // happen only after the HttpOnly session cookie has actually been cleared,
+      // eliminating the login <-> dashboard redirect race.
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { Accept: 'application/json' }
+      })
+    } catch {
+      // Local session is already cleared. Even when the network is unavailable,
+      // allow the UI to reach the login page instead of trapping the user.
+    }
   }
 
   return {
