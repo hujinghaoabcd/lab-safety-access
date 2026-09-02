@@ -1,0 +1,18 @@
+@media (min-width: 768px) {
+  /* Element Plus 新版 Dialog 会在根容器上保留默认内边距。
+     答题卡需要让蓝色标题栏真正贴到弹窗四边，因此清空根容器 padding，
+     具体内容留白继续由 header / body / footer 自己控制。 */
+  .el-dialog:has(.answer-card-grid) {
+    --el-dialog-padding-primary: 0px !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    background: #fff !important;
+  }
+
+  .el-dialog:has(.answer-card-grid) .el-dialog__header,
+  .el-dialog:has(.answer-card-grid) .el-dialog__body,
+  .el-dialog:has(.answer-card-grid) .el-dialog__footer {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
