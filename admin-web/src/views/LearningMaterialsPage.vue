@@ -18,7 +18,7 @@ interface LearningMaterial {
 const materials = ref<LearningMaterial[]>([])
 const loading = ref(false)
 const dialogVisible = ref(false)
-const dialogTitle = ref('新增学习资料')
+const dialogTitle = ref('新增资料')
 const formRef = ref()
 const selectedMaterials = ref<LearningMaterial[]>([])
 const uploadHeaders = ref<Record<string, string>>({
@@ -60,7 +60,7 @@ const loadMaterials = async () => {
     materials.value = data.list || []
     pagination.total = data.total || 0
   } catch (err: any) {
-    ElMessage.error(err?.message || '加载学习资料列表失败')
+    ElMessage.error(err?.message || '加载资料列表失败')
   } finally {
     loading.value = false
   }
@@ -71,7 +71,7 @@ onMounted(() => {
 })
 
 const handleAdd = () => {
-  dialogTitle.value = '新增学习资料'
+  dialogTitle.value = '新增资料'
   Object.assign(form, {
     id: 0,
     title: '',
@@ -85,7 +85,7 @@ const handleAdd = () => {
 }
 
 const handleEdit = (row: LearningMaterial) => {
-  dialogTitle.value = '编辑学习资料'
+  dialogTitle.value = '编辑资料'
   Object.assign(form, {
     id: row.id,
     title: row.title,
@@ -100,7 +100,7 @@ const handleEdit = (row: LearningMaterial) => {
 
 const handleDelete = async (row: LearningMaterial) => {
   try {
-    await ElMessageBox.confirm(`确定要删除学习资料"${row.title}"吗？删除后相关的学习进度也会被删除。`, '提示', {
+    await ElMessageBox.confirm(`确定要删除资料"${row.title}"吗？删除后相关的学习进度也会被删除。`, '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
@@ -116,11 +116,11 @@ const handleDelete = async (row: LearningMaterial) => {
 
 const handleBatchDelete = async () => {
   if (selectedMaterials.value.length === 0) {
-    ElMessage.warning('请选择要删除的学习资料')
+    ElMessage.warning('请选择要删除的资料')
     return
   }
   try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${selectedMaterials.value.length} 个学习资料吗？`, '提示', {
+    await ElMessageBox.confirm(`确定要删除选中的 ${selectedMaterials.value.length} 个资料吗？`, '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
@@ -228,12 +228,12 @@ const getFileName = (url: string) => {
 <template>
   <div class="learning-materials-page">
     <div class="page-header">
-      <h2>学习资料管理</h2>
+      <h2>资料管理</h2>
       <div class="header-actions">
         <el-button type="danger" :disabled="selectedMaterials.length === 0" @click="handleBatchDelete">
           批量删除
         </el-button>
-        <el-button type="primary" :icon="Plus" @click="handleAdd">新增学习资料</el-button>
+        <el-button type="primary" :icon="Plus" @click="handleAdd">新增资料</el-button>
       </div>
     </div>
 
