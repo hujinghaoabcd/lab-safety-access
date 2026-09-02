@@ -1,14 +1,14 @@
 @media (min-width: 768px) {
-  /* 考试中心：保留卡片形式，但将卡片改为更瘦长的桌面比例。 */
+  /* 考试中心：保留卡片形式，并维持偏瘦长的桌面比例。 */
   .desktop-exam-center .exam-list {
-    grid-template-columns: repeat(auto-fill, 326px) !important;
+    grid-template-columns: repeat(auto-fill, 350px) !important;
     justify-content: start !important;
     align-items: stretch !important;
     gap: 20px !important;
   }
 
   .desktop-exam-center .exam-card {
-    width: 326px !important;
+    width: 350px !important;
     min-height: 370px !important;
     padding: 22px 22px 18px !important;
     box-shadow: 0 4px 14px rgba(31, 45, 61, 0.08) !important;
