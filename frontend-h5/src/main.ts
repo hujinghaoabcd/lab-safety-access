@@ -9,14 +9,38 @@ import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 // Vant 全局样式与弹窗配置
-import { closeDialog, closeToast, setDialogDefaultOptions } from 'vant'
+import {
+  closeDialog,
+  closeToast,
+  setDialogDefaultOptions,
+  setToastDefaultOptions
+} from 'vant'
 import 'vant/lib/index.css'
+// Toast / Dialog 属于函数式组件。即使已经引入 Vant 全量样式，也显式引入它们的
+// 组件样式，避免自动按需组件与函数式调用组合时出现样式缺失或加载顺序异常。
+import 'vant/es/toast/style'
+import 'vant/es/dialog/style'
 
 // 移动端确认弹窗默认使用缩放离场动画。路由立即切换到登录页时，
 // 缩放中的白色 Dialog 会短暂呈现为一个“小白框”。改为纯淡入淡出，
 // 保持弹窗尺寸不发生收缩，避免退出登录时的视觉闪烁。
 setDialogDefaultOptions({
   transition: 'van-fade'
+})
+
+// 部分 Android 内置 WebView 对 Vant Toast 的 fit-content + transition 组合存在
+// 合成层异常：只绘制 Popup 的白色底层，却没有正确绘制 Toast 背景和文字。
+// 给所有 Toast 加稳定类并关闭 Toast 自身过渡，具体视觉样式在 global.css 中兜底。
+setToastDefaultOptions({
+  duration: 2200,
+  transition: 'none',
+  className: 'app-stable-toast'
+})
+setToastDefaultOptions('loading', {
+  duration: 0,
+  transition: 'none',
+  className: 'app-stable-toast',
+  forbidClick: true
 })
 
 // 退出后 ProfilePage 会先产生“已退出登录”Toast，同时确认 Dialog 也可能仍处于
