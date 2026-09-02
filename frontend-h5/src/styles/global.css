@@ -20,6 +20,14 @@
   --van-switch-on-background: #0475FA;
   --van-progress-color: #0475FA;
   --van-tag-primary-color: #0475FA;
+
+  /* Toast 使用不透明实色兜底。部分 Android 内置 WebView 对 rgba + Popup
+     合成层偶发只绘制白色 Popup 底层，导致提示变成无文字的小白条。 */
+  --van-toast-background: #323233;
+  --van-toast-text-color: #ffffff;
+  --van-toast-loading-icon-color: #ffffff;
+  --van-toast-font-size: 14px;
+  --van-toast-line-height: 20px;
   
   /* 去除圆角 */
   --van-button-border-radius: 0;
@@ -195,6 +203,65 @@ input, textarea {
 .blue-nav .van-nav-bar__text,
 .van-nav-bar.blue-nav .van-nav-bar__text {
   color: #fff !important;
+}
+
+/*
+ * Vant Toast 稳定渲染兜底
+ *
+ * Vant 4.9.x 的 Toast 同时继承 Popup 的白色 background/transform transition，
+ * Toast 自身又使用 width: fit-content 和 transition: all。少数 Android 内置
+ * WebView 在这些属性组合下会偶发只合成白色 Popup 图层，文字层没有被绘制，
+ * 表现就是“闪一下的小白条/小白块”。
+ *
+ * 所有 showToast/showLoadingToast/showSuccessToast/showFailToast 都通过 main.ts
+ * 获得 app-stable-toast 类。这里直接固定背景、文字、尺寸和 transition，避免各页面
+ * 分别修补，也保证登录失败、修改密码、保存、加载等提示使用同一套可靠样式。
+ */
+.app-stable-toast.van-toast {
+  --van-popup-background: #323233;
+  --van-toast-background: #323233;
+  --van-toast-text-color: #ffffff;
+  --van-toast-loading-icon-color: #ffffff;
+
+  background: #323233 !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  opacity: 1 !important;
+  transition: none !important;
+  -webkit-transition: none !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22) !important;
+  z-index: 9999 !important;
+}
+
+.app-stable-toast.van-toast--text,
+.app-stable-toast.van-toast--html {
+  width: auto !important;
+  min-width: 96px !important;
+  max-width: 80vw !important;
+  min-height: 0 !important;
+  padding: 10px 14px !important;
+}
+
+.app-stable-toast .van-toast__text {
+  display: block !important;
+  margin: 0 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  font-weight: 400 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  text-shadow: none !important;
+}
+
+.app-stable-toast .van-toast__icon,
+.app-stable-toast .van-toast__loading,
+.app-stable-toast .van-icon {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 /* 移动端证书微调：按纸质荣誉证书的视觉层级拉开标题、编号与正文。 */
