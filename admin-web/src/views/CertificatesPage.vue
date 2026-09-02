@@ -114,7 +114,6 @@ const handleExport = async () => {
 
     const data: any = await adminApi.exportCertificates(params)
     if (data?.base64) {
-      // 直接下载 Base64 Excel
       const link = document.createElement('a')
       link.href = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,' + data.base64
       link.download = data.fileName || '证书导出.xlsx'
@@ -131,7 +130,6 @@ const handleExport = async () => {
   }
 }
 
-// 查看证书详情弹窗
 const showCertDetail = ref(false)
 const currentCert = ref<Certificate | null>(null)
 
@@ -160,7 +158,6 @@ const handleCertificatePageSizeChange = (size: number) => {
 
 <template>
   <div class="certificates-page">
-    <!-- 搜索栏 -->
     <div class="page-card">
       <el-form :inline="true" :model="searchForm" class="search-form">
         <el-form-item label="关键词">
@@ -189,7 +186,6 @@ const handleCertificatePageSizeChange = (size: number) => {
       </el-form>
     </div>
 
-    <!-- 表格 -->
     <div class="page-card">
       <div class="page-header">
         <h2>证书列表</h2>
@@ -266,11 +262,10 @@ const handleCertificatePageSizeChange = (size: number) => {
       </div>
     </div>
 
-    <!-- 证书详情弹窗 -->
     <el-dialog v-model="showCertDetail" title="证书详情" width="500px">
       <div v-if="currentCert" class="cert-detail">
         <div class="cert-detail-header">
-          <div class="cert-icon">🏆</div>
+          <el-icon class="cert-icon"><Medal /></el-icon>
           <h3>实验室安全教育考试合格证书</h3>
         </div>
         <el-descriptions :column="1" border>
@@ -320,7 +315,9 @@ const handleCertificatePageSizeChange = (size: number) => {
       margin-bottom: 20px;
       
       .cert-icon {
-        font-size: 48px;
+        display: inline-flex;
+        font-size: 42px;
+        color: #b08d3a;
         margin-bottom: 10px;
       }
       
@@ -332,4 +329,3 @@ const handleCertificatePageSizeChange = (size: number) => {
   }
 }
 </style>
-
