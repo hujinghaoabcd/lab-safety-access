@@ -1,0 +1,83 @@
+@media (min-width: 768px) {
+  /* 首页统计图标：保留现有数据结构，仅增强视觉层次并修正垂直位置。 */
+  .desktop-dashboard .stat-icon-frame {
+    position: relative;
+    width: 48px !important;
+    height: 48px !important;
+    flex: 0 0 48px !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    transform: translateY(7px);
+  }
+
+  /* 双层圆形徽章，比单纯线性图标更有层次，但不过度装饰。 */
+  .desktop-dashboard .stat-icon-frame::before {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    opacity: 0.22;
+    pointer-events: none;
+  }
+
+  /* 右下角小状态点，增加识别度和完整感。 */
+  .desktop-dashboard .stat-icon-frame::after {
+    content: '';
+    position: absolute;
+    right: 1px;
+    bottom: 1px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 3px #fff;
+    pointer-events: none;
+  }
+
+  .desktop-dashboard .stat-icon-frame .el-icon {
+    position: relative;
+    z-index: 1;
+    font-size: 24px !important;
+    line-height: 1;
+  }
+
+  .desktop-dashboard .certificate-icon {
+    color: #c88608 !important;
+    background: #fff8e8 !important;
+    box-shadow: 0 0 0 1px #efd28e inset, 0 0 0 4px rgba(200, 134, 8, 0.06);
+  }
+
+  .desktop-dashboard .passed-icon {
+    color: #2f9f50 !important;
+    background: #f0faf3 !important;
+    box-shadow: 0 0 0 1px #b9dfc3 inset, 0 0 0 4px rgba(47, 159, 80, 0.06);
+  }
+
+  .desktop-dashboard .pending-icon {
+    color: #0475fa !important;
+    background: #eef6ff !important;
+    box-shadow: 0 0 0 1px #b9d8ff inset, 0 0 0 4px rgba(4, 117, 250, 0.06);
+  }
+
+  .desktop-dashboard .wrong-icon {
+    color: #e45860 !important;
+    background: #fff2f3 !important;
+    box-shadow: 0 0 0 1px #f0c2c5 inset, 0 0 0 4px rgba(228, 88, 96, 0.06);
+  }
+
+  .desktop-dashboard .time-icon {
+    color: #6f5bd5 !important;
+    background: #f5f2ff !important;
+    box-shadow: 0 0 0 1px #d1c8f1 inset, 0 0 0 4px rgba(111, 91, 213, 0.06);
+  }
+
+  /* 图标下移后，文字组保持原有位置，视觉中心会更平衡。 */
+  .desktop-dashboard .stat-content {
+    gap: 15px !important;
+  }
+}
