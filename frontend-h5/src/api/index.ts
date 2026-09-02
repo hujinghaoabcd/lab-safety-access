@@ -8,7 +8,8 @@ export function getBanners() {
   return request.get('/banner/list')
 }
 
-export function getAnnouncement() {
-  return request.get('/announcement/current')
+export function getAnnouncement(options?: { all?: boolean }) {
+  return request.get('/announcement/current', {
+    params: options?.all ? { all: 1 } : undefined
+  })
 }
-
