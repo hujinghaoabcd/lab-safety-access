@@ -120,6 +120,32 @@ const resetTestData = async (examId, testUsers) => {
   console.log('[reset] 完成。');
 };
 
+const chooseWrongAnswer = (question, correctAnswer) => {
+  const options = Array.isArray(question.options) ? question.options : [];
+  const letters = options.map((_, idx) => String.fromCharCode(65 + idx));
+  const correctText = String(correctAnswer ?? '').trim();
+  const type = String(question.type || '').trim();
+
+  if (type === '多选题' && letters.length) {
+    const compact = correctText.replace(/[\s,，、;；|]+/g, '').toUpperCase();
+    if (compact.length > 1) return letters[0];
+    const alternative = letters.find((letter) => letter !== compact);
+    if (alternative) return alternative;
+  }
+
+  if (/^[A-Z]+$/i.test(correctText) && letters.length) {
+    const alternative = letters.find((letter) => letter !== correctText.toUpperCase());
+    if (alternative) return alternative;
+  }
+
+  const alternativeText = options.find((option) => String(option).trim() !== correctText);
+  if (alternativeText !== undefined) return String(alternativeText);
+
+  // Degenerate one-option questions should not normally exist. Keep a fallback so the
+  // simulator still produces an incorrect result rather than silently scoring it right.
+  return '__AUTO_TEST_WRONG__';
+};
+
 const buildAnswers = (startedQuestions, correctAnswers, correctCount) => {
   const answers = {};
   startedQuestions.forEach((question, index) => {
@@ -127,7 +153,9 @@ const buildAnswers = (startedQuestions, correctAnswers, correctCount) => {
     if (correctAnswer === undefined || correctAnswer === null || String(correctAnswer).trim() === '') {
       throw new Error(`题目 ${question.id} 缺少正确答案，无法自动模拟`);
     }
-    answers[question.id] = index < correctCount ? correctAnswer : '__AUTO_TEST_WRONG__';
+    answers[question.id] = index < correctCount
+      ? correctAnswer
+      : chooseWrongAnswer(question, correctAnswer);
   });
   return answers;
 };
