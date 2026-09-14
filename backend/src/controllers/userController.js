@@ -142,22 +142,53 @@ const updateProfile = async (req, res) => {
 
 const getProfileStats = async (req, res) => {
   try {
-    const [examCountResult, passCountResult, certCountResult] = await Promise.all([
+    const [
+      examCountResult,
+      passCountResult,
+      certCountResult,
+      wrongCountResult,
+      studyDurationResult
+    ] = await Promise.all([
       dbGet('SELECT COUNT(*) AS count FROM exam_records WHERE user_id = ?', [req.user.id]),
       dbGet(
         "SELECT COUNT(DISTINCT exam_id) AS count FROM exam_records WHERE user_id = ? AND status = '通过'",
         [req.user.id]
       ),
+      // Only count certificates that still have a corresponding passed record.
+      // This also prevents historical orphan certificates from polluting the dashboard.
       dbGet(
-        'SELECT COUNT(*) AS count FROM certificates WHERE user_id = ? AND status = 1',
+        `SELECT COUNT(*) AS count
+           FROM certificates c
+          WHERE c.user_id = ?
+            AND c.status = 1
+            AND EXISTS (
+              SELECT 1
+                FROM exam_records er
+               WHERE er.user_id = c.user_id
+                 AND er.exam_id = c.exam_id
+                 AND er.status = '通过'
+            )`,
+        [req.user.id]
+      ),
+      dbGet(
+        'SELECT COUNT(DISTINCT question_id) AS count FROM wrong_questions WHERE user_id = ?',
+        [req.user.id]
+      ),
+      dbGet(
+        'SELECT COALESCE(SUM(study_duration), 0) AS seconds FROM learning_progress WHERE user_id = ?',
         [req.user.id]
       )
     ]);
 
+    const studySeconds = Number(studyDurationResult.seconds || 0);
+    const studyHours = Math.round((studySeconds / 3600) * 10) / 10;
+
     return success(res, {
       examCount: Number(examCountResult.count || 0),
       passCount: Number(passCountResult.count || 0),
-      certCount: Number(certCountResult.count || 0)
+      certCount: Number(certCountResult.count || 0),
+      wrongCount: Number(wrongCountResult.count || 0),
+      studyHours
     }, '获取统计数据成功');
   } catch (err) {
     console.error('获取用户统计数据错误:', err);
@@ -245,9 +276,6 @@ const changeAvatar = async (req, res) => {
   const file = req.file;
   if (!file) return error(res, '请上传头像文件', 400);
 
-  // File.type / multipart mimetype is advisory only. The real file signature is
-  // the source of truth, so supported images are accepted even when a mobile
-  // browser labels their MIME type incorrectly.
   const detectedMime = detectImageMime(file.buffer);
   if (!detectedMime) {
     return error(res, '无法识别头像图片内容，请选择 JPG、PNG 或 WebP 图片', 400);
