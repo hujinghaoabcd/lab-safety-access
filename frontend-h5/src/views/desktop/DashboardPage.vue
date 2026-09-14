@@ -208,8 +208,8 @@ const pendingExamCount = ref(0)
 const certCount = ref(0)
 const wrongCount = ref(0)
 const studyHours = ref(0)
-const totalExams = ref(10)
-const totalCerts = ref(5)
+const totalExams = ref(0)
+const totalCerts = ref(0)
 
 const certProgress = computed(() => totalCerts.value > 0 ? Math.min(100, (certCount.value / totalCerts.value) * 100) : 0)
 const passProgress = computed(() => totalExams.value > 0 ? Math.min(100, (passedCount.value / totalExams.value) * 100) : 0)
@@ -352,13 +352,14 @@ onMounted(async () => {
 
     passedCount.value = list.filter(item => item.status === 'passed').length
     pendingExamCount.value = list.filter(item => item.status === 'available').length
-    totalExams.value = list.length || 10
+    totalExams.value = list.length
 
     const statsResp: any = await getUserProfileStats()
     const statsData = statsResp?.data ?? statsResp
     certCount.value = statsData?.certCount ?? 0
     wrongCount.value = statsData?.wrongCount ?? 0
     studyHours.value = statsData?.studyHours ?? 0
+    totalCerts.value = Math.max(list.length, certCount.value)
   } catch (err) {
     console.error('加载首页数据失败:', err)
   }
