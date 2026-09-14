@@ -89,7 +89,7 @@ const getList = async (req, res) => {
     const exams = await dbQuery(
       `SELECT
          e.*,
-         (SELECT COUNT(*) FROM questions q WHERE q.exam_id = e.id) AS actual_question_count,
+         (SELECT COUNT(*) FROM exam_questions eq WHERE eq.exam_id = e.id) AS actual_question_count,
          (SELECT COUNT(*) FROM exam_records er
            WHERE er.user_id = ? AND er.exam_id = e.id) AS attempts,
          (SELECT COUNT(*) FROM exam_records er
@@ -146,7 +146,7 @@ const getDetail = async (req, res) => {
       { enforceAttempts: false, allowAfterPass: true }
     );
     const questionCount = await dbGet(
-      'SELECT COUNT(*) AS count FROM questions WHERE exam_id = ?',
+      'SELECT COUNT(*) AS count FROM exam_questions WHERE exam_id = ?',
       [exam.id]
     );
 
@@ -173,10 +173,11 @@ const startExam = async (req, res) => {
     const examId = req.body && req.body.examId;
     const exam = await assertExamAvailable({ get: dbGet }, req.user.id, examId);
     const rows = await dbQuery(
-      `SELECT id, content, type, category, options
-         FROM questions
-        WHERE exam_id = ?
-        ORDER BY id ASC`,
+      `SELECT q.id, q.content, q.type, q.category, q.options
+         FROM exam_questions eq
+         JOIN questions q ON q.id = eq.question_id
+        WHERE eq.exam_id = ?
+        ORDER BY q.id ASC`,
       [exam.id]
     );
 
@@ -216,10 +217,11 @@ const submitExam = async (req, res) => {
     const result = await withTransaction(async (tx) => {
       const exam = await assertExamAvailable(tx, req.user.id, body.examId);
       const questions = await tx.query(
-        `SELECT id, content, type, category, options, answer, analysis
-           FROM questions
-          WHERE exam_id = ?
-          ORDER BY id ASC`,
+        `SELECT q.id, q.content, q.type, q.category, q.options, q.answer, q.analysis
+           FROM exam_questions eq
+           JOIN questions q ON q.id = eq.question_id
+          WHERE eq.exam_id = ?
+          ORDER BY q.id ASC`,
         [exam.id]
       );
 
@@ -258,7 +260,6 @@ const submitExam = async (req, res) => {
       const wrongCount = questions.length - correctCount;
       const passed = score >= Number(exam.pass_score);
       const status = passed ? '通过' : '未通过';
-      // 数据库存 UTC，API 输出层统一转换为 Asia/Shanghai。
       const submitTime = utcDateTimeNow();
 
       const insertResult = await tx.run(
@@ -342,7 +343,6 @@ module.exports = {
   getDetail,
   startExam,
   submitExam,
-  // Exported for focused unit tests.
   normalizeMultiAnswer,
   isAnswerCorrect
 };
