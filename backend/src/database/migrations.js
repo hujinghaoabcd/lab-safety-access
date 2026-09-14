@@ -256,6 +256,49 @@ const migrations = [
           ON operation_audit_logs(action, created_at DESC);
       `);
     }
+  },
+  {
+    version: 4,
+    name: 'reusable_exam_questions',
+    up: async (tx) => {
+      await tx.exec(`
+        CREATE TABLE IF NOT EXISTS exam_questions (
+          exam_id INTEGER NOT NULL,
+          question_id INTEGER NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (exam_id, question_id),
+          FOREIGN KEY (exam_id) REFERENCES exams(id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+          FOREIGN KEY (question_id) REFERENCES questions(id)
+            ON UPDATE CASCADE ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_exam_questions_exam
+          ON exam_questions(exam_id);
+        CREATE INDEX IF NOT EXISTS idx_exam_questions_question
+          ON exam_questions(question_id);
+      `);
+
+      // Preserve every existing one-to-one assignment when moving to the
+      // reusable many-to-many model. questions.exam_id remains as a legacy
+      // compatibility column, but new assignment logic uses exam_questions.
+      await tx.run(`
+        INSERT OR IGNORE INTO exam_questions (exam_id, question_id)
+        SELECT exam_id, id
+          FROM questions
+         WHERE exam_id IS NOT NULL AND exam_id > 0
+      `);
+
+      await tx.run(`
+        UPDATE exams
+           SET question_count = (
+             SELECT COUNT(*)
+               FROM exam_questions eq
+              WHERE eq.exam_id = exams.id
+           ),
+               updated_at = CURRENT_TIMESTAMP
+      `);
+    }
   }
 ];
 
