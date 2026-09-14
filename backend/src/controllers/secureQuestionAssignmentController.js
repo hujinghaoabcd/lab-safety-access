@@ -48,6 +48,19 @@ const balancedTake = (candidates, count, selectedSet) => {
   return selected;
 };
 
+const syncExamCount = async (tx, examId) => {
+  const count = await tx.get(
+    'SELECT COUNT(*) AS count FROM exam_questions WHERE exam_id = ?',
+    [examId]
+  );
+  const questionCount = Number(count.count || 0);
+  await tx.run(
+    'UPDATE exams SET question_count = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [questionCount, examId]
+  );
+  return questionCount;
+};
+
 const configExamQuestions = async (req, res) => {
   const examId = Number.parseInt(req.params.id, 10);
   if (!Number.isInteger(examId) || examId <= 0) return error(res, '考试 ID 无效', 400);
@@ -68,7 +81,7 @@ const configExamQuestions = async (req, res) => {
       if (addIds.length) {
         const placeholders = addIds.map(() => '?').join(',');
         const found = await tx.query(
-          `SELECT id, exam_id AS examId
+          `SELECT id
              FROM questions
             WHERE id IN (${placeholders})`,
           addIds
@@ -76,13 +89,12 @@ const configExamQuestions = async (req, res) => {
         if (found.length !== addIds.length) {
           throw new QuestionAssignmentError('部分待添加题目不存在', 404);
         }
-        const conflicts = found.filter(
-          (question) => question.examId && Number(question.examId) !== examId
-        );
-        if (conflicts.length) {
-          throw new QuestionAssignmentError(
-            `有 ${conflicts.length} 道题已属于其他考试，不能直接抢占`,
-            409
+
+        for (const questionId of addIds) {
+          await tx.run(
+            `INSERT OR IGNORE INTO exam_questions (exam_id, question_id)
+             VALUES (?, ?)`,
+            [examId, questionId]
           );
         }
       }
@@ -90,33 +102,14 @@ const configExamQuestions = async (req, res) => {
       if (removeIds.length) {
         const placeholders = removeIds.map(() => '?').join(',');
         await tx.run(
-          `UPDATE questions
-              SET exam_id = NULL, updated_at = CURRENT_TIMESTAMP
-            WHERE exam_id = ? AND id IN (${placeholders})`,
+          `DELETE FROM exam_questions
+            WHERE exam_id = ? AND question_id IN (${placeholders})`,
           [examId, ...removeIds]
         );
       }
 
-      if (addIds.length) {
-        const placeholders = addIds.map(() => '?').join(',');
-        await tx.run(
-          `UPDATE questions
-              SET exam_id = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE id IN (${placeholders})
-              AND (exam_id IS NULL OR exam_id = 0 OR exam_id = ?)`,
-          [examId, ...addIds, examId]
-        );
-      }
-
-      const count = await tx.get(
-        'SELECT COUNT(*) AS count FROM questions WHERE exam_id = ?',
-        [examId]
-      );
-      await tx.run(
-        'UPDATE exams SET question_count = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [Number(count.count || 0), examId]
-      );
-      return { questionCount: Number(count.count || 0) };
+      const questionCount = await syncExamCount(tx, examId);
+      return { questionCount };
     });
 
     return success(res, result, '题目配置已保存');
@@ -147,15 +140,16 @@ const autoSelectQuestions = async (req, res) => {
         throw new QuestionAssignmentError('自动抽题数量必须是 1–500 的整数');
       }
 
+      // The question bank is reusable: a question already used by another exam
+      // remains eligible here. Only duplicate use inside this exam is prevented
+      // by the (exam_id, question_id) primary key.
       const candidates = await tx.query(
-        `SELECT id, type, category
-           FROM questions
-          WHERE exam_id IS NULL OR exam_id = 0 OR exam_id = ?`,
-        [examId]
+        'SELECT id, type, category FROM questions ORDER BY id',
+        []
       );
       if (candidates.length < targetCount) {
         throw new QuestionAssignmentError(
-          `可用题目只有 ${candidates.length} 道，无法抽取 ${targetCount} 道`,
+          `题库只有 ${candidates.length} 道题，无法抽取 ${targetCount} 道`,
           409
         );
       }
@@ -191,27 +185,21 @@ const autoSelectQuestions = async (req, res) => {
       }
 
       const selectedIds = selected.slice(0, targetCount).map((question) => question.id);
-      await tx.run(
-        'UPDATE questions SET exam_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE exam_id = ?',
-        [examId]
-      );
-      const placeholders = selectedIds.map(() => '?').join(',');
-      await tx.run(
-        `UPDATE questions
-            SET exam_id = ?, updated_at = CURRENT_TIMESTAMP
-          WHERE id IN (${placeholders})`,
-        [examId, ...selectedIds]
-      );
-      await tx.run(
-        'UPDATE exams SET question_count = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [selectedIds.length, examId]
-      );
+      await tx.run('DELETE FROM exam_questions WHERE exam_id = ?', [examId]);
+      for (const questionId of selectedIds) {
+        await tx.run(
+          'INSERT INTO exam_questions (exam_id, question_id) VALUES (?, ?)',
+          [examId, questionId]
+        );
+      }
+      await syncExamCount(tx, examId);
 
       const statsRows = await tx.query(
-        `SELECT type, COUNT(*) AS count
-           FROM questions
-          WHERE exam_id = ?
-          GROUP BY type`,
+        `SELECT q.type, COUNT(*) AS count
+           FROM exam_questions eq
+           JOIN questions q ON q.id = eq.question_id
+          WHERE eq.exam_id = ?
+          GROUP BY q.type`,
         [examId]
       );
       const stats = Object.fromEntries(
@@ -237,5 +225,6 @@ module.exports = {
   configExamQuestions,
   autoSelectQuestions,
   normalizeIds,
-  balancedTake
+  balancedTake,
+  syncExamCount
 };
