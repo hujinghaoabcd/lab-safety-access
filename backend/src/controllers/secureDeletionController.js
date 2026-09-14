@@ -34,6 +34,19 @@ const audit = async (tx, req, action, targetType, targetId, detail = null) => {
   );
 };
 
+const syncExamCounts = async (tx, examIds) => {
+  for (const examId of [...new Set(examIds.map(Number).filter(Boolean))]) {
+    const count = await tx.get(
+      'SELECT COUNT(*) AS count FROM exam_questions WHERE exam_id = ?',
+      [examId]
+    );
+    await tx.run(
+      'UPDATE exams SET question_count = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [Number(count.count || 0), examId]
+    );
+  }
+};
+
 const deleteUser = async (req, res) => {
   const userId = Number.parseInt(req.params.id, 10);
   if (!Number.isInteger(userId) || userId <= 0) return error(res, '用户 ID 无效', 400);
@@ -118,23 +131,21 @@ const deleteExam = async (req, res) => {
         [examId]
       );
       const questionCount = await tx.get(
-        'SELECT COUNT(*) AS count FROM questions WHERE exam_id = ?',
+        'SELECT COUNT(*) AS count FROM exam_questions WHERE exam_id = ?',
         [examId]
       );
 
+      // Questions are reusable. Deleting an exam removes only this exam's
+      // mapping; it must never delete or detach the shared question bank row.
       await tx.run(
         `DELETE FROM wrong_questions
-          WHERE exam_record_id IN (SELECT id FROM exam_records WHERE exam_id = ?)
-             OR question_id IN (SELECT id FROM questions WHERE exam_id = ?)`,
-        [examId, examId]
+          WHERE exam_record_id IN (SELECT id FROM exam_records WHERE exam_id = ?)`,
+        [examId]
       );
       await tx.run('DELETE FROM certificates WHERE exam_id = ?', [examId]);
       await tx.run('DELETE FROM exam_records WHERE exam_id = ?', [examId]);
       await tx.run('DELETE FROM exam_assignments WHERE exam_id = ?', [examId]);
-      await tx.run(
-        'UPDATE questions SET exam_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE exam_id = ?',
-        [examId]
-      );
+      await tx.run('DELETE FROM exam_questions WHERE exam_id = ?', [examId]);
       await tx.run('DELETE FROM exams WHERE id = ?', [examId]);
       await audit(tx, req, 'exam.delete', 'exam', examId, {
         name: exam.name,
@@ -147,7 +158,7 @@ const deleteExam = async (req, res) => {
         releasedQuestionCount: Number(questionCount.count || 0)
       };
     });
-    return success(res, result, '考试已删除，原题目已退回题库');
+    return success(res, result, '考试已删除，题库题目已保留');
   } catch (err) {
     if (err instanceof DeletionError) return error(res, err.message, err.status);
     console.error('删除考试失败:', err);
@@ -161,27 +172,20 @@ const deleteQuestion = async (req, res) => {
 
   try {
     await withTransaction(async (tx) => {
-      const question = await tx.get(
-        'SELECT id, exam_id AS examId FROM questions WHERE id = ?',
-        [questionId]
-      );
+      const question = await tx.get('SELECT id FROM questions WHERE id = ?', [questionId]);
       if (!question) throw new DeletionError('题目不存在', 404);
 
+      const mappings = await tx.query(
+        'SELECT exam_id AS examId FROM exam_questions WHERE question_id = ?',
+        [questionId]
+      );
+      const affectedExamIds = mappings.map((row) => row.examId);
+
       await tx.run('DELETE FROM wrong_questions WHERE question_id = ?', [questionId]);
+      await tx.run('DELETE FROM exam_questions WHERE question_id = ?', [questionId]);
       await tx.run('DELETE FROM questions WHERE id = ?', [questionId]);
-      if (question.examId) {
-        const count = await tx.get(
-          'SELECT COUNT(*) AS count FROM questions WHERE exam_id = ?',
-          [question.examId]
-        );
-        await tx.run(
-          'UPDATE exams SET question_count = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-          [Number(count.count || 0), question.examId]
-        );
-      }
-      await audit(tx, req, 'question.delete', 'question', questionId, {
-        examId: question.examId || null
-      });
+      await syncExamCounts(tx, affectedExamIds);
+      await audit(tx, req, 'question.delete', 'question', questionId, { affectedExamIds });
     });
     return success(res, null, '删除成功');
   } catch (err) {
@@ -197,34 +201,33 @@ const batchDeleteQuestions = async (req, res) => {
     const result = await withTransaction(async (tx) => {
       const placeholders = ids.map(() => '?').join(',');
       const questions = await tx.query(
-        `SELECT id, exam_id AS examId FROM questions WHERE id IN (${placeholders})`,
+        `SELECT id FROM questions WHERE id IN (${placeholders})`,
         ids
       );
       if (!questions.length) throw new DeletionError('所选题目不存在', 404);
       const actualIds = questions.map((row) => row.id);
       const actualPlaceholders = actualIds.map(() => '?').join(',');
-      const affectedExamIds = [...new Set(questions
-        .map((row) => row.examId)
-        .filter(Boolean))];
+      const mappings = await tx.query(
+        `SELECT DISTINCT exam_id AS examId
+           FROM exam_questions
+          WHERE question_id IN (${actualPlaceholders})`,
+        actualIds
+      );
+      const affectedExamIds = mappings.map((row) => row.examId);
 
       await tx.run(
         `DELETE FROM wrong_questions WHERE question_id IN (${actualPlaceholders})`,
         actualIds
       );
       await tx.run(
+        `DELETE FROM exam_questions WHERE question_id IN (${actualPlaceholders})`,
+        actualIds
+      );
+      await tx.run(
         `DELETE FROM questions WHERE id IN (${actualPlaceholders})`,
         actualIds
       );
-      for (const examId of affectedExamIds) {
-        const count = await tx.get(
-          'SELECT COUNT(*) AS count FROM questions WHERE exam_id = ?',
-          [examId]
-        );
-        await tx.run(
-          'UPDATE exams SET question_count = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-          [Number(count.count || 0), examId]
-        );
-      }
+      await syncExamCounts(tx, affectedExamIds);
       await audit(tx, req, 'question.batch_delete', 'question', actualIds.join(','), {
         count: actualIds.length,
         affectedExamIds
@@ -244,14 +247,51 @@ const deleteRecord = async (req, res) => {
   if (!Number.isInteger(recordId) || recordId <= 0) return error(res, '记录 ID 无效', 400);
 
   try {
-    await withTransaction(async (tx) => {
-      const record = await tx.get('SELECT id FROM exam_records WHERE id = ?', [recordId]);
+    const result = await withTransaction(async (tx) => {
+      const record = await tx.get(
+        `SELECT id, user_id AS userId, exam_id AS examId, status
+           FROM exam_records
+          WHERE id = ?`,
+        [recordId]
+      );
       if (!record) throw new DeletionError('考试记录不存在', 404);
+
       await tx.run('DELETE FROM wrong_questions WHERE exam_record_id = ?', [recordId]);
       await tx.run('DELETE FROM exam_records WHERE id = ?', [recordId]);
-      await audit(tx, req, 'exam_record.delete', 'exam_record', recordId);
+
+      const remainingPass = await tx.get(
+        `SELECT 1 AS present
+           FROM exam_records
+          WHERE user_id = ? AND exam_id = ? AND status = '通过'
+          LIMIT 1`,
+        [record.userId, record.examId]
+      );
+
+      let revokedCertificate = false;
+      if (!remainingPass) {
+        const revokeResult = await tx.run(
+          `UPDATE certificates
+              SET status = 0
+            WHERE user_id = ? AND exam_id = ? AND status = 1`,
+          [record.userId, record.examId]
+        );
+        revokedCertificate = Number(revokeResult.changes || 0) > 0;
+      }
+
+      await audit(tx, req, 'exam_record.delete', 'exam_record', recordId, {
+        userId: record.userId,
+        examId: record.examId,
+        revokedCertificate
+      });
+      return { revokedCertificate };
     });
-    return success(res, null, '删除考试记录成功');
+    return success(
+      res,
+      result,
+      result.revokedCertificate
+        ? '删除考试记录成功，对应证书已同步撤销'
+        : '删除考试记录成功'
+    );
   } catch (err) {
     if (err instanceof DeletionError) return error(res, err.message, err.status);
     console.error('删除考试记录失败:', err);
@@ -266,5 +306,6 @@ module.exports = {
   deleteQuestion,
   batchDeleteQuestions,
   deleteRecord,
-  normalizeIds
+  normalizeIds,
+  syncExamCounts
 };
