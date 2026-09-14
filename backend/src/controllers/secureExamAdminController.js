@@ -142,7 +142,7 @@ const toggleExamStatus = async (req, res) => {
 
     if (newStatus === 1) {
       const countRow = await dbGet(
-        'SELECT COUNT(*) AS count FROM questions WHERE exam_id = ?',
+        'SELECT COUNT(*) AS count FROM exam_questions WHERE exam_id = ?',
         [req.params.id]
       );
       const actualCount = Number(countRow.count || 0);
