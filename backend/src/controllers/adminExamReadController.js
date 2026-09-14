@@ -87,11 +87,12 @@ const getExamQuestions = async (req, res) => {
     const exam = await dbGet('SELECT id FROM exams WHERE id = ?', [examId]);
     if (!exam) return error(res, '考试不存在', 404);
     const rows = await dbQuery(
-      `SELECT id, content, type, category, options, answer, analysis,
-              created_at AS createTime
-         FROM questions
-        WHERE exam_id = ?
-        ORDER BY created_at DESC, id DESC`,
+      `SELECT q.id, q.content, q.type, q.category, q.options, q.answer, q.analysis,
+              q.created_at AS createTime
+         FROM exam_questions eq
+         JOIN questions q ON q.id = eq.question_id
+        WHERE eq.exam_id = ?
+        ORDER BY eq.created_at DESC, q.id DESC`,
       [examId]
     );
     return success(res, rows.map((question) => ({
