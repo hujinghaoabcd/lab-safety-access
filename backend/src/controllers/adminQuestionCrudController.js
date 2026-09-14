@@ -51,7 +51,7 @@ const validateExamId = async (tx, value) => {
 const syncExamCount = async (tx, examId) => {
   if (!examId) return;
   const count = await tx.get(
-    'SELECT COUNT(*) AS count FROM questions WHERE exam_id = ?',
+    'SELECT COUNT(*) AS count FROM exam_questions WHERE exam_id = ?',
     [examId]
   );
   await tx.run(
@@ -70,6 +70,7 @@ const getQuestions = async (req, res) => {
     const category = String(req.query.category || '').trim();
     const type = String(req.query.type || '').trim();
     const unassigned = String(req.query.unassigned ?? '').trim();
+    const examIdText = String(req.query.examId ?? '').trim();
 
     if (keyword) {
       where.push('content LIKE ?');
@@ -86,7 +87,22 @@ const getQuestions = async (req, res) => {
       where.push('type = ?');
       params.push(type);
     }
-    if (unassigned === '1') where.push('(exam_id IS NULL OR exam_id = 0)');
+    if (unassigned === '1') {
+      if (examIdText) {
+        const examId = Number.parseInt(examIdText, 10);
+        if (!Number.isInteger(examId) || examId <= 0) return error(res, '考试 ID 参数无效', 400);
+        where.push(`NOT EXISTS (
+          SELECT 1 FROM exam_questions eq
+           WHERE eq.question_id = questions.id AND eq.exam_id = ?
+        )`);
+        params.push(examId);
+      } else {
+        where.push(`NOT EXISTS (
+          SELECT 1 FROM exam_questions eq
+           WHERE eq.question_id = questions.id
+        )`);
+      }
+    }
 
     const count = await dbGet(
       `SELECT COUNT(*) AS count FROM questions WHERE ${where.join(' AND ')}`,
@@ -131,7 +147,13 @@ const createQuestion = async (req, res) => {
           examId === undefined ? null : examId
         ]
       );
-      await syncExamCount(tx, examId);
+      if (examId) {
+        await tx.run(
+          'INSERT OR IGNORE INTO exam_questions (exam_id, question_id) VALUES (?, ?)',
+          [examId, created.lastID]
+        );
+        await syncExamCount(tx, examId);
+      }
       await tx.run(
         `INSERT INTO operation_audit_logs
           (actor_type, actor_id, action, target_type, target_id, outcome, ip)
@@ -178,7 +200,8 @@ const updateQuestion = async (req, res) => {
         analysis: req.body && req.body.analysis !== undefined ? req.body.analysis : current.analysis
       };
       const question = normalizeRequestQuestion(merged);
-      const examId = req.body && Object.prototype.hasOwnProperty.call(req.body, 'examId')
+      const hasExamId = req.body && Object.prototype.hasOwnProperty.call(req.body, 'examId');
+      const examId = hasExamId
         ? await validateExamId(tx, req.body.examId)
         : current.exam_id;
 
@@ -198,8 +221,24 @@ const updateQuestion = async (req, res) => {
           questionId
         ]
       );
-      await syncExamCount(tx, current.exam_id);
-      if (examId !== current.exam_id) await syncExamCount(tx, examId);
+
+      if (hasExamId && examId !== current.exam_id) {
+        if (current.exam_id) {
+          await tx.run(
+            'DELETE FROM exam_questions WHERE exam_id = ? AND question_id = ?',
+            [current.exam_id, questionId]
+          );
+          await syncExamCount(tx, current.exam_id);
+        }
+        if (examId) {
+          await tx.run(
+            'INSERT OR IGNORE INTO exam_questions (exam_id, question_id) VALUES (?, ?)',
+            [examId, questionId]
+          );
+          await syncExamCount(tx, examId);
+        }
+      }
+
       await tx.run(
         `INSERT INTO operation_audit_logs
           (actor_type, actor_id, action, target_type, target_id, outcome, detail, ip)
