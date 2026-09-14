@@ -87,21 +87,19 @@ const getQuestions = async (req, res) => {
       where.push('type = ?');
       params.push(type);
     }
-    if (unassigned === '1') {
-      if (examIdText) {
-        const examId = Number.parseInt(examIdText, 10);
-        if (!Number.isInteger(examId) || examId <= 0) return error(res, '考试 ID 参数无效', 400);
-        where.push(`NOT EXISTS (
-          SELECT 1 FROM exam_questions eq
-           WHERE eq.question_id = questions.id AND eq.exam_id = ?
-        )`);
-        params.push(examId);
-      } else {
-        where.push(`NOT EXISTS (
-          SELECT 1 FROM exam_questions eq
-           WHERE eq.question_id = questions.id
-        )`);
-      }
+    // In the old one-question-one-exam model, unassigned=1 meant globally unused.
+    // With reusable questions, the exam configuration page must still see
+    // questions used by other exams. When examId is provided, hide only items
+    // already selected by that exam. Legacy callers without examId receive the
+    // full reusable bank rather than losing previously assigned questions.
+    if (unassigned === '1' && examIdText) {
+      const examId = Number.parseInt(examIdText, 10);
+      if (!Number.isInteger(examId) || examId <= 0) return error(res, '考试 ID 参数无效', 400);
+      where.push(`NOT EXISTS (
+        SELECT 1 FROM exam_questions eq
+         WHERE eq.question_id = questions.id AND eq.exam_id = ?
+      )`);
+      params.push(examId);
     }
 
     const count = await dbGet(
