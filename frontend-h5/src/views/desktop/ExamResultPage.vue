@@ -76,8 +76,14 @@ const total = Number(route.query.total) || 100
 const correct = Number(route.query.correct) || 0
 const wrong = Number(route.query.wrong) || 0
 const passScore = Number(route.query.passScore) || 60
+// 后端提交接口返回的权威判定；旧链接没有该参数时回退到分数比较
+const passedQuery = String(route.query.passed ?? '')
 
-const isPassed = computed(() => score >= passScore)
+const isPassed = computed(() => {
+  if (passedQuery === '1' || passedQuery === 'true') return true
+  if (passedQuery === '0' || passedQuery === 'false') return false
+  return score >= passScore
+})
 
 const handleContinue = () => {
   router.push('/exam-center')

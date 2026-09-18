@@ -211,6 +211,7 @@ const submitExam = async () => {
         total: String(data.totalScore ?? 100),
         correct: String(data.correctCount ?? 0),
         wrong: String(data.wrongCount ?? 0),
+        passed: data.passed ? '1' : '0',
         passScore: String(data.totalScore ? data.totalScore * 0.6 : 60)
       }
     })
