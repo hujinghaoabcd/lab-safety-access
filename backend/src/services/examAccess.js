@@ -10,7 +10,7 @@ class ExamAccessError extends Error {
 
 const getMaxExamAttempts = () => {
   const parsed = Number.parseInt(process.env.MAX_EXAM_ATTEMPTS || '', 10);
-  if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 20) return parsed;
+  if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 100000) return parsed;
   return DEFAULT_MAX_ATTEMPTS;
 };
 
